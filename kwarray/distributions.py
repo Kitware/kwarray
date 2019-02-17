@@ -16,7 +16,7 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import numpy as np
 import ubelt as ub
 import functools
-from kwarray import ensure_rng
+from kwarray.util_random import ensure_rng
 
 
 def _issubclass2(child, parent):
