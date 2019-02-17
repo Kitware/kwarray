@@ -1,0 +1,970 @@
+# -*- coding: utf-8 -*-
+"""
+Attempts to expose a common API that works for both Tensors and ndarrays
+
+Example:
+    >>> import torch
+    >>> import numpy as np
+    >>> data1 = torch.rand(10, 10)
+    >>> data2 = data1.numpy()
+    >>> # Method 1: grab the appropriate sub-impl
+    >>> impl1 = ArrayAPI.impl(data1)
+    >>> impl2 = ArrayAPI.impl(data2)
+    >>> result1 = impl1.sum(data1, axis=0)
+    >>> result2 = impl2.sum(data2, axis=0)
+    >>> assert np.all(impl1.numpy(result1) == impl2.numpy(result2))
+    >>> # Method 2: choose the impl on the fly
+    >>> result1 = ArrayAPI.sum(data1, axis=0)
+    >>> result2 = ArrayAPI.sum(data2, axis=0)
+    >>> assert np.all(ArrayAPI.numpy(result1) == ArrayAPI.numpy(result2))
+
+Example:
+    >>> import torch
+    >>> import numpy as np
+    >>> data1 = torch.rand(10, 10)
+    >>> data2 = data1.numpy()
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+import torch
+import numpy as np
+import ubelt as ub
+import six
+from functools import partial
+
+
+def _get_funcname(func):
+    if six.PY2:
+        try:
+            return func.func_name
+        except AttributeError:
+            return func.__name__
+    else:
+        return func.__name__
+
+
+class _ImplRegistry(object):
+    def __init__(self):
+        self.registered = {
+            'torch': {},
+            'numpy': {},
+            'api': {},
+        }
+
+    def _register(self, func, func_type, impl):
+        func_name = _get_funcname(func)
+
+        assert func_type in {
+            'data_func',           # methods where the first argument is an array
+            'array_sequence',  # methods that take a sequence of arrays
+            'shape_creation',  # methods that allocate new data via shape
+        }
+        self.registered[impl][func_name] = {
+            'func': func,
+            'func_name': func_name,
+            'func_type': func_type,
+        }
+        return staticmethod(func)
+
+    def _implmethod(self, func=None, func_type='data_func', impl=None):
+        _register = partial(self._register, func_type=func_type, impl=impl)
+        if func is None:
+            return _register
+        else:
+            return _register(func)
+
+    def _apimethod(self, key=None, func_type='data_func'):
+        """
+        Creates wrapper for a "data method" --- i.e. a ArrayAPI function that has
+        only one main argument, which is an array.
+        """
+        if isinstance(key, six.string_types):
+            # numpy_func = self.registered['numpy'][key]['func']
+            # torch_func = self.registered['torch'][key]['func']
+            numpy_func = getattr(NumpyImpls, key)
+            torch_func = getattr(TorchImpls, key)
+            def func(data, *args, **kwargs):
+                if torch.is_tensor(data):
+                    return torch_func(data, *args, **kwargs)
+                elif isinstance(data, np.ndarray):
+                    return numpy_func(data, *args, **kwargs)
+                elif isinstance(data, (list, tuple)):
+                    return numpy_func(np.asarray(data), *args, **kwargs)
+            func.__name__ = str(key)  # the str wrap is for python2
+        else:
+            func = key
+        _register = partial(self._register, func_type=func_type, impl='api')
+        if func is None:
+            return _register
+        else:
+            return _register(func)
+
+    def _ensure_datamethods_names_are_registered(self):
+        """
+        Checks to make sure all methods are implemented in both
+        torch and numpy implementations as well as exposed in the ArrayAPI.
+        """
+        # Check that we didn't forget to add anything
+        # api_names = {
+        #     key for key, value in ArrayAPI.__dict__.items()
+        #     if isinstance(value, staticmethod)
+        # }
+        # import xdev
+        # xdev.fix_embed_globals()
+        numpy_names = set(self.registered['numpy'].keys())
+        torch_names = set(self.registered['torch'].keys())
+        api_names = set(self.registered['api'].keys())
+
+        universe = (torch_names | numpy_names)
+
+        grouped = ub.group_items(self.registered['numpy'].values(), lambda x: x['func_type'])
+        shape_creation_methods = {item['func_name'] for item in grouped['shape_creation']}
+
+        missing_torch = universe - torch_names
+        missing_numpy = universe - numpy_names
+        missing_api = universe - api_names - shape_creation_methods
+
+        if missing_numpy or missing_torch:
+            message = ub.codeblock(
+                '''
+                missing_torch = {}
+                missing_numpy = {}
+                ''').format(missing_torch, missing_numpy)
+            raise AssertionError(message)
+
+        if missing_api:
+            message = ub.codeblock(
+                '''
+                WARNING (these will be implicitly created):
+                missing_api = {}
+                '''.format(missing_api))
+            print(message)
+            import warnings
+            warnings.warn(message)
+
+        # Insert any missing functions into the API implicitly
+        autogen = []
+        for func_name in missing_api:
+            func_type = self.registered['numpy'][func_name]['func_type']
+            autogen.append("{} = _apimethod('{}', func_type='{}')".format(func_name, func_name, func_type))
+            implicitmethod = self._apimethod(func_name, func_type=func_type)
+            setattr(ArrayAPI, func_name, implicitmethod)
+
+        for func_name in universe:
+            infos = []
+            try:
+                for impl in ['numpy', 'torch', 'api']:
+                    info = self.registered[impl][func_name]
+                    info.pop('func')
+                    infos.append(info)
+                assert ub.allsame(infos), 'fix {}'.format(infos)
+            except KeyError:
+                pass
+
+        if autogen:
+            print('Please explicitly add the following code:')
+            print('\n'.join(autogen))
+
+# alias staticmethod to make it easier to keep track of which IMPL we are in
+
+_REGISTERY = _ImplRegistry()
+_torchmethod = partial(_REGISTERY._implmethod, impl='torch')
+_numpymethod = partial(_REGISTERY._implmethod, impl='numpy')
+_apimethod = _REGISTERY._apimethod
+
+
+class TorchImpls(object):
+    """
+    Torch backend for the ArrayAPI API
+    """
+
+    is_tensor = True
+    is_numpy = False
+
+    @_torchmethod(func_type='array_sequence')
+    def cat(datas, axis=-1):
+        return torch.cat(datas, dim=axis)
+
+    @_torchmethod(func_type='array_sequence')
+    def hstack(datas):
+        """
+        Concatenates along axis=0 if inputs are are 1-D otherwise axis=1
+
+        Example:
+            >>> datas1 = [torch.arange(10), torch.arange(10)]
+            >>> datas2 = [d.numpy() for d in datas1]
+            >>> ans1 = TorchImpls.hstack(datas1)
+            >>> ans2 = NumpyImpls.hstack(datas2)
+            >>> assert np.all(ans1.numpy() == ans2)
+        """
+        axis = 1
+        if len(datas[0].shape) == 1:
+            axis = 0
+        return torch.cat(datas, dim=axis)
+
+    @_torchmethod(func_type='array_sequence')
+    def vstack(datas):
+        """
+        Ensures that inputs datas are at least 2D (prepending a dimension of 1)
+        and then concats along axis=0.
+
+        Example:
+            >>> datas1 = [torch.arange(10), torch.arange(10)]
+            >>> datas2 = [d.numpy() for d in datas1]
+            >>> ans1 = TorchImpls.vstack(datas1)
+            >>> ans2 = NumpyImpls.vstack(datas2)
+            >>> assert np.all(ans1.numpy() == ans2)
+        """
+        datas = [TorchImpls.atleast_nd(d, n=2, front=True) for d in datas]
+        return torch.cat(datas, dim=0)
+
+    @_torchmethod(func_type='data_func')
+    def atleast_nd(arr, n, front=False):
+        ndims = len(arr.shape)
+        if n is not None and ndims <  n:
+            # append the required number of dimensions to the front or back
+            if front:
+                expander = (None,) * (n - ndims) + (Ellipsis,)
+            else:
+                expander = (Ellipsis,) + (None,) * (n - ndims)
+            arr = arr[expander]
+        return arr
+
+    @_torchmethod(func_type='data_func')
+    def view(data, *shape):
+        data_ = data.view(*shape)
+        return data_
+
+    @_torchmethod(func_type='data_func')
+    def take(data, indices, axis=None):
+        if not torch.is_tensor(indices):
+            indices = torch.LongTensor(indices).to(data.device)
+        if axis is None:
+            return data.take(indices)
+        else:
+            return torch.index_select(data, dim=axis, index=indices)
+
+    @_torchmethod(func_type='data_func')
+    def compress(data, flags, axis=None):
+        if not torch.is_tensor(flags):
+            flags = np.asarray(flags).astype(np.uint8)
+            flags = torch.ByteTensor(flags).to(data.device)
+        if flags.ndimension() != 1:
+            raise ValueError('condition must be a 1-d tensor')
+        if axis is None:
+            return torch.masked_select(data.view(-1), flags)
+        else:
+            out_shape = list(data.shape)
+            fancy_shape = [-1] * len(out_shape)
+            out_shape[axis] = int(flags.sum())
+            fancy_shape[axis] = flags.numel()
+            explicit_flags = flags.view(*fancy_shape).expand_as(data)
+            out = torch.masked_select(data, explicit_flags).view(*out_shape)
+            return out
+
+    @_torchmethod(func_type='data_func')
+    def tile(data, reps):
+        """
+        Implement np.tile in torch
+
+        Example:
+            >>> # xdoctest: +SKIP
+            >>> data = torch.arange(10)[:, None]
+            >>> ans1 = ArrayAPI.tile(data, [1, 2])
+            >>> ans2 = ArrayAPI.tile(data.numpy(), [1, 2])
+            >>> assert np.all(ans1.numpy() == ans2)
+
+        Doctest:
+            >>> # xdoctest: +SKIP
+            >>> shapes = [(3,), (3, 4,), (3, 5, 7), (1,), (3, 1, 3)]
+            >>> for shape in shapes:
+            >>>     data = torch.rand(*shape)
+            >>>     for axis in range(len(shape)):
+            >>>         for reps in it.product(*[range(0, 4)] * len(shape)):
+            >>>             ans1 = ArrayAPI.tile(data, reps)
+            >>>             ans2 = ArrayAPI.tile(data.numpy(), reps)
+            >>>             #print('ans1.shape = {!r}'.format(tuple(ans1.shape)))
+            >>>             #print('ans2.shape = {!r}'.format(tuple(ans2.shape)))
+            >>>             assert np.all(ans1.numpy() == ans2)
+        """
+        n_prepend = len(reps) - len(data.shape)
+        if n_prepend > 0:
+            reps = [1] * n_prepend + list(reps)
+        if any(r == 0 for r in reps):
+            newshape = np.array([r * s for r, s in zip(reps, data.shape)])
+            return torch.empty(tuple(newshape), dtype=data.dtype).to(data.device)
+        else:
+            return data.repeat(reps)
+
+    @_torchmethod(func_type='data_func')
+    def repeat(data, repeats, axis=None):
+        """
+        I'm not actually sure how to implement this efficiently
+
+        Example:
+            >>> # xdoctest: +SKIP
+            >>> data = torch.arange(10)[:, None]
+            >>> ans1 = ArrayAPI.repeat(data, 2, axis=1)
+            >>> ans2 = ArrayAPI.repeat(data.numpy(), 2, axis=1)
+            >>> assert np.all(ans1.numpy() == ans2)
+
+        Doctest:
+            >>> # xdoctest: +SKIP
+            >>> shapes = [(3,), (3, 4,), (3, 5, 7)]
+            >>> for shape in shapes:
+            >>>     data = torch.rand(*shape)
+            >>>     for axis in range(len(shape)):
+            >>>         for repeats in range(0, 4):
+            >>>             ans1 = ArrayAPI.repeat(data, repeats, axis=axis)
+            >>>             ans2 = ArrayAPI.repeat(data.numpy(), repeats, axis=axis)
+            >>>             assert np.all(ans1.numpy() == ans2)
+
+
+            ArrayAPI.repeat(data, 2, axis=0)
+            ArrayAPI.repeat(data.numpy(), 2, axis=0)
+
+            x = np.array([[1,2],[3,4]])
+            np.repeat(x, [1, 2], axis=0)
+
+            ArrayAPI.repeat(data.numpy(), [1, 2])
+        """
+        raise NotImplementedError
+        if False:
+            # hack! may not always work
+            return np.repeat(data, repeats, axis=axis)
+        else:
+            if isinstance(repeats, int):
+                if axis is None:
+                    return data.view(-1).repeat(repeats)
+                else:
+                    expander = [1] * len(data.shape)
+                    expander[axis] = repeats
+                    if repeats == 0:
+                        newshape = list(data.shape)
+                        newshape[axis] = 0
+                        return torch.empty(tuple(newshape), dtype=data.dtype).to(data.device)
+                    else:
+                        return data.repeat(expander)
+            else:
+                raise NotImplementedError
+        pass
+
+    @_torchmethod(func_type='data_func')
+    def T(data):
+        return data.t()
+
+    @_torchmethod(func_type='data_func')
+    def transpose(data, axes):
+        """
+        Example:
+            >>> data1 = torch.rand(2, 3, 5)
+            >>> data2 = data1.numpy()
+            >>> res1 = ArrayAPI.transpose(data1, (2, 0, 1))
+            >>> res2 = ArrayAPI.transpose(data2, (2, 0, 1))
+            >>> assert np.all(res1.numpy() == res2)
+        """
+        return data.permute(axes)
+
+    @_torchmethod(func_type='data_func')
+    def numel(data):
+        return data.numel()
+
+    # --- Allocators ----
+
+    @_torchmethod(func_type='data_func')
+    def full_like(data, fill_value, dtype=None):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.full_like(data, fill_value, dtype=dtype)
+
+    @_torchmethod(func_type='data_func')
+    def empty_like(data, dtype=None):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.empty_like(data, dtype=dtype)
+
+    @_torchmethod(func_type='data_func')
+    def zeros_like(data, dtype=None):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.zeros_like(data, dtype=dtype)
+
+    @_torchmethod(func_type='data_func')
+    def ones_like(data, dtype=None):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.zeros_like(data, dtype=dtype)
+
+    @_torchmethod(func_type='shape_creation')
+    def full(shape, fill_value, dtype=float):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.full(shape, fill_value, dtype=dtype)
+
+    @_torchmethod(func_type='shape_creation')
+    def empty(shape, dtype=float):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.full(shape, dtype=dtype)
+
+    @_torchmethod(func_type='shape_creation')
+    def zeros(shape, dtype=float):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.zeros(shape, dtype=dtype)
+
+    @_torchmethod(func_type='shape_creation')
+    def ones(shape, dtype=float):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.ones(shape, dtype=dtype)
+
+    # -------
+
+    @_torchmethod(func_type='data_func')
+    def argmax(data, axis=None):
+        return torch.argmax(data, dim=axis)
+
+    @_torchmethod(func_type='data_func')
+    def max(data, axis=None):
+        """
+        Example:
+            >>> data1 = torch.rand(5, 5, 5, 5, 5, 5)
+            >>> data2 = data1.numpy()
+            >>> res1 = ArrayAPI.max(data1)
+            >>> res2 = ArrayAPI.max(data2)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.max(data1, axis=(4, 0, 1))
+            >>> res2 = ArrayAPI.max(data2, axis=(4, 0, 1))
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.max(data1, axis=(5, -2))
+            >>> res2 = ArrayAPI.max(data2, axis=(5, -2))
+            >>> assert np.all(res1.numpy() == res2)
+        """
+        if axis is None:
+            return torch.max(data)
+        elif isinstance(axis, tuple):
+            axis_ = [d if d >= 0 else len(data.shape) + d for d in axis]
+            temp = data
+            for d in sorted(axis_)[::-1]:
+                temp = temp.max(dim=d)[0]
+            return temp
+        else:
+            return torch.max(data, dim=axis)[0]
+
+    @_torchmethod(func_type='data_func')
+    def max_argmax(data, axis=None):
+        """
+        Note: this isn't always gaurenteed to be compatibile with numpy
+        if there are equal elements in data. See:
+        >>> np.ones(10).argmax()
+        0
+        >>> torch.ones(10).argmax()
+        tensor(9)
+        """
+        return torch.max(data, dim=axis)
+
+    @_torchmethod
+    def maximum(data1, data2, out=None):
+        """
+        Example:
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = torch.rand(5, 5)
+            >>> result1 = TorchImpls.maximum(data1, data2)
+            >>> result2 = NumpyImpls.maximum(data1.numpy(), data2.numpy())
+            >>> assert np.allclose(result1.numpy(), result2)
+        """
+        return torch.max(data1, data2, out=out)
+
+    @_torchmethod
+    def minimum(data1, data2, out=None):
+        """
+        Example:
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = torch.rand(5, 5)
+            >>> result1 = TorchImpls.minimum(data1, data2)
+            >>> result2 = NumpyImpls.minimum(data1.numpy(), data2.numpy())
+            >>> assert np.allclose(result1.numpy(), result2)
+        """
+        return torch.min(data1, data2, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def sum(data, axis=None):
+        if axis is None:
+            return data.sum()
+        else:
+            return data.sum(dim=axis)
+
+    @_torchmethod(func_type='data_func')
+    def nan_to_num(x, copy=True):
+        if copy:
+            x = x.clone()
+        x[torch.isnan(x)] = 0
+        return x
+
+    @_torchmethod(func_type='data_func')
+    def copy(data):
+        return torch.clone(data)
+
+    log = _torchmethod(torch.log)
+    log2 = _torchmethod(torch.log2)
+    any = _torchmethod(torch.any)
+    all = _torchmethod(torch.all)
+
+    @_torchmethod(func_type='data_func')
+    def nonzero(data):
+        # torch returns an NxD tensor, whereas numpy returns
+        # a D-tuple of N-dimensional arrays.
+        return tuple(torch.nonzero(data).t())
+
+    @_torchmethod(func_type='data_func')
+    def astype(data, dtype, copy=True):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        data = data.to(dtype)
+        if copy:
+            data = data.clone()
+        return data
+
+    @_torchmethod(func_type='data_func')
+    def tensor(data, device=ub.NoParam):
+        if device is not ub.NoParam:
+            data = data.to(device)
+        return data
+
+    @_torchmethod(func_type='data_func')
+    def numpy(data):
+        return data.data.cpu().numpy()
+
+    @_torchmethod(func_type='data_func')
+    def tolist(data):
+        return data.data.cpu().numpy().tolist()
+
+    @_torchmethod(func_type='data_func')
+    def contiguous(data):
+        return data.contiguous()
+
+    @_torchmethod(func_type='data_func')
+    def pad(data, pad_width, mode='constant'):
+        pad = list(ub.flatten(pad_width[::-1]))
+        return torch.nn.functional.pad(data, pad, mode=mode)
+
+    @_torchmethod(func_type='data_func')
+    def asarray(data, dtype=None):
+        """
+        Cast data into a tensor representation
+        """
+        if not isinstance(data, torch.Tensor):
+            data =  torch.Tensor(data)
+        if dtype is not None:
+            dtype = _torch_dtype_lut().get(dtype, dtype)
+            data = data.to(dtype)
+        return data
+
+    ensure = asarray
+
+    @_torchmethod(func_type='data_func')
+    def dtype_kind(data):
+        """ returns the numpy code for the data type kind """
+        if data.dtype.is_floating_point:
+            return 'f'
+        elif data.dtype == torch.uint8:
+            return 'u'
+        else:
+            return 'i'
+
+    @_torchmethod(func_type='data_func')
+    def floor(data, out=None):
+        return torch.floor(data, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def ceil(data, out=None):
+        return torch.ceil(data, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def ifloor(data, out=None):
+        return torch.floor(data, out=out).int()
+
+    @_torchmethod(func_type='data_func')
+    def iceil(data, out=None):
+        return torch.ceil(data, out=out).int()
+
+
+class NumpyImpls(object):
+    """
+    Numpy backend for the ArrayAPI API
+    """
+
+    is_tensor = False
+    is_numpy = True
+
+    hstack = _numpymethod(func_type='array_sequence')(np.hstack)
+    vstack = _numpymethod(func_type='array_sequence')(np.vstack)
+
+    @_numpymethod(func_type='array_sequence')
+    def cat(datas, axis=-1):
+        return np.concatenate(datas, axis=axis)
+
+    @_numpymethod(func_type='data_func')
+    def atleast_nd(arr, n, front=False):
+        import kwarray
+        return kwarray.atleast_nd(arr, n, front)
+
+    @_numpymethod(func_type='data_func')
+    def view(data, *shape):
+        data_ = data.reshape(*shape)
+        return data_
+
+    @_numpymethod(func_type='data_func')
+    def take(data, indices, axis=None):
+        return data.take(indices, axis=axis)
+
+    @_numpymethod(func_type='data_func')
+    def compress(data, flags, axis=None):
+        return data.compress(flags, axis=axis)
+
+    @_numpymethod(func_type='data_func')
+    def repeat(data, repeats, axis=None):
+        if not (axis is None or isinstance(repeats, int)):
+            raise NotImplementedError('torch version of non-int repeats is not implemented')
+        return np.repeat(data, repeats, axis=axis)
+
+    @_numpymethod(func_type='data_func')
+    def tile(data, reps):
+        return np.tile(data, reps)
+
+    @_numpymethod(func_type='data_func')
+    def T(data):
+        return data.T
+
+    @_numpymethod(func_type='data_func')
+    def transpose(data, axes):
+        return np.transpose(data, axes)
+
+    @_numpymethod(func_type='data_func')
+    def numel(data):
+        return data.size
+
+    # --- Allocators ----
+
+    @_numpymethod
+    def empty_like(data, dtype=None):
+        return np.empty_like(data, dtype=dtype)
+
+    @_numpymethod
+    def full_like(data, fill_value, dtype=None):
+        return np.full_like(data, fill_value, dtype=dtype)
+
+    @_numpymethod
+    def zeros_like(data, dtype=None):
+        return np.zeros_like(data, dtype=dtype)
+
+    @_numpymethod
+    def ones_like(data, dtype=None):
+        return np.zeros_like(data, dtype=dtype)
+
+    @_numpymethod(func_type='shape_creation')
+    def full(shape, fill_value, dtype=float):
+        return np.full(shape, fill_value, dtype=dtype)
+
+    @_numpymethod(func_type='shape_creation')
+    def empty(shape, dtype=float):
+        return np.full(shape, dtype=dtype)
+
+    @_numpymethod(func_type='shape_creation')
+    def zeros(shape, dtype=float):
+        return np.zeros(shape, dtype=dtype)
+
+    @_numpymethod(func_type='shape_creation')
+    def ones(shape, dtype=float):
+        return np.ones(shape, dtype=dtype)
+
+    # -------
+
+    @_numpymethod
+    def argmax(data, axis=None):
+        return np.argmax(data, axis=axis)
+
+    @_numpymethod
+    def max(data, axis=None):
+        return data.max(axis=axis)
+
+    @_numpymethod
+    def max_argmax(data, axis=None):
+        return data.max(axis=axis), np.argmax(data, axis=axis)
+
+    @_numpymethod
+    def sum(data, axis=None):
+        return data.sum(axis=axis)
+
+    @_numpymethod
+    def maximum(data1, data2, out=None):
+        return np.maximum(data1, data2, out=out)
+
+    @_numpymethod
+    def minimum(data1, data2, out=None):
+        return np.minimum(data1, data2, out=out)
+
+    nan_to_num = _numpymethod(np.nan_to_num)
+
+    log = _numpymethod(np.log)
+    log2 = _numpymethod(np.log2)
+
+    any = _numpymethod(np.any)
+    all = _numpymethod(np.all)
+
+    copy = _numpymethod(np.copy)
+
+    nonzero = _numpymethod(np.nonzero)
+
+    @_numpymethod(func_type='data_func')
+    def astype(data, dtype, copy=True):
+        return data.astype(dtype, copy=copy)
+
+    @_numpymethod(func_type='data_func')
+    def tensor(data, device=ub.NoParam):
+        data = torch.from_numpy(np.ascontiguousarray(data))
+        if device is not ub.NoParam:
+            data = data.to(device)
+        return data
+
+    @_numpymethod(func_type='data_func')
+    def numpy(data):
+        return data
+
+    @_numpymethod(func_type='data_func')
+    def tolist(data):
+        return data.tolist()
+
+    @_numpymethod(func_type='data_func')
+    def contiguous(data):
+        return np.ascontiguousarray(data)
+
+    @_numpymethod(func_type='data_func')
+    def pad(data, pad_width, mode='constant'):
+        return np.pad(data, pad_width, mode=mode)
+
+    @_numpymethod(func_type='data_func')
+    def asarray(data, dtype=None):
+        """
+        Cast data into a numpy representation
+        """
+        if isinstance(data, torch.Tensor):
+            data = data.cpu().numpy()
+        return np.asarray(data, dtype=dtype)
+
+    ensure = asarray
+
+    @_numpymethod(func_type='data_func')
+    def dtype_kind(data):
+        return data.dtype.kind
+
+    @_numpymethod(func_type='data_func')
+    def floor(data, out=None):
+        return np.floor(data, out=out)
+
+    @_numpymethod(func_type='data_func')
+    def ceil(data, out=None):
+        return np.ceil(data, out=out)
+
+    @_numpymethod(func_type='data_func')
+    def ifloor(data, out=None):
+        return np.floor(data, out=out).astype(np.int32)
+
+    @_numpymethod(func_type='data_func')
+    def iceil(data, out=None):
+        return np.ceil(data, out=out).astype(np.int32)
+
+
+class ArrayAPI(object):
+    """
+    Compatability API between torch and numpy
+
+    Example:
+        >>> take = ArrayAPI.take
+        >>> np_data = np.arange(0, 143).reshape(11, 13)
+        >>> pt_data = torch.LongTensor(np_data)
+        >>> indices = [1, 3, 5, 7, 11, 13, 17, 21]
+        >>> idxs0 = [1, 3, 5, 7]
+        >>> idxs1 = [1, 3, 5, 7, 11]
+        >>> assert np.allclose(take(np_data, indices), take(pt_data, indices))
+        >>> assert np.allclose(take(np_data, idxs0, 0), take(pt_data, idxs0, 0))
+        >>> assert np.allclose(take(np_data, idxs1, 1), take(pt_data, idxs1, 1))
+
+    Example:
+        >>> compress = ArrayAPI.compress
+        >>> np_data = np.arange(0, 143).reshape(11, 13)
+        >>> pt_data = torch.LongTensor(np_data)
+        >>> flags = (np_data % 2 == 0).ravel()
+        >>> f0 = (np_data % 2 == 0)[:, 0]
+        >>> f1 = (np_data % 2 == 0)[0, :]
+        >>> assert np.allclose(compress(np_data, flags), compress(pt_data, flags))
+        >>> assert np.allclose(compress(np_data, f0, 0), compress(pt_data, f0, 0))
+        >>> assert np.allclose(compress(np_data, f1, 1), compress(pt_data, f1, 1))
+    """
+
+    @staticmethod
+    def impl(data):
+        """
+        Returns a namespace suitable for operating on the input data type
+
+        Args:
+            data (ndarray | Tensor): data to be operated on
+
+        """
+        from kwarray import arrayapi
+        if torch.is_tensor(data):
+            return arrayapi.TorchImpls
+        else:
+            return arrayapi.NumpyImpls
+
+    @staticmethod
+    def coerce(data):
+        """
+        Coerces some form of inputs into an array api (either numpy or torch).
+        """
+        if isinstance(data, six.string_types):
+            from kwarray import arrayapi
+            if data in ['torch', 'tensor']:
+                return arrayapi.TorchImpls
+            elif data == 'numpy':
+                return arrayapi.NumpyImpls
+            else:
+                raise KeyError(data)
+        else:
+            return ArrayAPI.impl(data)
+
+    @_apimethod(func_type='array_sequence')
+    def cat(datas, *args, **kwargs):
+        impl = ArrayAPI.impl(datas[0])
+        return impl.cat(datas, *args, **kwargs)
+
+    @_apimethod(func_type='array_sequence')
+    def hstack(datas, *args, **kwargs):
+        impl = ArrayAPI.impl(datas[0])
+        return impl.hstack(datas, *args, **kwargs)
+
+    @_apimethod(func_type='array_sequence')
+    def vstack(datas, *args, **kwargs):
+        impl = ArrayAPI.impl(datas[0])
+        return impl.vstack(datas, *args, **kwargs)
+
+    take = _apimethod('take')
+    compress = _apimethod('compress')
+
+    repeat = _apimethod('repeat')
+    tile = _apimethod('tile')
+
+    view = _apimethod('view')
+    numel = _apimethod('numel')
+    atleast_nd = _apimethod('atleast_nd')
+
+    full_like = _apimethod('full_like')
+    ones_like = _apimethod('ones_like')
+    zeros_like = _apimethod('zeros_like')
+    empty_like = _apimethod('empty_like')
+
+    sum = _apimethod('sum')
+    argmax = _apimethod('argmax')
+    max = _apimethod('max')
+    maximum = _apimethod('maximum')
+    minimum = _apimethod('minimum')
+
+    astype = _apimethod('astype')
+    nonzero = _apimethod('nonzero')
+
+    nan_to_num = _apimethod('nan_to_num')
+
+    tensor = _apimethod('tensor')
+    numpy = _apimethod('numpy')
+    tolist = _apimethod('tolist')
+    asarray = _apimethod('asarray')
+    asarray = _apimethod('ensure')
+
+    T = _apimethod('T')
+    transpose = _apimethod('transpose')
+
+    contiguous = _apimethod('contiguous')
+    pad = _apimethod('pad')
+
+    dtype_kind = _apimethod('dtype_kind')
+
+    max_argmax = _apimethod('max_argmax')
+
+    # ones = _apimethod('ones', func_type='shape_creation')
+    # full = _apimethod('full', func_type='shape_creation')
+    # empty = _apimethod('empty', func_type='shape_creation')
+    # zeros = _apimethod('zeros', func_type='shape_creation')
+
+    any = _apimethod('any', func_type='data_func')
+    all = _apimethod('all', func_type='data_func')
+
+    log2 = _apimethod('log2', func_type='data_func')
+    log = _apimethod('log', func_type='data_func')
+    copy = _apimethod('copy', func_type='data_func')
+
+    iceil = _apimethod('iceil', func_type='data_func')
+    ifloor = _apimethod('ifloor', func_type='data_func')
+    floor = _apimethod('floor', func_type='data_func')
+    ceil = _apimethod('ceil', func_type='data_func')
+
+
+TorchNumpyCompat = ArrayAPI  # backwards compat
+
+
+if __debug__:
+    _REGISTERY._ensure_datamethods_names_are_registered()
+
+
+@ub.memoize
+def _torch_dtype_lut():
+    lut = {}
+
+    # Handle nonstandard alias dtype names
+    lut['double'] = torch.double
+    lut['long'] = torch.long
+
+    # Handle floats
+    for k in [np.float16, 'float16']:
+        lut[k] = torch.float16
+    for k in [np.float32, 'float32']:
+        lut[k] = torch.float32
+    for k in [np.float64, 'float64']:
+        lut[k] = torch.float64
+
+    if torch.float == torch.float32:
+        lut['float'] = torch.float32
+    else:
+        raise AssertionError('dont think this can happen')
+
+    if np.float_ == np.float32:
+        lut[float] = torch.float32
+    elif np.float_ == np.float64:
+        lut[float] = torch.float64
+    else:
+        raise AssertionError('dont think this can happen')
+
+    # Handle signed integers
+    for k in [np.int8, 'int8']:
+        lut[k] = torch.int8
+    for k in [np.int16, 'int16']:
+        lut[k] = torch.int16
+    for k in [np.int32, 'int32']:
+        lut[k] = torch.int32
+    for k in [np.int64, 'int64']:
+        lut[k] = torch.int64
+
+    if np.int_ == np.int32:
+        lut[int] = torch.int32
+    elif np.int_ == np.int64:
+        lut[int] = torch.int64
+    else:
+        raise AssertionError('dont think this can happen')
+
+    if torch.int == torch.int32:
+        lut['int'] = torch.int32
+    else:
+        raise AssertionError('dont think this can happen')
+
+    # Handle unsigned integers
+    for k in [np.uint8, 'uint8']:
+        lut[k] = torch.uint8
+
+    # import torch.utils.data
+    # cant use torch.utils.data.dataloader.numpy_type_map directly because it
+    # maps to tensor types not dtypes, but we can use it to check
+    check = False
+    if check:
+        for k, v in torch.utils.data.dataloader.numpy_type_map.items():
+            assert lut[k] == v.dtype
+    return lut
