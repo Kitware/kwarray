@@ -1,1 +1,0 @@
-mkinit kwarray

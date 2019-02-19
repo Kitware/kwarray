@@ -35,7 +35,7 @@ def _issubclass2(child, parent):
 def _isinstance2(obj, cls):
     """
     obj = self
-    cls = kwil.misc.distributions.Distribution
+    cls = distributions.Distribution
 
     child = obj.__class__
     parent = cls
@@ -429,8 +429,8 @@ class Distribution(Parameterized, _RBinOpMixin):
     def _show(self, n, bins=None, ax=None, color=None, label=None):
         """ plot samples monte-carlo style """
         if ax is None:
-            import kwil
-            kwil.autompl()
+            import kwplot
+            kwplot.autompl()
             from matplotlib import pyplot as plt
             ax = plt.gca()
         data = self.sample(n)
@@ -451,9 +451,9 @@ class Mixture(Distribution):
         >>> pdfs = [Normal(mean=10, std=2), Normal(18, 2)]
         >>> self = Mixture(pdfs)
         >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwil
-        >>> kwil.autompl()
-        >>> kwil.figure(fnum=1, doclf=True)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
         >>> self._show(500, bins=25)
     """
     def __init__(self, pdfs, weights=None, rng=None):
@@ -502,9 +502,9 @@ class Composed(Distribution):
         >>> data = self.sample(5)
         >>> print(ub.repr2(list(data), nl=0, precision=5))
         >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwil
-        >>> kwil.autompl()
-        >>> kwil.figure(fnum=1, doclf=True)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
         >>> self._show(1000, bins=100)
 
     Example:
@@ -517,9 +517,9 @@ class Composed(Distribution):
         >>> data = self.sample(5)
         >>> print(ub.repr2(list(data), nl=0, precision=5))
         >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwil
-        >>> kwil.autompl()
-        >>> kwil.figure(fnum=1, doclf=True)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
         >>> self._show(5000, bins=100)
     """
     def __init__(self, operation, operands):
@@ -594,9 +594,9 @@ class Exponential(Distribution):
     Example:
         >>> self = Exponential(rng=0)
         >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwil
-        >>> kwil.autompl()
-        >>> kwil.figure(fnum=1, doclf=True)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
         >>> self._show(500, bins=25)
     """
     def __init__(self, scale=1, rng=None):
@@ -899,9 +899,9 @@ class PDF(Distribution):
         >>> p = x ** 2
         >>> self = PDF(x, p)
         >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwil
-        >>> kwil.autompl()
-        >>> kwil.figure(fnum=1, doclf=True)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
         >>> self._show(5000, bins=50)
     """
     def __init__(self, x, p, rng=None):

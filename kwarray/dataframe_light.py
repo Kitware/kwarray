@@ -444,8 +444,8 @@ class DataFrameLight(ub.NiceRepr):
             >>> ub.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
         """
         if len(args) == 0 and len(kwargs) == 0:
-            import kwil
-            unique, groupxs = kwil.group_indices(self[by])
+            import kwarray
+            unique, groupxs = kwarray.group_indices(self[by])
             groups = [self.take(idxs) for idxs in groupxs]
             return zip(unique, groups)
         else:
@@ -557,11 +557,3 @@ class DataFrameArray(DataFrameLight):
     #         newobj = self.__class__(newdata, self._keys)
     #     else:
     #         raise NotImplementedError
-
-if __name__ == '__main__':
-    """
-    CommandLine:
-        xdoctest -m kwil.structs.dataframe_light
-    """
-    import xdoctest
-    xdoctest.doctest_module(__file__)
