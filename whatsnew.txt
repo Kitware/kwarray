@@ -1,3 +1,8 @@
+Version 0.3.0
+=============
+* `boolmask` now automatically converts data to an integer ndarray 
+
+
 Version 0.2.0
 =============
 * Ports from KWIL
