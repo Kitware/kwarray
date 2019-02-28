@@ -1,0 +1,43 @@
+---
+kind: pipeline
+name: "Test kwarray in 3.6"
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: "Test python 3.6"
+    image: python:3.6
+    commands:
+      - pip install pip -U
+      - pip install -r requirements.txt -U
+      - pip install -e .
+      - ./run_tests.py
+
+trigger:
+  event:
+    - pull_request
+    - tag
+      
+---
+kind: pipeline
+name: "Test kwarray in 2.7"
+
+platform:
+  os: linux
+  arch: amd64
+  
+steps:
+  - name: "Test python 2.x"
+    image: python:2.7 
+    commands:
+      - pip install pip -U
+      - pip install -r requirements.txt -U
+      - pip install -e .
+      - ./run_tests.py
+
+trigger:
+  event:
+    - pull_request
+    - tag
