@@ -1,5 +1,5 @@
 """
-mkinit ~/code/kwarray/kwarray/__init__.py -w
+mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods -w
 """
 
 __protected__ = [
