@@ -388,7 +388,7 @@ class TorchImpls(object):
     @_torchmethod(func_type='data_func')
     def ones_like(data, dtype=None):
         dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.zeros_like(data, dtype=dtype)
+        return torch.ones_like(data, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def full(shape, fill_value, dtype=float):
@@ -651,7 +651,7 @@ class NumpyImpls(object):
 
     @_numpymethod
     def ones_like(data, dtype=None):
-        return np.zeros_like(data, dtype=dtype)
+        return np.ones_like(data, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
     def full(shape, fill_value, dtype=float):
