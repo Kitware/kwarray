@@ -1,5 +1,7 @@
 Version 0.3.0
 =============
+* Fixed bug in `ArrayAPI.ones_like`, where it returned zeros
+* Add `ArrayAPI.matmul` 
 * `boolmask` now automatically converts data to an integer ndarray 
 
 

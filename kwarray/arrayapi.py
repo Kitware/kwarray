@@ -479,6 +479,11 @@ class TorchImpls(object):
         """
         return torch.min(data1, data2, out=out)
 
+    # @_torchmethod(func_type='data_func')
+    # def matmul(data1, data2, out=None):
+    #     return torch.matmul(data1, data2, out=out)
+    matmul = _torchmethod(torch.matmul)
+
     @_torchmethod(func_type='data_func')
     def sum(data, axis=None):
         if axis is None:
@@ -695,6 +700,11 @@ class NumpyImpls(object):
     def minimum(data1, data2, out=None):
         return np.minimum(data1, data2, out=out)
 
+    # @_numpymethod
+    # def matmul(data1, data2, out=None):
+    #     return np.matmul(data1, data2, out=out)
+    matmul = _numpymethod(np.matmul)
+
     nan_to_num = _numpymethod(np.nan_to_num)
 
     log = _numpymethod(np.log)
@@ -859,6 +869,8 @@ class ArrayAPI(object):
     max = _apimethod('max')
     maximum = _apimethod('maximum')
     minimum = _apimethod('minimum')
+
+    matmul = _apimethod('matmul')
 
     astype = _apimethod('astype')
     nonzero = _apimethod('nonzero')
