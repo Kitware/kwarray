@@ -584,6 +584,19 @@ class TorchImpls(object):
     def iceil(data, out=None):
         return torch.ceil(data, out=out).int()
 
+    @_torchmethod(func_type='data_func')
+    def round(data, out=None):
+        return torch.round(data, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def iround(data, out=None, dtype=np.int):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.round(data, out=out).to(dtype)
+
+    @_torchmethod(func_type='data_func')
+    def clip(data, a_min=None, a_max=None, out=None):
+        return torch.clamp(data, a_min, a_max, out=out)
+
 
 class NumpyImpls(object):
     """
@@ -775,6 +788,16 @@ class NumpyImpls(object):
     def iceil(data, out=None):
         return np.ceil(data, out=out).astype(np.int32)
 
+    @_numpymethod(func_type='data_func')
+    def round(data, out=None):
+        return np.round(data, out=out)
+
+    @_numpymethod(func_type='data_func')
+    def iround(data, out=None, dtype=np.int):
+        return np.round(data, out=out).astype(dtype)
+
+    clip = _numpymethod(np.clip)
+
 
 class ArrayAPI(object):
     """
@@ -909,6 +932,8 @@ class ArrayAPI(object):
     ifloor = _apimethod('ifloor', func_type='data_func')
     floor = _apimethod('floor', func_type='data_func')
     ceil = _apimethod('ceil', func_type='data_func')
+
+    clip = _apimethod('clip', func_type='data_func')
 
 
 TorchNumpyCompat = ArrayAPI  # backwards compat
