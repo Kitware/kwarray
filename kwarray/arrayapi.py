@@ -350,7 +350,14 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def T(data):
-        return data.t()
+        ndims = data.ndimension()
+        if ndims == 2:
+            # torch.t can only handle 2 dims
+            return data.t()
+        else:
+            # use permute for compatability
+            axes = list(reversed(range(ndims)))
+            return data.permute(*axes)
 
     @_torchmethod(func_type='data_func')
     def transpose(data, axes):
@@ -826,6 +833,9 @@ class ArrayAPI(object):
         >>> assert np.allclose(compress(np_data, f1, 1), compress(pt_data, f1, 1))
     """
 
+    _torch = TorchImpls
+    _numpy = NumpyImpls
+
     @staticmethod
     def impl(data):
         """
@@ -835,11 +845,10 @@ class ArrayAPI(object):
             data (ndarray | Tensor): data to be operated on
 
         """
-        from kwarray import arrayapi
         if torch.is_tensor(data):
-            return arrayapi.TorchImpls
+            return TorchImpls
         else:
-            return arrayapi.NumpyImpls
+            return NumpyImpls
 
     @staticmethod
     def coerce(data):
@@ -932,6 +941,9 @@ class ArrayAPI(object):
     ifloor = _apimethod('ifloor', func_type='data_func')
     floor = _apimethod('floor', func_type='data_func')
     ceil = _apimethod('ceil', func_type='data_func')
+
+    round = _apimethod('round', func_type='data_func')
+    iround = _apimethod('iround', func_type='data_func')
 
     clip = _apimethod('clip', func_type='data_func')
 
