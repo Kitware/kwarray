@@ -260,6 +260,14 @@ class DataFrameLight(ub.NiceRepr):
         """
         return self[key] if key in self else default
 
+    def clear(self):
+        """
+        Removes all rows inplace
+        """
+        if self._data:
+            for key in self._data.keys():
+                self._data[key].clear()
+
     def __getitem__(self, key):
         """
         Note:
