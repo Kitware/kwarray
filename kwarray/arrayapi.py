@@ -555,9 +555,19 @@ class TorchImpls(object):
     def asarray(data, dtype=None):
         """
         Cast data into a tensor representation
+
+        Example:
+            >>> array([], shape=(2, 0, 196, 196), dtype=float32)
         """
         if not isinstance(data, torch.Tensor):
-            data =  torch.Tensor(data)
+            data
+            try:
+                data =  torch.Tensor(data)
+            except RuntimeError:
+                if data.size == 0:
+                    want_shape = data.shape
+                    data_ = torch.empty([0])
+                    data = data_.view(want_shape)
         if dtype is not None:
             dtype = _torch_dtype_lut().get(dtype, dtype)
             data = data.to(dtype)
