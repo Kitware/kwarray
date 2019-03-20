@@ -30,6 +30,7 @@ import numpy as np
 import ubelt as ub
 import six
 from functools import partial
+import xdev
 
 
 def _get_funcname(func):
@@ -535,6 +536,7 @@ class TorchImpls(object):
         return data
 
     @_torchmethod(func_type='data_func')
+    @xdev.profile
     def numpy(data):
         return data.data.cpu().numpy()
 
@@ -759,6 +761,7 @@ class NumpyImpls(object):
         return data
 
     @_numpymethod(func_type='data_func')
+    @xdev.profile
     def numpy(data):
         return data
 
