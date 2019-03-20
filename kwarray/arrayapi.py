@@ -559,7 +559,7 @@ class TorchImpls(object):
         Cast data into a tensor representation
 
         Example:
-            >>> array([], shape=(2, 0, 196, 196), dtype=float32)
+            >>> data = np.empty((2, 0, 196, 196), dtype=np.float32)
         """
         if not isinstance(data, torch.Tensor):
             data
