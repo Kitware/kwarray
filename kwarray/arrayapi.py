@@ -614,6 +614,10 @@ class TorchImpls(object):
     def clip(data, a_min=None, a_max=None, out=None):
         return torch.clamp(data, a_min, a_max, out=out)
 
+    @_torchmethod(func_type='data_func')
+    def softmax(data, axis=None):
+        return torch.softmax(data, dim=axis)
+
 
 class NumpyImpls(object):
     """
@@ -815,6 +819,11 @@ class NumpyImpls(object):
 
     clip = _numpymethod(np.clip)
 
+    @_numpymethod(func_type='data_func')
+    def softmax(data, axis=None):
+        from scipy import special
+        return special.softmax(data, axis=axis)
+
 
 class ArrayAPI(object):
     """
@@ -956,6 +965,8 @@ class ArrayAPI(object):
     iround = _apimethod('iround', func_type='data_func')
 
     clip = _apimethod('clip', func_type='data_func')
+
+    softmax = _apimethod('softmax', func_type='data_func')
 
 
 TorchNumpyCompat = ArrayAPI  # backwards compat
