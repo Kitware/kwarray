@@ -12,8 +12,9 @@ def boolmask(indices, shape=None):
     Args:
         indices (ndarray): list of integer indices
 
-        shape (int | tuple): length of the returned list. If not specified this
-            is inferred from `indices`.
+        shape (int | tuple): length of the returned list. If not specified
+            the minimal possible shape to incoporate all the indices is used.
+            In general, it is best practice to always specify this argument.
 
     Returns:
         ndarray[int]: mask: mask[idx] is True if idx in indices
@@ -36,7 +37,9 @@ def boolmask(indices, shape=None):
                   [False,  True, False],
                   [False,  True, False]], dtype=np.bool)
     """
-    indices = np.asarray(indices)
+    indices = np.asanyarray(indices)
+    if indices.dtype.kind not in {'i', 'u'}:
+        indices = indices.astype(np.int)
     if shape is None:
         shape = indices.max() + 1
     mask = np.zeros(shape, dtype=np.bool)

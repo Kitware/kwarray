@@ -184,23 +184,18 @@ if __name__ == '__main__':
         name='kwarray',
         version=version,
         author='Jon Crall',
-        description='A "utility belt" of commonly needed utility and helper functions',
         long_description=parse_description(),
         install_requires=parse_requirements('requirements.txt'),
         extras_require={
             'all': parse_requirements('optional-requirements.txt')
         },
         author_email='erotemic@gmail.com',
-        url='https://github.com/Erotemic/kwarray',
-        license='Apache 2',
+        url='https://kwgitlab.kitware.com/jon.crall/kwarray',
         packages=['kwarray'],
         classifiers=[
             # List of classifiers available at:
             # https://pypi.python.org/pypi?%3Aaction=list_classifiers
             'Development Status :: 3 - Alpha',
-            #'Intended Audience :: <?TODO: Developers>',
-            #'Topic :: <?TODO: Software Development :: Libraries :: Python Modules>',
-            #'Topic :: <?TODO: Utilities>'',
             # This should be interpreted as Apache License v2.0
             'License :: OSI Approved :: Apache Software License',
             # Supported Python versions

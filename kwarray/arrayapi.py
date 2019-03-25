@@ -245,6 +245,33 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def compress(data, flags, axis=None):
+        """
+        Example:
+            >>> import kwarray
+            >>> data = torch.rand(10, 4, 2)
+            >>> impl = kwarray.ArrayAPI.coerce(data)
+
+            >>> axis = 0
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (5, 4, 2)
+
+            >>> axis = 1
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (10, 2, 2)
+
+            >>> axis = 2
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (10, 4, 1)
+
+            >>> axis = None
+            >>> data = torch.rand(10)
+            >>> flags = (torch.arange(data.shape[0]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (5,)
+        """
         if not torch.is_tensor(flags):
             flags = np.asarray(flags).astype(np.uint8)
             flags = torch.ByteTensor(flags).to(data.device)
@@ -254,11 +281,14 @@ class TorchImpls(object):
             return torch.masked_select(data.view(-1), flags)
         else:
             out_shape = list(data.shape)
-            fancy_shape = [-1] * len(out_shape)
             out_shape[axis] = int(flags.sum())
+
+            fancy_shape = [1] * len(out_shape)
             fancy_shape[axis] = flags.numel()
-            explicit_flags = flags.view(*fancy_shape).expand_as(data)
-            out = torch.masked_select(data, explicit_flags).view(*out_shape)
+            explicit_flags = flags.view(*fancy_shape)
+
+            flat_out = torch.masked_select(data, explicit_flags)
+            out = flat_out.view(*out_shape)
             return out
 
     @_torchmethod(func_type='data_func')
@@ -350,7 +380,14 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def T(data):
-        return data.t()
+        ndims = data.ndimension()
+        if ndims == 2:
+            # torch.t can only handle 2 dims
+            return data.t()
+        else:
+            # use permute for compatability
+            axes = list(reversed(range(ndims)))
+            return data.permute(*axes)
 
     @_torchmethod(func_type='data_func')
     def transpose(data, axes):
@@ -388,7 +425,7 @@ class TorchImpls(object):
     @_torchmethod(func_type='data_func')
     def ones_like(data, dtype=None):
         dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.zeros_like(data, dtype=dtype)
+        return torch.ones_like(data, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def full(shape, fill_value, dtype=float):
@@ -479,6 +516,11 @@ class TorchImpls(object):
         """
         return torch.min(data1, data2, out=out)
 
+    # @_torchmethod(func_type='data_func')
+    # def matmul(data1, data2, out=None):
+    #     return torch.matmul(data1, data2, out=out)
+    matmul = _torchmethod(torch.matmul)
+
     @_torchmethod(func_type='data_func')
     def sum(data, axis=None):
         if axis is None:
@@ -543,9 +585,19 @@ class TorchImpls(object):
     def asarray(data, dtype=None):
         """
         Cast data into a tensor representation
+
+        Example:
+            >>> data = np.empty((2, 0, 196, 196), dtype=np.float32)
         """
         if not isinstance(data, torch.Tensor):
-            data =  torch.Tensor(data)
+            data
+            try:
+                data =  torch.Tensor(data)
+            except RuntimeError:
+                if data.size == 0:
+                    want_shape = data.shape
+                    data_ = torch.empty([0])
+                    data = data_.view(want_shape)
         if dtype is not None:
             dtype = _torch_dtype_lut().get(dtype, dtype)
             data = data.to(dtype)
@@ -578,6 +630,23 @@ class TorchImpls(object):
     @_torchmethod(func_type='data_func')
     def iceil(data, out=None):
         return torch.ceil(data, out=out).int()
+
+    @_torchmethod(func_type='data_func')
+    def round(data, out=None):
+        return torch.round(data, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def iround(data, out=None, dtype=np.int):
+        dtype = _torch_dtype_lut().get(dtype, dtype)
+        return torch.round(data, out=out).to(dtype)
+
+    @_torchmethod(func_type='data_func')
+    def clip(data, a_min=None, a_max=None, out=None):
+        return torch.clamp(data, a_min, a_max, out=out)
+
+    @_torchmethod(func_type='data_func')
+    def softmax(data, axis=None):
+        return torch.softmax(data, dim=axis)
 
 
 class NumpyImpls(object):
@@ -651,7 +720,7 @@ class NumpyImpls(object):
 
     @_numpymethod
     def ones_like(data, dtype=None):
-        return np.zeros_like(data, dtype=dtype)
+        return np.ones_like(data, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
     def full(shape, fill_value, dtype=float):
@@ -694,6 +763,11 @@ class NumpyImpls(object):
     @_numpymethod
     def minimum(data1, data2, out=None):
         return np.minimum(data1, data2, out=out)
+
+    # @_numpymethod
+    # def matmul(data1, data2, out=None):
+    #     return np.matmul(data1, data2, out=out)
+    matmul = _numpymethod(np.matmul)
 
     nan_to_num = _numpymethod(np.nan_to_num)
 
@@ -765,6 +839,21 @@ class NumpyImpls(object):
     def iceil(data, out=None):
         return np.ceil(data, out=out).astype(np.int32)
 
+    @_numpymethod(func_type='data_func')
+    def round(data, out=None):
+        return np.round(data, out=out)
+
+    @_numpymethod(func_type='data_func')
+    def iround(data, out=None, dtype=np.int):
+        return np.round(data, out=out).astype(dtype)
+
+    clip = _numpymethod(np.clip)
+
+    @_numpymethod(func_type='data_func')
+    def softmax(data, axis=None):
+        from scipy import special
+        return special.softmax(data, axis=axis)
+
 
 class ArrayAPI(object):
     """
@@ -793,6 +882,9 @@ class ArrayAPI(object):
         >>> assert np.allclose(compress(np_data, f1, 1), compress(pt_data, f1, 1))
     """
 
+    _torch = TorchImpls
+    _numpy = NumpyImpls
+
     @staticmethod
     def impl(data):
         """
@@ -802,11 +894,10 @@ class ArrayAPI(object):
             data (ndarray | Tensor): data to be operated on
 
         """
-        from kwarray import arrayapi
         if torch.is_tensor(data):
-            return arrayapi.TorchImpls
+            return TorchImpls
         else:
-            return arrayapi.NumpyImpls
+            return NumpyImpls
 
     @staticmethod
     def coerce(data):
@@ -860,6 +951,8 @@ class ArrayAPI(object):
     maximum = _apimethod('maximum')
     minimum = _apimethod('minimum')
 
+    matmul = _apimethod('matmul')
+
     astype = _apimethod('astype')
     nonzero = _apimethod('nonzero')
 
@@ -897,6 +990,13 @@ class ArrayAPI(object):
     ifloor = _apimethod('ifloor', func_type='data_func')
     floor = _apimethod('floor', func_type='data_func')
     ceil = _apimethod('ceil', func_type='data_func')
+
+    round = _apimethod('round', func_type='data_func')
+    iround = _apimethod('iround', func_type='data_func')
+
+    clip = _apimethod('clip', func_type='data_func')
+
+    softmax = _apimethod('softmax', func_type='data_func')
 
 
 TorchNumpyCompat = ArrayAPI  # backwards compat
