@@ -30,13 +30,14 @@ from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
                          isect_flags, iter_reduce_ufunc,)
 from .util_random import (ensure_rng, random_combinations, random_product,
                           seed_global, shuffle,)
+from .util_torch import (one_hot_embedding,)
 
 __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'LocLight',
            'apply_grouping', 'arglexmax', 'argmaxima', 'argminima',
            'atleast_nd', 'boolmask', 'ensure_rng', 'group_consecutive',
            'group_consecutive_indices', 'group_indices', 'group_items',
            'isect_flags', 'iter_reduce_ufunc', 'maxvalue_assignment',
-           'mincost_assignment', 'mindist_assignment', 'random_combinations',
-           'random_product', 'seed_global', 'shuffle', 'standard_normal',
-           'standard_normal32', 'standard_normal64', 'stats_dict', 'uniform',
-           'uniform32']
+           'mincost_assignment', 'mindist_assignment', 'one_hot_embedding',
+           'random_combinations', 'random_product', 'seed_global', 'shuffle',
+           'standard_normal', 'standard_normal32', 'standard_normal64',
+           'stats_dict', 'uniform', 'uniform32']

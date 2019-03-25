@@ -245,6 +245,33 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def compress(data, flags, axis=None):
+        """
+        Example:
+            >>> import kwarray
+            >>> data = torch.rand(10, 4, 2)
+            >>> impl = kwarray.ArrayAPI.coerce(data)
+
+            >>> axis = 0
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (5, 4, 2)
+
+            >>> axis = 1
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (10, 2, 2)
+
+            >>> axis = 2
+            >>> flags = (torch.arange(data.shape[axis]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (10, 4, 1)
+
+            >>> axis = None
+            >>> data = torch.rand(10)
+            >>> flags = (torch.arange(data.shape[0]) % 2) == 0
+            >>> out = impl.compress(data, flags, axis=axis)
+            >>> assert tuple(out.shape) == (5,)
+        """
         if not torch.is_tensor(flags):
             flags = np.asarray(flags).astype(np.uint8)
             flags = torch.ByteTensor(flags).to(data.device)
@@ -254,11 +281,14 @@ class TorchImpls(object):
             return torch.masked_select(data.view(-1), flags)
         else:
             out_shape = list(data.shape)
-            fancy_shape = [-1] * len(out_shape)
             out_shape[axis] = int(flags.sum())
+
+            fancy_shape = [1] * len(out_shape)
             fancy_shape[axis] = flags.numel()
-            explicit_flags = flags.view(*fancy_shape).expand_as(data)
-            out = torch.masked_select(data, explicit_flags).view(*out_shape)
+            explicit_flags = flags.view(*fancy_shape)
+
+            flat_out = torch.masked_select(data, explicit_flags)
+            out = flat_out.view(*out_shape)
             return out
 
     @_torchmethod(func_type='data_func')
