@@ -249,6 +249,9 @@ def argmaxima(arr, num, axis=None, ordered=True):
             order, otherwise they are in decending order. (Setting this to
             false is a bit faster).
 
+    TODO:
+        - [ ] if num is None, return arg for all values equal to the maximum
+
     Returns:
         ndarray
 
