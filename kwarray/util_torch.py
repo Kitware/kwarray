@@ -7,12 +7,12 @@ def one_hot_embedding(labels, num_classes, dim=1):
     Embedding labels to one-hot form.
 
     Args:
-      labels: (LongTensor) class labels, sized [N,].
-      num_classes: (int) number of classes.
-      dim (int): dimension which will be created
+        labels: (LongTensor) class labels, sized [N,].
+        num_classes: (int) number of classes.
+        dim (int): dimension which will be created, if negative
 
     Returns:
-      (tensor) encoded labels, sized [N,#classes].
+        Tensor: encoded labels, sized [N,#classes].
 
     References:
         https://discuss.pytorch.org/t/convert-int-into-one-hot-format/507/4
@@ -55,6 +55,8 @@ def one_hot_embedding(labels, num_classes, dim=1):
     """
     if torch.is_tensor(labels):
         in_dims = labels.ndimension()
+        if dim < 0:
+            dim = in_dims - dim + 1
         if dim == 1 and in_dims == 1:
             # normal case where everything is already flat
             y = torch.eye(int(num_classes), device=labels.device)
@@ -70,6 +72,8 @@ def one_hot_embedding(labels, num_classes, dim=1):
                 dim_order.insert(dim, in_dims)
                 y_onehot = y_onehot.permute(*dim_order)
     else:
+        if dim < 0:
+            dim = labels.ndim - dim + 1
         flag = (dim != 1 or labels.ndim == 2)
         if flag:
             orig_shape = labels.shape
