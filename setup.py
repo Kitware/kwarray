@@ -6,37 +6,7 @@ Installation:
 
 Developing:
     git clone https://github.com/Erotemic/kwarray.git
-    pip install -e kwarray
-
-Pypi:
-     # Presetup
-     pip install twine
-
-     # First tag the source-code
-     VERSION=$(python -c "import setup; print(setup.version)")
-     echo $VERSION
-     git tag $VERSION -m "tarball tag $VERSION"
-     git push --tags origin master
-
-     # NEW API TO UPLOAD TO PYPI
-     # https://packaging.python.org/tutorials/distributing-packages/
-
-     # Build wheel or source distribution
-     python setup.py bdist_wheel --universal
-
-     # Use twine to upload. This will prompt for username and password
-     # If you get an error:
-     #   403 Client Error: Invalid or non-existent authentication information.
-     # simply try typing your password slower.
-     twine upload --username erotemic --skip-existing dist/*
-
-     # Check the url to make sure everything worked
-     https://pypi.org/project/kwarray/
-
-     # ---------- OLD ----------------
-     # Check the url to make sure everything worked
-     https://pypi.python.org/pypi?:action=display&name=kwarray
-
+    pip install kwarray
 """
 from setuptools import setup
 import sys
@@ -185,9 +155,10 @@ if __name__ == '__main__':
         version=version,
         author='Jon Crall',
         long_description=parse_description(),
-        install_requires=parse_requirements('requirements.txt'),
+        install_requires=parse_requirements('requirements/runtime.txt'),
         extras_require={
-            'all': parse_requirements('optional-requirements.txt')
+            'all': parse_requirements('requirements.txt'),
+            'tests': parse_requirements('requirements/tests.txt'),
         },
         author_email='erotemic@gmail.com',
         url='https://kwgitlab.kitware.com/jon.crall/kwarray',

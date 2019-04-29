@@ -6,8 +6,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.4.0
 
+### Added
+* dev folder with developer benchmarks and scripts
+
+### Changed
+* Refactored requirements into tests and runtime
+
 ### Fixed
 * Fix bug in one-hot-encoding when dim=-1
+* `run_developer_setup.sh` uses `setup.py develop` to avoid issues with PEP 517.
 
 ## Version 0.3.0
 
