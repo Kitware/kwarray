@@ -11,7 +11,7 @@ __explicit__ = [
     'ArrayAPI'
 ]
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 from kwarray.arrayapi import ArrayAPI
 
