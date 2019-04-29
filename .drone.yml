@@ -1,6 +1,6 @@
 ---
 kind: pipeline
-name: "Test kwarray in 3.6"
+name: "Test in 3.6"
 
 platform:
   os: linux
@@ -12,9 +12,13 @@ steps:
     commands:
       - pip install pip -U
       - pip install -r requirements.txt -U
-      #- pip install .
-      - ./run_developer_setup.sh
-      - ./run_tests.py
+
+      # - ./run_developer_setup.sh
+      # - ./run_tests.py
+      
+      # using pyargs tests the installed package instead of the source one
+      - pip install -v --no-use-pep517 .
+      - pytest ./tests/ --pyargs kwarray
 
 trigger:
   event:
@@ -23,7 +27,7 @@ trigger:
       
 ---
 kind: pipeline
-name: "Test kwarray in 2.7"
+name: "Test in 2.7"
 
 platform:
   os: linux
@@ -35,9 +39,13 @@ steps:
     commands:
       - pip install pip -U
       - pip install -r requirements.txt -U
-      - ./run_developer_setup.sh
-      #- pip install .  # Why is this broken?
-      - ./run_tests.py
+
+      # - ./run_developer_setup.sh
+      # - ./run_tests.py
+      
+      # using pyargs tests the installed package instead of the source one
+      - pip install -v --no-use-pep517 .
+      - pytest ./tests/ --pyargs kwarray
 
 trigger:
   event:
