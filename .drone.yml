@@ -12,7 +12,8 @@ steps:
     commands:
       - pip install pip -U
       - pip install -r requirements.txt -U
-      - pip install -e .
+      #- pip install .
+      - ./run_developer_setup.sh
       - ./run_tests.py
 
 trigger:
@@ -34,7 +35,8 @@ steps:
     commands:
       - pip install pip -U
       - pip install -r requirements.txt -U
-      - pip install -e .
+      - ./run_developer_setup.sh
+      #- pip install .  # Why is this broken?
       - ./run_tests.py
 
 trigger:
