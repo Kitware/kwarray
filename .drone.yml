@@ -18,7 +18,7 @@ steps:
       
       # using pyargs tests the installed package instead of the source one
       - pip install -v --no-use-pep517 .
-      - pytest ./tests/ --pyargs kwarray
+      - pytest --pyargs kwarray
 
 trigger:
   event:
@@ -45,7 +45,7 @@ steps:
       
       # using pyargs tests the installed package instead of the source one
       - pip install -v --no-use-pep517 .
-      - pytest ./tests/ --pyargs kwarray
+      - pytest --pyargs kwarray
 
 trigger:
   event:
