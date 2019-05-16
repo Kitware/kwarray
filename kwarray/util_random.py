@@ -205,11 +205,35 @@ def _pystate_to_npstate(pystate):
 
 def ensure_rng(rng, api='numpy'):
     """
-    Returns a random number generator
+    Coerces input into a random number generator.
+
+    This function is useful for ensuring that your code uses a controlled
+    internal random state that is independent of other modules.
+
+    If the input is None, then a global random state is returned.
+
+    If the input is a numeric value, then that is used as a seed to construct a
+    random state.
+
+    If the input is a random number generator, then another random number
+    generator with the same state is returned. Depending on the api, this
+    random state is either return as-is, or used to construct an equivalent
+    random state with the requested api.
 
     Args:
-        seed: if None, then deafults to the global rng.
-            Otherwise the seed can be an integer or a RandomState class
+        seed (int | float | numpy.random.RandomState | random.Random | None):
+            if None, then defaults to the global rng.  Otherwise the seed can
+            be an integer or a RandomState class
+
+        api (str, default='numpy'): specify the type of random number
+            generator to use. This can either be 'numpy' for a
+            `numpy.random.RandomState` object or 'python' for a `random.Random`
+            object.
+
+    Returns:
+        (numpy.random.RandomState | random.Random) : rng -
+            either a numpy or python random number generator, depending on the
+            setting of `api`.
 
     Example:
         >>> rng = ensure_rng(None)
@@ -254,12 +278,21 @@ def ensure_rng(rng, api='numpy'):
         >>> ensure_rng(None).randint(0, 10000)
         3264
     """
+    if isinstance(rng, float):
+        # Coerce the float into an integer
+        a, b = rng.as_integer_ratio()
+        if b == 1:
+            rng = a
+        else:
+            s = max(a.bit_length(), b.bit_length())
+            rng = (b << s) | a
+
     if api == 'numpy':
         if rng is None:
-            # Dont do this because it seeds using dev/urandom
-            # rng = np.random.RandomState(seed=None)
             # This is the underlying random state of the np.random module
             rng = np.random.mtrand._rand
+            # Dont do this because it seeds using dev/urandom
+            # rng = np.random.RandomState(seed=None)
         elif isinstance(rng, int):
             rng = np.random.RandomState(seed=rng % _SEED_MAX)
         elif isinstance(rng, random.Random):

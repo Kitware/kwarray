@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 * Refactored requirements into tests and runtime
+* `ensure_rng` can now accept floats as a seed
 
 ### Fixed
 * Fix bug in one-hot-encoding when dim=-1
@@ -23,10 +24,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Fixed bug in `ArrayAPI.ones_like`, where it returned zeros
 
 ### Added
-* Add `clear` to DataFrameLight
-* Added util_torch with `one_hot_embedding`
+* Add `clear` to `DataFrameLight`
+* Added `util_torch` with `one_hot_embedding`
 * Add `ArrayAPI.matmul` 
-* Add various `ArrayAPI` funcs
+* Add various `ArrayAPI` functions
 
 ### Changed
 * Speed improvements
