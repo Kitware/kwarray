@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 * Refactored requirements into tests and runtime
 * `ensure_rng` can now accept floats as a seed
+* Improved speed of `random_product`.
 
 ### Fixed
 * Fix bug in one-hot-encoding when dim=-1

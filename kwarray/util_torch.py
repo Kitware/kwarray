@@ -89,3 +89,36 @@ def one_hot_embedding(labels, num_classes, dim=1):
             new_axes.insert(dim, len(orig_shape))
             y_onehot = y_onehot.transpose(*new_axes)
     return y_onehot
+
+
+def one_hot_lookup(probs, labels):
+    """
+    Return probability of a particular label (usually true labels) for each item
+
+    Each item in labels corresonds to a row in probs. Returns the index
+    specified at each row.
+
+    Args:
+        probs (ArrayLike): N x C float array of probabilities
+        labels (ArrayLike): N integer array between 0 and C
+
+    Returns:
+        ArrayLike: the selected probability for each row
+
+    Example:
+        >>> probs = np.array([
+        >>>     [0, 1, 2],
+        >>>     [3, 4, 5],
+        >>>     [6, 7, 8],
+        >>>     [9, 10, 11],
+        >>> ])
+        >>> labels = np.array([0, 1, 2, 1])
+        >>> one_hot_lookup(probs, labels)
+        array([ 0,  4,  8, 10])
+    """
+    assert not torch.is_tensor(labels), 'not implemented yet'
+    # ohe = kwarray.one_hot_embedding(labels, probs.shape[1]).astype(np.bool)
+    # Constructing the OHE with a small dtype offers a sizable speed advantage
+    ohe = np.eye(probs.shape[1], dtype=np.bool)[labels]
+    out = probs[ohe]
+    return out

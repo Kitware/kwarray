@@ -109,6 +109,8 @@ def random_combinations(items, size, num=None, rng=None):
                 yield combo
 
 
+# import xdev
+# @xdev.profile
 def random_product(items, num=None, rng=None):
     """
     Yields `num` items from the cartesian product of items in a random order.
@@ -122,16 +124,37 @@ def random_product(items, num=None, rng=None):
 
         rng (random.Random | np.random.RandomState | int): random number generator
 
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/util_random.py random_product:1 --profile
+
     Example:
         >>> items = [(1, 2, 3), (4, 5, 6, 7)]
         >>> rng = 0
         >>> list(random_product(items, rng=0))
         >>> list(random_product(items, num=3, rng=0))
+
+    Example:
+        >>> # xdoctest: +REQUIRES(--profile)
+        >>> import kwarray
+        >>> rng = kwarray.ensure_rng(0)
+        >>> items = [np.array([15, 14]), np.array([27, 26]), np.array([21, 22]), np.array([32, 31])]
+        >>> num = 2
+        >>> for _ in range(100):
+        >>>     list(random_product(items, num=num, rng=rng))
     """
-    rng = ensure_rng(rng, 'python')
-    seen = set()
-    items = [list(g) for g in items]
-    max_num = np.prod(np.array(list(map(len, items))))
+    # NUMPY_RNG = True  # toggle new speedup on
+    try:
+        if not isinstance(items, (list, tuple)):
+            raise TypeError
+        idx_cards = np.array([len(g) for g in items], dtype=np.uint32)
+    except (TypeError, AttributeError):
+        items = [list(g) for g in items]
+        idx_cards = np.array([len(g) for g in items], dtype=np.uint32)
+
+    ndims = len(items)
+    # max_num = np.prod(idx_cards.astype(np.float))
+    max_num = np.multiply.reduce(idx_cards.astype(np.float32))
+
     if num is None:
         num = max_num
     else:
@@ -140,13 +163,31 @@ def random_product(items, num=None, rng=None):
         #     raise ValueError('num exceedes maximum number of products')
 
     # TODO: make this more efficient when num is large
-    if num > max_num // 2:
+    if max_num > 100 and num > max_num // 2:
+
+        rng = ensure_rng(rng, 'python')
+
         for prod in shuffle(list(it.product(*items)), rng=rng):
             yield prod
     else:
+        if True:  # NUMPY_RNG
+            rng = ensure_rng(rng, 'numpy')
+            # Need to use least-common-multiple so the mod of all idxs
+            # are equally likely
+            card_lcm = np.lcm.reduce(idx_cards)
+        else:
+            rng = ensure_rng(rng, 'python')
+
+        seen = set()
         while len(seen) < num:
-            # combo = tuple(sorted(rng.choice(items, size, replace=False)))
-            idxs = tuple(rng.randint(0, len(g) - 1) for g in items)
+
+            if True:  # NUMPY_RNG
+                idxs = rng.randint(0, card_lcm, size=ndims, dtype=idx_cards.dtype)
+                idxs %= idx_cards
+                idxs = tuple(idxs.tolist())
+            else:
+                idxs = tuple(rng.randint(0, n - 1) for n in idx_cards)
+
             if idxs not in seen:
                 seen.add(idxs)
                 prod = tuple(g[x] for g, x in zip(items, idxs))
@@ -201,6 +242,26 @@ def _pystate_to_npstate(pystate):
     cached_gaussian = cached_gaussian_ if has_gauss else 0.0
     npstate = (NP_VERSION, keys, pos, has_gauss, cached_gaussian)
     return npstate
+
+
+def _coerce_rng_type(rng):
+    if rng is None or isinstance(rng, (random.Random, np.random.RandomState)):
+        return rng
+    elif isinstance(rng, (float, np.floating)):
+        rng = float(rng)
+        # Coerce the float into an integer
+        a, b = rng.as_integer_ratio()
+        if b == 1:
+            rng = a
+        else:
+            s = max(a.bit_length(), b.bit_length())
+            rng = (b << s) | a
+    elif isinstance(rng, (int, np.integer)):
+        rng = int(rng)
+    else:
+        raise TypeError(
+            'Cannot coerce {!r} to a random object'.format(type(rng)))
+    return rng
 
 
 def ensure_rng(rng, api='numpy'):
@@ -278,14 +339,7 @@ def ensure_rng(rng, api='numpy'):
         >>> ensure_rng(None).randint(0, 10000)
         3264
     """
-    if isinstance(rng, float):
-        # Coerce the float into an integer
-        a, b = rng.as_integer_ratio()
-        if b == 1:
-            rng = a
-        else:
-            s = max(a.bit_length(), b.bit_length())
-            rng = (b << s) | a
+    rng = _coerce_rng_type(rng)
 
     if api == 'numpy':
         if rng is None:
