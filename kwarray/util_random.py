@@ -32,7 +32,7 @@ def shuffle(items, rng=None):
     Shuffles a list inplace and then returns it for convinience
 
     Args:
-        items (list or ndarray): list to shuffl
+        items (list or ndarray): list to shuffle
         rng (RandomState or int): seed or random number gen
 
     Returns:
@@ -56,10 +56,10 @@ def random_combinations(items, size, num=None, rng=None):
     Yields `num` combinations of length `size` from items in random order
 
     Args:
-        items (?):
-        size (?):
-        num (None): (default = None)
-        rng (RandomState):  random number generator(default = None)
+        items (List): pool of items to choose from
+        size (int): number of items in each combination
+        num (None, default=None): number of combinations to generate
+        rng (int | RandomState, default=None): seed or random number generator
 
     Yields:
         tuple: combo
@@ -84,11 +84,11 @@ def random_combinations(items, size, num=None, rng=None):
         >>> result = ('combos = %s' % (ub.repr2(combos),))
         >>> print(result)
     """
-    import scipy.misc
+    import scipy.special
     rng = ensure_rng(rng, api='python')
     num_ = np.inf if num is None else num
     # Ensure we dont request more than is possible
-    n_max = int(scipy.misc.comb(len(items), size))
+    n_max = int(scipy.special.comb(len(items), size))
     num_ = min(n_max, num_)
     if num is not None and num_ > n_max // 2:
         # If num is too big just generate all combinations and shuffle them
