@@ -1,10 +1,2 @@
-pytest >= 3.3.1
-coverage >= 4.3.4
-xdoctest >= 0.3.0
-pytest-cov
-torch >= 1.0.0
-scipy >= 1.2.1
-numpy >= 1.15.2
-pandas >= 0.23.3
-ubelt >= 0.7.1
-six >= 1.11.0
+-r requirements/runtime.txt
+-r requirements/tests.txt

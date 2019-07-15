@@ -2,5 +2,5 @@ torch >= 1.0.0
 scipy >= 1.2.1
 numpy >= 1.15.2
 pandas >= 0.23.3
-ubelt >= 0.7.1
+ubelt >= 0.8.2
 six >= 1.11.0
