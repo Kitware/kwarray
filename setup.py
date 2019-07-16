@@ -8,9 +8,10 @@ Developing:
     git clone https://github.com/Erotemic/kwarray.git
     pip install kwarray
 """
-from setuptools import setup
 import sys
 from os.path import dirname
+from setuptools import setup
+from setuptools import find_packages
 
 
 repodir = dirname(__file__)
@@ -155,7 +156,8 @@ if __name__ == '__main__':
         },
         author_email='erotemic@gmail.com',
         url='https://kwgitlab.kitware.com/jon.crall/kwarray',
-        packages=['kwarray'],
+        license='Apache 2',
+        packages=find_packages(include='kwarray.*'),
         classifiers=[
             # List of classifiers available at:
             # https://pypi.python.org/pypi?%3Aaction=list_classifiers
