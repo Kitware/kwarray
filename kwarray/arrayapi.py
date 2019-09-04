@@ -30,6 +30,10 @@ import numpy as np
 import ubelt as ub
 import six
 from functools import partial
+from distutils.version import LooseVersion
+
+
+_TORCH_HAS_BOOL_COMP = LooseVersion(torch.__version__) >= LooseVersion('1.2.0')
 
 
 def _get_funcname(func):
@@ -274,7 +278,10 @@ class TorchImpls(object):
         """
         if not torch.is_tensor(flags):
             flags = np.asarray(flags).astype(np.uint8)
-            flags = torch.ByteTensor(flags).to(data.device)
+            if _TORCH_HAS_BOOL_COMP:
+                flags = torch.BoolTensor(flags).to(data.device)
+            else:
+                flags = torch.ByteTensor(flags).to(data.device)
         if flags.ndimension() != 1:
             raise ValueError('condition must be a 1-d tensor')
         if axis is None:
