@@ -51,3 +51,4 @@ trigger:
   event:
     - pull_request
     - tag
+
