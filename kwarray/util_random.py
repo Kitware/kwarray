@@ -124,9 +124,6 @@ def random_product(items, num=None, rng=None):
 
         rng (random.Random | np.random.RandomState | int): random number generator
 
-    CommandLine:
-        xdoctest -m ~/code/kwarray/kwarray/util_random.py random_product:1 --profile
-
     Example:
         >>> items = [(1, 2, 3), (4, 5, 6, 7)]
         >>> rng = 0
@@ -135,8 +132,7 @@ def random_product(items, num=None, rng=None):
 
     Example:
         >>> # xdoctest: +REQUIRES(--profile)
-        >>> import kwarray
-        >>> rng = kwarray.ensure_rng(0)
+        >>> rng = ensure_rng(0)
         >>> items = [np.array([15, 14]), np.array([27, 26]), np.array([21, 22]), np.array([32, 31])]
         >>> num = 2
         >>> for _ in range(100):
