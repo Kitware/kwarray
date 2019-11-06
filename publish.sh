@@ -25,7 +25,7 @@ Usage:
     source $(secret_loader.sh)
 
     # Interactive/Dry run
-    ./publish.sh 
+    DEPLOY_REMOTE=public ./publish.sh 
 
     # Non-Interactive run
     #./publish.sh yes
