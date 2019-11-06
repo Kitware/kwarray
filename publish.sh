@@ -45,7 +45,7 @@ check_variable(){
 CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}
 DEPLOY_BRANCH=${DEPLOY_BRANCH:=release}
 DEPLOY_REMOTE=${DEPLOY_REMOTE:=origin}
-VERSION=$(python -c "import setup; print(setup.parse_version())")
+VERSION=$(python -c "import setup; print(setup.version)")
 
 check_variable CURRENT_BRANCH
 check_variable DEPLOY_BRANCH
