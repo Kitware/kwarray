@@ -9,7 +9,7 @@ Developing:
     pip install kwarray
 """
 import sys
-from os.path import dirname
+from os.path import dirname, exists
 from setuptools import setup
 from setuptools import find_packages
 
@@ -17,30 +17,14 @@ from setuptools import find_packages
 repodir = dirname(__file__)
 
 
-def parse_version(package):
+def parse_version(fpath):
     """
-    Statically parse the version number from __init__.py
-
-    CommandLine:
-        python -c "import setup; print(setup.parse_version('kwarray'))"
+    Statically parse the version number from a python file
     """
-    from os.path import dirname, join, exists
     import ast
-
-    # Check if the package is a single-file or multi-file package
-    _candiates = [
-        join(dirname(__file__), package + '.py'),
-        join(dirname(__file__), package, '__init__.py'),
-    ]
-    _found = [init_fpath for init_fpath in _candiates if exists(init_fpath)]
-    if len(_found) > 0:
-        init_fpath = _found[0]
-    elif len(_found) > 1:
-        raise Exception('parse_version found multiple init files')
-    elif len(_found) == 0:
-        raise Exception('Cannot find package init file')
-
-    with open(init_fpath) as file_:
+    if not exists(fpath):
+        raise ValueError('fpath={!r} does not exist'.format(fpath))
+    with open(fpath, 'r') as file_:
         sourcecode = file_.read()
     pt = ast.parse(sourcecode)
     class VersionVisitor(ast.NodeVisitor):
@@ -141,27 +125,28 @@ def parse_requirements(fname='requirements.txt'):
     return packages
 
 
-version = parse_version('kwarray')  # needs to be a global var for git tags
+version = parse_version('kwarray/__init__.py')  # needs to be a global var for git tags
 
 if __name__ == '__main__':
     setup(
         name='kwarray',
         version=version,
         author='Jon Crall',
+        author_email='jon.crall@kitware.com',
+        url='https://gitlab.kitware.com/computer-vision/kwarray',
         long_description=parse_description(),
+        long_description_content_type='text/x-rst',
         install_requires=parse_requirements('requirements/runtime.txt'),
         extras_require={
             'all': parse_requirements('requirements.txt'),
             'tests': parse_requirements('requirements/tests.txt'),
         },
-        author_email='erotemic@gmail.com',
-        url='https://kwgitlab.kitware.com/jon.crall/kwarray',
         license='Apache 2',
         packages=find_packages(include='kwarray.*'),
         classifiers=[
             # List of classifiers available at:
             # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             # This should be interpreted as Apache License v2.0
             'License :: OSI Approved :: Apache Software License',
             # Supported Python versions
