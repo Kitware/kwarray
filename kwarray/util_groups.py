@@ -128,13 +128,13 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([2, 1, 2, 1, 2, 1, 2, 3, 3, 3, 3])
         >>> (keys, groupxs) = group_indices(idx_to_groupid)
-        >>> print(ub.repr2(keys, with_dtype=True))
-        >>> print(ub.repr2(groupxs, with_dtype=True))
-        np.array([1, 2, 3], dtype=np.int64)
+        >>> print(ub.repr2(keys, with_dtype=False))
+        >>> print(ub.repr2(groupxs, with_dtype=False))
+        np.array([1, 2, 3])
         [
-            np.array([1, 3, 5], dtype=np.int64),
-            np.array([0, 2, 4, 6], dtype=np.int64),
-            np.array([ 7,  8,  9, 10], dtype=np.int64),
+            np.array([1, 3, 5]),
+            np.array([0, 2, 4, 6]),
+            np.array([ 7,  8,  9, 10]),
         ]
 
     Example:
@@ -145,14 +145,14 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> # 2d arrays must be flattened before coming into this function so
         >>> # information is on the last axis
         >>> (keys, groupxs) = group_indices(idx_to_groupid.T[0])
-        >>> print(ub.repr2(keys, with_dtype=True))
-        >>> print(ub.repr2(groupxs, with_dtype=True))
-        np.array([ 24, 129, 659, 822], dtype=np.int64)
+        >>> print(ub.repr2(keys, with_dtype=False))
+        >>> print(ub.repr2(groupxs, with_dtype=False))
+        np.array([ 24, 129, 659, 822])
         [
-            np.array([ 0,  4, 10], dtype=np.int64),
-            np.array([1], dtype=np.int64),
-            np.array([2, 3, 5, 6, 8, 9], dtype=np.int64),
-            np.array([7], dtype=np.int64),
+            np.array([ 0,  4, 10]),
+            np.array([1]),
+            np.array([2, 3, 5, 6, 8, 9]),
+            np.array([7]),
         ]
 
     Example:
@@ -160,12 +160,12 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([True, True, False, True, False, False, True])
         >>> (keys, groupxs) = group_indices(idx_to_groupid)
-        >>> print(ub.repr2(keys, with_dtype=True))
-        >>> print(ub.repr2(groupxs, with_dtype=True))
-        np.array([False,  True], dtype=np.bool)
+        >>> print(ub.repr2(keys, with_dtype=False))
+        >>> print(ub.repr2(groupxs, with_dtype=False))
+        np.array([False,  True])
         [
-            np.array([2, 4, 5], dtype=np.int64),
-            np.array([0, 1, 3, 6], dtype=np.int64),
+            np.array([2, 4, 5]),
+            np.array([0, 1, 3, 6]),
         ]
 
     SeeAlso:
