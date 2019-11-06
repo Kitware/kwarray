@@ -1,6 +1,11 @@
 The Kitware Array Module
 ========================
 
+.. # TODO Get CI services running on gitlab 
+.. # |ReadTheDocs|
+
+|Pypi| |Downloads| 
+
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
 
 Here is the complete API:
@@ -88,3 +93,13 @@ of a numpy array, and ``apply_grouping``, which partitions a numpy array by thos
 indices.
 
 ``boolmask`` effectively inverts ``np.where``.
+
+
+.. |Pypi| image:: https://img.shields.io/pypi/v/kwarray.svg
+   :target: https://pypi.python.org/pypi/kwarray
+
+.. |Downloads| image:: https://img.shields.io/pypi/dm/kwarray.svg
+   :target: https://pypistats.org/packages/kwarray
+
+.. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=latest
+    :target: http://kwarray.readthedocs.io/en/latest/
