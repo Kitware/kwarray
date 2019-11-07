@@ -4,7 +4,7 @@ The Kitware Array Module
 .. # TODO Get CI services running on gitlab 
 .. # |ReadTheDocs|
 
-|Appveyor| |Pypi| |Downloads| 
+|GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| 
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
 
@@ -107,3 +107,9 @@ indices.
 .. # See: https://ci.appveyor.com/project/jon.crall/scriptconfig/settings/badges
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true
    :target: https://ci.appveyor.com/project/jon.crall/kwarray/branch/master
+
+.. |GitlabCIPipeline| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/pipeline.svg
+   :target: https://gitlab.kitware.com/utils/scriptconfig/-/jobs
+
+.. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/coverage.svg?job=coverage
+    :target: https://gitlab.kitware.com/computer-vision/kwarray/commits/master
