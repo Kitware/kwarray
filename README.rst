@@ -8,7 +8,7 @@ The Kitware Array Module
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
 
-Here is the complete API:
+The top-level API is:
 
 .. code:: python
 
