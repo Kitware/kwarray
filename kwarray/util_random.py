@@ -241,8 +241,15 @@ def _pystate_to_npstate(pystate):
 
 
 def _coerce_rng_type(rng):
+    """
+    Internal method that transforms input seeds into an integer form.
+    """
     if rng is None or isinstance(rng, (random.Random, np.random.RandomState)):
-        return rng
+        pass
+    elif rng is random:
+        rng = rng._inst
+    elif rng is np.random:
+        rng = np.random.mtrand._rand
     elif isinstance(rng, (float, np.floating)):
         rng = float(rng)
         # Coerce the float into an integer
@@ -278,8 +285,8 @@ def ensure_rng(rng, api='numpy'):
     random state with the requested api.
 
     Args:
-        seed (int | float | numpy.random.RandomState | random.Random | None):
-            if None, then defaults to the global rng.  Otherwise the seed can
+        rng (int | float | numpy.random.RandomState | random.Random | None):
+            if None, then defaults to the global rng. Otherwise this can
             be an integer or a RandomState class
 
         api (str, default='numpy'): specify the type of random number
@@ -320,6 +327,15 @@ def ensure_rng(rng, api='numpy'):
         >>> assert np_nums == pp_nums
         >>> assert pn_nums == nn_nums
 
+    Example:
+        >>> # Test that random modules can be coerced
+        >>> import random
+        >>> import numpy as np
+        >>> ensure_rng(random, api='python')
+        >>> ensure_rng(random, api='numpy')
+        >>> ensure_rng(np.random, api='python')
+        >>> ensure_rng(np.random, api='numpy')
+
     Ignore:
         >>> np.random.seed(0)
         >>> np.random.randint(0, 10000)
@@ -354,7 +370,8 @@ def ensure_rng(rng, api='numpy'):
             np_rng.set_state(npstate)
     elif api == 'python':
         if rng is None:
-            rng = random
+            # This is the underlying random state of the random module
+            rng = rng._inst
         elif isinstance(rng, int):
             rng = random.Random(rng % _SEED_MAX)
         elif isinstance(rng, np.random.RandomState):
