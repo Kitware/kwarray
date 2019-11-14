@@ -371,7 +371,7 @@ def ensure_rng(rng, api='numpy'):
     elif api == 'python':
         if rng is None:
             # This is the underlying random state of the random module
-            rng = rng._inst
+            rng = random._inst
         elif isinstance(rng, int):
             rng = random.Random(rng % _SEED_MAX)
         elif isinstance(rng, np.random.RandomState):
