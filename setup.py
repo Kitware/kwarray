@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Installation:
-    pip install git+https://github.com/Erotemic/kwarray.git
-
-Developing:
-    git clone https://github.com/Erotemic/kwarray.git
-    pip install kwarray
-"""
 import sys
 from os.path import dirname, exists
 from setuptools import setup
