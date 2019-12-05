@@ -168,6 +168,22 @@ def group_indices(idx_to_groupid, assume_sorted=False):
             np.array([0, 1, 3, 6]),
         ]
 
+    Example:
+        >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> import ubelt as ub
+        >>> idx_to_groupid = [('a', 'b'),  ('d', 'b'), ('a', 'b'), ('a', 'b')]
+        >>> (keys, groupxs) = group_indices(idx_to_groupid)
+        >>> print(ub.repr2(keys, with_dtype=False))
+        >>> print(ub.repr2(groupxs, with_dtype=False))
+        [
+            ('a', 'b'),
+            ('d', 'b'),
+        ]
+        [
+            np.array([0, 2, 3]),
+            np.array([1]),
+        ]
+
     SeeAlso:
         apply_grouping
 
@@ -180,14 +196,15 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         http://stackoverflow.com/questions/21888406/
         getting-the-indexes-to-the-duplicate-columns-of-a-numpy-array
     """
+    _idx_to_groupid_orig = idx_to_groupid
     idx_to_groupid = np.array(idx_to_groupid, copy=False)
     _n_item = idx_to_groupid.size
     _dtype = idx_to_groupid.dtype
     _kind = _dtype.kind
     if _kind == 'U' or _kind == 'O':
         # hack for string based data
-        group = ub.group_items(range(_n_item), idx_to_groupid)
-        keys = np.array(list(group.keys()))
+        group = ub.group_items(range(_n_item), _idx_to_groupid_orig)
+        keys = list(group.keys())
         groupxs = list(map(np.array, group.values()))
         return keys, groupxs
 

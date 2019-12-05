@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed 
 * `ensure_rng` now correctly coerce the `random` and `np.random` modules.
+* `group_indices` now works correctly on lists of tuples.
 
 
 ## [Version 0.4.0] - Released 2019 - Nov
