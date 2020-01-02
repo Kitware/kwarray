@@ -43,11 +43,6 @@ stages:
     
     before_script:
         - python -V  # Print out python version for debugging
-        - pip install virtualenv
-        - virtualenv venv
-        - source venv/bin/activate
-        - pip install pip -U
-        - pip install pip setuptools -U
 
     script: 
         - python setup.py bdist_wheel --universal
@@ -55,12 +50,10 @@ stages:
     cache:
         paths:
             - .cache/pip
-            - venv/
 
     artifacts:
         paths:
             - dist/*.whl
-            - venv/
 
 
 .test_full_template: &test_full_template
@@ -72,7 +65,14 @@ stages:
         test
     
     before_script:
-        - source venv/bin/activate
+        - python -V  # Print out python version for debugging
+        - export PYVER=$(python -c "import sys; print('{}{}'.format(*sys.version_info[0:2]))")
+        - pip install virtualenv
+        - virtualenv venv$PYVER
+        - source venv$PYVER/bin/activate
+        - pip install pip -U
+        - pip install pip setuptools -U
+        - python -V  # Print out python version for debugging
         - pip install -r requirements.txt
         - pip install .  
 
@@ -136,12 +136,12 @@ stages:
         gpgsign
 
     script: 
-        # Decrypt and import GPG Keys / trust
         - export GPG_EXECUTABLE=gpg
         - export GPG_KEYID=$(cat dev/public_gpg_key)
         - $GPG_EXECUTABLE --version
         - openssl version
         - $GPG_EXECUTABLE --list-keys
+        # Decrypt and import GPG Keys / trust
         # note CI_KITWARE_SECRET is a protected variables only available on master and release branch
         - GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc | $GPG_EXECUTABLE --import 
         - GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc | $GPG_EXECUTABLE --import-ownertrust
@@ -181,10 +181,12 @@ stages:
         deploy
 
     script: 
-        - ls wheelhouse
-        # GPG info should already have been imported
         - export GPG_EXECUTABLE=gpg
         - export GPG_KEYID=$(cat dev/public_gpg_key)
+        - $GPG_EXECUTABLE --version
+        - openssl version
+        - $GPG_EXECUTABLE --list-keys
+        # GPG info should already have been imported
         - MB_PYTHON_TAG=$MB_PYTHON_TAG \
             USE_GPG=True \
             GPG_KEYID=$KEYID \
