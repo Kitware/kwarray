@@ -201,6 +201,9 @@ stages:
         - GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_key.pgp.enc | $GPG_EXECUTABLE --import 
         - $GPG_EXECUTABLE --list-keys  || echo "first one fails for some reason"
         - $GPG_EXECUTABLE --list-keys  
+        # Install twine
+        - pip install six pyopenssl ndg-httpsclient pyasn1 -U 
+        - pip install requests[security] twine 
         # Execute the publish script for real this time
         - MB_PYTHON_TAG=$MB_PYTHON_TAG USE_GPG=True GPG_KEYID=$GPG_KEYID TWINE_PASSWORD=$TWINE_PASSWORD TWINE_USERNAME=$TWINE_USERNAME GPG_EXECUTABLE=$GPG_EXECUTABLE CURRENT_BRANCH=release DEPLOY_BRANCH=release TAG_AND_UPLOAD=yes ./publish.sh 
             

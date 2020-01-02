@@ -168,7 +168,7 @@ if __name__ == '__main__':
     setup(
         name=NAME,
         version=VERSION,
-        author='Kitware, Inc., Jon Crall',
+        author='Kitware Inc., Jon Crall',
         author_email='kitware@kitware.com, jon.crall@kitware.com',
         url='https://gitlab.kitware.com/computer-vision/kwarray',
         long_description=parse_description(),
