@@ -31,10 +31,10 @@ def mindist_assignment(vecs1, vecs2, p=2):
         >>> vecs1 = rng.randint(0, 10, (5, 2))
         >>> vecs2 = rng.randint(0, 10, (7, 2))
         >>> ret = mindist_assignment(vecs1, vecs2)
-        >>> print('Assignment: {}'.format(ret[0]))
         >>> print('Total error: {:.4f}'.format(ret[1]))
-        Assignment: [(0, 0), (1, 3), (2, 5), (3, 2), (4, 6)]
         Total error: 8.2361
+        >>> print('Assignment: {}'.format(ret[0]))  # xdoc: +IGNORE_WANT
+        Assignment: [(0, 0), (1, 3), (2, 5), (3, 2), (4, 6)]
     """
     from scipy.spatial import distance_matrix
     cost = distance_matrix(vecs1, vecs2, p=p)
