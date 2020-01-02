@@ -8,7 +8,7 @@ The Kitware Array Module
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
 
-Here is the complete API:
+The top-level API is:
 
 .. code:: python
 
@@ -104,12 +104,12 @@ indices.
 .. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=latest
     :target: http://kwarray.readthedocs.io/en/latest/
 
-.. # See: https://ci.appveyor.com/project/jon.crall/scriptconfig/settings/badges
+.. # See: https://ci.appveyor.com/project/jon.crall/kwarray/settings/badges
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true
    :target: https://ci.appveyor.com/project/jon.crall/kwarray/branch/master
 
 .. |GitlabCIPipeline| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/pipeline.svg
-   :target: https://gitlab.kitware.com/utils/scriptconfig/-/jobs
+   :target: https://gitlab.kitware.com/computer-vision/kwarray/-/jobs
 
 .. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/coverage.svg?job=coverage
     :target: https://gitlab.kitware.com/computer-vision/kwarray/commits/master

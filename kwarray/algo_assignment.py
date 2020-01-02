@@ -19,16 +19,22 @@ def mindist_assignment(vecs1, vecs2, p=2):
     Notes:
         Thin wrapper around mincost_assignment
 
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mindist_assignment
+
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mindist_assignment
+
     Example:
         >>> # Rows are detections in img1, cols are detections in img2
-        >>> rng = np.random.RandomState(42)
+        >>> rng = np.random.RandomState(43)
         >>> vecs1 = rng.randint(0, 10, (5, 2))
         >>> vecs2 = rng.randint(0, 10, (7, 2))
         >>> ret = mindist_assignment(vecs1, vecs2)
-        >>> print('Assignment: {}'.format(ret[0]))
         >>> print('Total error: {:.4f}'.format(ret[1]))
-        Assignment: [(0, 2), (1, 6), (2, 0), (3, 3), (4, 1)]
-        Total error: 10.6700
+        Total error: 8.2361
+        >>> print('Assignment: {}'.format(ret[0]))  # xdoc: +IGNORE_WANT
+        Assignment: [(0, 0), (1, 3), (2, 5), (3, 2), (4, 6)]
     """
     from scipy.spatial import distance_matrix
     cost = distance_matrix(vecs1, vecs2, p=p)
@@ -48,6 +54,9 @@ def mincost_assignment(cost):
     Returns:
         Tuple[list, float]: tuple containing a list of assignment of rows
             and columns, and the total cost of the assignment.
+
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mincost_assignment
 
     Example:
         >>> # Costs to match item i in set1 with item j in set2.
@@ -100,6 +109,7 @@ def mincost_assignment(cost):
     is_finite = ~is_infinte
     is_positive = cost_matrix > 0
     is_negative = cost_matrix < 0
+    # Note: in scipy 1.4 input costs may be infinte, should fix for this case
     feasible_pos_vals = cost_matrix[(is_finite & is_positive)]
     feasible_neg_vals = cost_matrix[(is_finite & is_negative)]
     feasible_extent = feasible_pos_vals.sum() - feasible_neg_vals.sum()
@@ -131,6 +141,9 @@ def maxvalue_assignment(value):
         Tuple[list, float]: tuple containing a list of assignment of rows
             and columns, and the total value of the assignment.
 
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py maxvalue_assignment
+
     Example:
         >>> # Costs to match item i in set1 with item j in set2.
         >>> value = np.array([
@@ -140,10 +153,12 @@ def maxvalue_assignment(value):
         >>>     [-1, -1, -1, -1],
         >>> ])
         >>> ret = maxvalue_assignment(value)
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> # Note, depending on the scipy version the assignment might change
+        >>> # but the value should always be the same.
         >>> print('Total value: {}'.format(ret[1]))
-        Assignment: [(0, 0), (1, 2), (2, 1)]
         Total value: 23.0
+        >>> print('Assignment: {}'.format(ret[0]))  # xdoc: +IGNORE_WANT
+        Assignment: [(0, 0), (1, 3), (2, 1)]
 
         >>> ret = maxvalue_assignment(np.array([[np.inf]]))
         >>> print('Assignment: {}'.format(ret[0]))
@@ -162,3 +177,12 @@ def maxvalue_assignment(value):
     assignment, cost_tot = mincost_assignment(cost)
     value_tot = -cost_tot
     return assignment, value_tot
+
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        xdoctest -m kwarray.algo_assignment
+    """
+    import xdoctest
+    xdoctest.doctest_module(__file__)
