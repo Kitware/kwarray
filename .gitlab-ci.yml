@@ -98,6 +98,9 @@ stages:
             echo $CI_KITWARE_SECRET
             echo $TWINE_USERNAME
 
+            # ADD RELEVANT VARIABLES TO GITLAB SECRET VARIABLES
+            # https://gitlab.kitware.com/computer-vision/kwimage/-/settings/ci_cd
+
             # HOW TO ENCRYPT YOUR SECRET GPG KEY
             IDENTIFIER="travis-ci-Erotemic"
             GPG_KEYID=$(gpg --list-keys --keyid-format LONG "$IDENTIFIER" | head -n 2 | tail -n 1 | awk '{print $1}' | tail -c 9)
