@@ -21,7 +21,6 @@ stages:
 ### TEMPLATES ###
 # Define common templates using YAML anchors
 
-
 .common_template: &common_template
     tags:
         # Tags define which runners will accept which jobs
