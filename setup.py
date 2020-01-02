@@ -117,14 +117,59 @@ def parse_requirements(fname='requirements.txt'):
     return packages
 
 
-version = parse_version('kwarray/__init__.py')  # needs to be a global var for git tags
+def native_mb_python_tag(plat_impl=None, version_info=None):
+    """
+    Example:
+        >>> print(native_mb_python_tag())
+        >>> print(native_mb_python_tag('PyPy', (2, 7)))
+        >>> print(native_mb_python_tag('CPython', (3, 8)))
+    """
+    if plat_impl is None:
+        import platform
+        plat_impl = platform.python_implementation()
+
+    if version_info is None:
+        import sys
+        version_info = sys.version_info
+
+    major, minor = version_info[0:2]
+    ver = '{}{}'.format(major, minor)
+
+    if plat_impl == 'CPython':
+        # TODO: get if cp27m or cp27mu
+        impl = 'cp'
+        if ver == '27':
+            IS_27_BUILT_WITH_UNICODE = True  # how to determine this?
+            if IS_27_BUILT_WITH_UNICODE:
+                abi = 'mu'
+            else:
+                abi = 'm'
+        else:
+            if ver == '38':
+                # no abi in 38?
+                abi = ''
+            else:
+                abi = 'm'
+        mb_tag = '{impl}{ver}-{impl}{ver}{abi}'.format(**locals())
+    elif plat_impl == 'PyPy':
+        abi = ''
+        impl = 'pypy'
+        ver = '{}{}'.format(major, minor)
+        mb_tag = '{impl}-{ver}'.format(**locals())
+    else:
+        raise NotImplementedError(plat_impl)
+    return mb_tag
+
+
+NAME = 'kwarray'
+VERSION = version = parse_version('kwarray/__init__.py')  # needs to be a global var for git tags
 
 if __name__ == '__main__':
     setup(
-        name='kwarray',
-        version=version,
-        author='Jon Crall',
-        author_email='jon.crall@kitware.com',
+        name=NAME,
+        version=VERSION,
+        author='Kitware, Inc., Jon Crall',
+        author_email='kitware@kitware.com, jon.crall@kitware.com',
         url='https://gitlab.kitware.com/computer-vision/kwarray',
         long_description=parse_description(),
         long_description_content_type='text/x-rst',

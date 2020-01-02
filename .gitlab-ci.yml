@@ -159,9 +159,8 @@ stages:
 
     artifacts:
         paths:
-            - wheelhouse/*.asc
-            - wheelhouse/*.whl
             - dist/*.asc
+            - dist/*.tar.gz
             - dist/*.whl
 
     only:
