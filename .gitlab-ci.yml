@@ -50,8 +50,7 @@ stages:
         - pip install pip setuptools -U
 
     script: 
-        - pip install -r requirements.txt
-        - pip install .  
+        - python setup.py bdist_wheel --universal
 
     cache:
         paths:
@@ -61,6 +60,7 @@ stages:
     artifacts:
         paths:
             - dist/*.whl
+            - venv/
 
 
 .test_full_template: &test_full_template
@@ -73,9 +73,16 @@ stages:
     
     before_script:
         - source venv/bin/activate
+        - pip install -r requirements.txt
+        - pip install .  
 
     script: 
         - ./run_tests.py
+
+    cache:
+        paths:
+            - .cache/pip
+            - venv/
 
     # Coverage is a regex that will parse the coverage from the test stdout
     coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
@@ -153,6 +160,9 @@ stages:
     artifacts:
         paths:
             - wheelhouse/*.asc
+            - wheelhouse/*.whl
+            - dist/*.asc
+            - dist/*.whl
 
     only:
         refs:
