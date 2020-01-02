@@ -123,6 +123,9 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     Returns:
         Tuple[ndarray, List[ndarrays]]: (keys, groupxs)
 
+    CommandLine:
+        xdoctest -m ~/code/kwarray/kwarray/util_groups.py group_indices:3
+
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
         >>> import ubelt as ub
@@ -204,8 +207,14 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     if _kind == 'U' or _kind == 'O':
         # hack for string based data
         group = ub.group_items(range(_n_item), _idx_to_groupid_orig)
-        keys = list(group.keys())
-        groupxs = list(map(np.array, group.values()))
+        try:
+            # attempt to return values in a consistant order
+            sortx = ub.argsort(list(group.keys()))
+            keys = list(ub.take(list(group.keys()), sortx))
+            groupxs = list(ub.take(list(map(np.array, group.values())), sortx))
+        except Exception:
+            keys = list(group.keys())
+            groupxs = list(map(np.array, group.values()))
         return keys, groupxs
 
     # Sort items and idx_to_groupid by groupid
