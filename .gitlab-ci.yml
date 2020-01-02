@@ -113,10 +113,13 @@ stages:
             GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -e -a -in dev/ci_public_gpg_key.pgp > dev/ci_public_gpg_key.pgp.enc
             GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -e -a -in dev/ci_secret_gpg_key.pgp > dev/ci_secret_gpg_key.pgp.enc
             GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -e -a -in dev/gpg_owner_trust > dev/gpg_owner_trust.enc
-            echo $KEYID > dev/public_gpg_key
+            echo $GPG_KEYID > dev/public_gpg_key
 
             # Test decrpyt
-            GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc
+            cat dev/public_gpg_key
+            GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc 
+            GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc 
+            GLKWS=$CI_KITWARE_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_key.pgp.enc 
 
             source $(secret_unloader.sh)
 
@@ -138,6 +141,7 @@ stages:
     script: 
         - export GPG_EXECUTABLE=gpg
         - export GPG_KEYID=$(cat dev/public_gpg_key)
+        - echo "GPG_KEYID = $GPG_KEYID"
         - $GPG_EXECUTABLE --version
         - openssl version
         - $GPG_EXECUTABLE --list-keys
@@ -149,7 +153,7 @@ stages:
         # The publish script only builds wheels and does gpg signing if TAG_AND_UPLOAD is False
         - MB_PYTHON_TAG=$MB_PYTHON_TAG \
             USE_GPG=True \
-            GPG_KEYID=$KEYID \
+            GPG_KEYID=$GPG_KEYID \
             TWINE_PASSWORD=$TWINE_PASSWORD \
             TWINE_USERNAME=$TWINE_USERNAME \
             GPG_EXECUTABLE=$GPG_EXECUTABLE \
