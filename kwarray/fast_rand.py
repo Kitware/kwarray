@@ -1,13 +1,10 @@
 # -* -coding: utf-8 -*-
+"""
+Fast 32-bit random functions for numpy as of 2018. (More recent versions of
+numpy may have these natively supported).
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
-
-
-# __all__ = [
-#     'standard_normal',
-#     'standard_normal32',
-#     'standard_normal64',
-# ]
 
 
 def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):

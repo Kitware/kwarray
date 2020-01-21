@@ -1,3 +1,6 @@
+"""
+Torch specific extensions
+"""
 import torch
 import numpy as np
 

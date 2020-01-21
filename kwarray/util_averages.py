@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Currently just defines "stats_dict", which is a nice way to gather multiple
+numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
+geometric-mean, standard-deviation, etc...) about data in an array.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import collections
 import numpy as np

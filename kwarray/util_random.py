@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Handle and interchange between different random number generators (numpy,
+python, torch, ...). Also defines useful random iterator functions and
+`:func:ensure_rng`.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 import random
@@ -109,8 +114,6 @@ def random_combinations(items, size, num=None, rng=None):
                 yield combo
 
 
-# import xdev
-# @xdev.profile
 def random_product(items, num=None, rng=None):
     """
     Yields `num` items from the cartesian product of items in a random order.

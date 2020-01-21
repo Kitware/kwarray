@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+A convinient interface to solving assignment problems with the Hungarian
+algorithm (also known as Munkres or maximum linear-sum-assignment).
+
+The core implementation of munkres in in scipy. Recent versions are written in
+C, so their speed should be reflected here.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 
