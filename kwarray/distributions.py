@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Defines data structures for efficient repeated sampling of specific
+distributions (e.g. Normal, Uniform, Binomial) with specific parameters.
+
 Inspired by ~/code/imgaug/imgaug/parameters.py
 
 Similar Libraries:
