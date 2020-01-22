@@ -2,11 +2,12 @@ The Kitware Array Module
 ========================
 
 .. # TODO Get CI services running on gitlab 
-.. # |ReadTheDocs|
 
-|GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| 
+|GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| |ReadTheDocs|
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
+
+Read the docs here: https://kwarray.readthedocs.io/en/latest/
 
 The top-level API is:
 
@@ -134,7 +135,7 @@ my projects:
    :target: https://pypistats.org/packages/kwarray
 
 .. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=latest
-    :target: http://kwarray.readthedocs.io/en/latest/
+    :target: https://kwarray.readthedocs.io/en/latest/
 
 .. # See: https://ci.appveyor.com/project/jon.crall/kwarray/settings/badges
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true
