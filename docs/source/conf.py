@@ -110,6 +110,7 @@ autoapi_modules = {
 
 
 autoapi_dirs = ['../../kwarray']
+autoapi_keep_files = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -247,5 +248,6 @@ autodoc_member_order = 'bysource'
 html_theme_options = {
     'collapse_navigation': False,
     'display_version': True,
+    # 'navigation_depth': 4,
     # 'logo_only': True,
 }

@@ -150,18 +150,20 @@ def isect_flags(arr, other):
 def atleast_nd(arr, n, front=False):
     r"""
     View inputs as arrays with at least n dimensions.
-    TODO: Submit as a PR to numpy
 
     Args:
-        arr (array_like): One array-like object.  Non-array inputs are
-                converted to arrays.  Arrays that already have n or more
-                dimensions are preserved.
-        n (int): number of dimensions to ensure
-        tofront (bool): if True new dimensions are added to the front of the
-            array.  otherwise they are added to the back.
+        arr (array_like):
+            An array-like object.  Non-array inputs are converted to arrays.
+            Arrays that already have n or more dimensions are preserved.
 
-    Returns
-    -------
+        n (int):
+            number of dimensions to ensure
+
+        front (bool, default=False):
+            if True new dimensions are added to the front of the array.
+            otherwise they are added to the back.
+
+    Returns:
         ndarray :
             An array with ``a.ndim >= n``.  Copies are avoided where possible,
             and views with three or more dimensions are returned.  For example,
@@ -169,12 +171,10 @@ def atleast_nd(arr, n, front=False):
             ``(1, N, 1)``, and a 2-D array of shape ``(M, N)`` becomes a view
             of shape ``(M, N, 1)``.
 
-    See Also
-    ---------
-        ensure_shape, np.atleast_1d, np.atleast_2d, np.atleast_3d
+    See Also:
+        numpy.atleast_1d, numpy.atleast_2d, numpy.atleast_3d
 
-    Example
-    -------
+    Example:
         >>> n = 2
         >>> arr = np.array([1, 1, 1])
         >>> arr_ = atleast_nd(arr, n)
@@ -183,9 +183,7 @@ def atleast_nd(arr, n, front=False):
         >>> print(result)
         [[1], [1], [1]]
 
-    Example
-    -------
-
+    Example:
         >>> n = 4
         >>> arr1 = [1, 1, 1]
         >>> arr2 = np.array(0)

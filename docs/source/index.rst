@@ -16,11 +16,11 @@
 Welcome to kwarray's documentation!
 ===================================
 
-.. THIS ISNT WORKING ONLINE BECAUSE AUTODOC REQUIRES INSTALABLE MODS
-.. AUTOAPI works though.
+
 .. The __init__ files contains the top-level documentation overview
-.. automodule:: kwarray.__init__
-   :show-inheritance:
+.. autoapimodule:: kwarray
+    :show-inheritance:
+    :special-members: __init__
 
 
 Function Usefulness
@@ -54,18 +54,6 @@ Function Usefulness
 
 
 .. toctree::
-   :maxdepth: 8
-   :caption: Package Layout
-
-   modules
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
-.. toctree::
-   :hidden:
 
    kwarray
 
