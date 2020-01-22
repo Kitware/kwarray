@@ -24,24 +24,31 @@ def count_usage():
 
     all_fpaths = []
     for name in names:
-        repo_fpath = ub.expandpath(join('~/code', name))
-        fpaths = glob.glob(join(repo_fpath, '**', '*.py'), recursive=True)
-        for fpath in fpaths:
-            all_fpaths.append((name, fpath))
+        if name:
+            repo_fpath = ub.expandpath(join('~/code', name))
+            fpaths = glob.glob(join(repo_fpath, '**', '*.py'), recursive=True)
+            for fpath in fpaths:
+                all_fpaths.append((name, fpath))
+
+    print('all_fpaths = {}'.format(ub.repr2(all_fpaths)))
+    print('names = {}'.format(ub.repr2(names)))
 
     import re
 
     import ubelt as ub
-    import kwarray
+    modname = 'kwarray'
+    module = ub.import_module_from_name(modname)
 
-    package_name = kwarray.__name__
-    package_allvar = kwarray.__all__
+    package_name = module.__name__
+    package_allvar = module.__all__
 
     pat = re.compile(r'\b' + package_name + r'\.(?P<attr>[a-zA-Z_][A-Za-z_0-9]*)\b')
 
     pkg_to_hist = ub.ddict(lambda: ub.ddict(int))
     for name, fpath in ub.ProgIter(all_fpaths):
-        text = open(fpath, 'r').read()
+        # print('fpath = {!r}'.format(fpath))
+        text = ub.readfrom(fpath, verbose=0)
+        # text = open(fpath, 'r').read()
         for match in pat.finditer(text):
             attr = match.groupdict()['attr']
             if attr in package_allvar:

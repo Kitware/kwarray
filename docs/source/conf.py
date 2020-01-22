@@ -1,4 +1,23 @@
 # -*- coding: utf-8 -*-
+"""
+Notes:
+    http://docs.readthedocs.io/en/latest/getting_started.html
+
+    pip install sphinx sphinx-autobuild sphinx_rtd_theme sphinxcontrib-napoleon
+
+    cd ~/code/kwarray
+    mkdir docs
+    cd docs
+
+    sphinx-quickstart
+
+    # need to edit the conf.py
+
+    cd ~/code/kwarray/docs
+    make html
+    sphinx-apidoc -f -o ~/code/kwarray/docs/source ~/code/kwarray/kwarray --separate
+    make html
+"""
 #
 # Configuration file for the Sphinx documentation builder.
 #
@@ -20,14 +39,14 @@
 # -- Project information -----------------------------------------------------
 
 project = 'kwarray'
-copyright = '2019, Jon Crall'
+copyright = '2020, Kitware Inc'
 author = 'Jon Crall'
 
 # The short X.Y version
 import kwarray
 version = '.'.join(kwarray.__version__.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
-release = ''
+release = kwarray.__version__
 
 
 # -- General configuration ---------------------------------------------------
