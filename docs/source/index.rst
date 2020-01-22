@@ -16,10 +16,15 @@
 Welcome to kwarray's documentation!
 ===================================
 
+.. THIS ISNT WORKING ONLINE BECAUSE AUTODOC REQUIRES INSTALABLE MODS
+.. AUTOAPI works though.
 .. The __init__ files contains the top-level documentation overview
 .. automodule:: kwarray.__init__
    :show-inheritance:
 
+
+Function Usefulness
+===================
 
 ================================================================ ================
  Function name                                                   Usefulness
@@ -48,36 +53,6 @@ Welcome to kwarray's documentation!
 ================================================================ ================
 
 
-:mod:`kwarray.distributions`
--------------
-:func:`kwarray.Parameterized`
-:func:`kwarray.ParameterizedList`
-:func:`kwarray.Distribution`
-:func:`kwarray.Mixture`
-:func:`kwarray.Composed`
-:func:`kwarray.CastError`
-:func:`kwarray.Uniform`
-:func:`kwarray.Exponential`
-:func:`kwarray.Constant`
-:func:`kwarray.DiscreteUniform`
-:func:`kwarray.Normal`
-:func:`kwarray.Bernoulli`
-:func:`kwarray.Binomial`
-:func:`kwarray.Categorical`
-:func:`kwarray.NonlinearUniform`
-:func:`kwarray.CategoryUniform`
-:func:`kwarray.TruncNormal`
-:func:`kwarray.PDF`
-:func:`kwarray.Seeded`
-
-:mod:`kwarray.arrayapi`
--------------
-:func:`kwarray.TorchImpls`
-:func:`kwarray.NumpyImpls`
-:func:`kwarray.ArrayAPI`
-:func:`kwarray.TorchNumpyCompat`
-
-
 .. toctree::
    :maxdepth: 8
    :caption: Package Layout
@@ -87,6 +62,13 @@ Welcome to kwarray's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+
+.. toctree::
+   :hidden:
+
+   kwarray
+
 
 
 

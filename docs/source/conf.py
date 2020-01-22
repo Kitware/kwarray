@@ -5,6 +5,9 @@ Notes:
 
     pip install sphinx sphinx-autobuild sphinx_rtd_theme sphinxcontrib-napoleon
 
+    pip install sphinx-autoapi
+
+
     cd ~/code/kwarray
     mkdir docs
     cd docs
@@ -97,6 +100,14 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
 ]
+
+autoapi_modules = {
+    'kwarray': {
+        'override': False,
+        'output': 'auto'
+    }
+}
+
 
 autoapi_dirs = ['../../kwarray']
 
