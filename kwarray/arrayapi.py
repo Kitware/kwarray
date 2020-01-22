@@ -864,9 +864,23 @@ class NumpyImpls(object):
 
 class ArrayAPI(object):
     """
-    Compatability API between torch and numpy
+    Compatability API between torch and numpy.
+
+    The API defines classmethods that work on both Tensors and ndarrays.  As
+    such the user can simply use ``kwarray.ArrayAPI.<funcname>`` and it will
+    return the expected result for both Tensor and ndarray types.
+
+    However, this is inefficient because it requires us to check the type of
+    the input for every API call. Therefore it is recommended that you use the
+    :func:`ArrayAPI.coerce` function, which takes as input the data you want to
+    operate on. It performs the type check once, and then returns another
+    object that defines with an identical API, but specific to the given data
+    type. This means that we can ignore type checks on future calls of the
+    specific implementation. See examples for more details.
+
 
     Example:
+        >>> # Use the easy-to-use, but inefficient array api
         >>> take = ArrayAPI.take
         >>> np_data = np.arange(0, 143).reshape(11, 13)
         >>> pt_data = torch.LongTensor(np_data)
@@ -878,6 +892,7 @@ class ArrayAPI(object):
         >>> assert np.allclose(take(np_data, idxs1, 1), take(pt_data, idxs1, 1))
 
     Example:
+        >>> # Use the easy-to-use, but inefficient array api
         >>> compress = ArrayAPI.compress
         >>> np_data = np.arange(0, 143).reshape(11, 13)
         >>> pt_data = torch.LongTensor(np_data)
@@ -887,6 +902,24 @@ class ArrayAPI(object):
         >>> assert np.allclose(compress(np_data, flags), compress(pt_data, flags))
         >>> assert np.allclose(compress(np_data, f0, 0), compress(pt_data, f0, 0))
         >>> assert np.allclose(compress(np_data, f1, 1), compress(pt_data, f1, 1))
+
+    Example:
+        >>> # Use ArrayAPI to coerce an identical API that doesnt do type checks
+        >>> import kwarray
+        >>> np_data = np.arange(0, 15).reshape(3, 5)
+        >>> pt_data = torch.LongTensor(np_data)
+        >>> # The new ``impl`` object has the same API as ArrayAPI, but works
+        >>> # specifically on torch Tensors.
+        >>> impl = kwarray.ArrayAPI.coerce(pt_data)
+        >>> flat_data = impl.view(pt_data, -1)
+        >>> print('flat_data = {!r}'.format(flat_data))
+        flat_data = tensor([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14])
+        >>> # The new ``impl`` object has the same API as ArrayAPI, but works
+        >>> # specifically on numpy ndarrays.
+        >>> impl = kwarray.ArrayAPI.coerce(np_data)
+        >>> flat_data = impl.view(np_data, -1)
+        >>> print('flat_data = {!r}'.format(flat_data))
+        flat_data = array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14])
     """
 
     _torch = TorchImpls

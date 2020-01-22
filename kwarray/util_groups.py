@@ -11,11 +11,12 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
     """
     Groups a list of items by group id.
 
-    Works like ``:func:ubelt.group_items``, but with numpy optimizations.
-    This can be quite a bit faster than using `itertools.groupby` [1]_ [2]_.
+    Works like :func:`ubelt.group_items`, but with numpy optimizations.
+    This can be quite a bit faster than using :func:`itertools.groupby` [1]_
+    [2]_.
 
     In cases where there are many lists of items to group (think column-major
-    data), consider using `func:group_indices` and `func:apply_grouping`
+    data), consider using :func:`group_indices` and :func:`apply_grouping`
     instead.
 
     Args:
@@ -39,8 +40,8 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
         Dict[T2, ndarray[T1]]: mapping from groupids to corresponding items
 
     References:
-        ..[1] http://stackoverflow.com/questions/4651683/
-        ..[2] numpy-grouping-using-itertools-groupby-performance
+        .. [1] http://stackoverflow.com/questions/4651683/
+        .. [2] numpy-grouping-using-itertools-groupby-performance
 
     Example:
         >>> from kwarray.util_groups import *  # NOQA
@@ -69,19 +70,19 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     to that list of objects.
 
     Using this function will return a list of indices that can be used in
-    conjunction with `:func:apply_grouping` to group the elements.  This is
+    conjunction with :func:`apply_grouping` to group the elements.  This is
     most useful when you have many lists (think column-major data)
     corresponding to the group-ids.
 
     In cases where there is only one list of objects or knowing the indices
-    doesn't matter, then consider using `func:group_items` instead.
+    doesn't matter, then consider using func:`group_items` instead.
 
     Args:
         idx_to_groupid (ndarray):
             The input array, where each item is interepreted as a group id.
             For the fastest runtime, the input array must be numeric (ideally
             with integer types).  If the type is non-numeric then the less
-            efficient `:func:ubelt.group_items` is used.
+            efficient :func:`ubelt.group_items` is used.
 
         assume_sorted (bool, default=False):
             If the input array is sorted, then setting this to True will avoid
@@ -203,7 +204,9 @@ def group_indices(idx_to_groupid, assume_sorted=False):
 
 def apply_grouping(items, groupxs, axis=0):
     """
-    Applies grouping from group_indicies
+    Applies grouping from group_indicies.
+
+    Typically used in conjunction with :func:`group_indices`.
 
     Args:
         items (ndarray): items to group
@@ -215,9 +218,6 @@ def apply_grouping(items, groupxs, axis=0):
     Returns:
         List[ndarray]: grouped items
 
-    SeeAlso:
-        :func:group_indices
-        :func:invert_apply_grouping
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
@@ -256,7 +256,7 @@ def group_consecutive(arr, offset=1):
         apply_grouping(data, group_consecutive_indices(data))
 
     References:
-        ..[3] http://stackoverflow.com/questions/7352684/groups-consecutive-elements
+        .. [3] http://stackoverflow.com/questions/7352684/groups-consecutive-elements
 
     Example:
         >>> arr = np.array([1, 2, 3, 5, 6, 7, 8, 9, 10, 15, 99, 100, 101])

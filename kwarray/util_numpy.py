@@ -9,8 +9,8 @@ import numpy as np
 def boolmask(indices, shape=None):
     """
     Constructs an array of booleans where an item is True if its position is in
-    `indices` otherwise it is False. This can be viewed as the inverse of
-    `numpy.where`.
+    ``indices`` otherwise it is False. This can be viewed as the inverse of
+    :func:`numpy.where`.
 
     Args:
         indices (ndarray): list of integer indices
@@ -66,7 +66,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
 
     Returns:
         ndarray:
-            if len(arrs) == 0, returns `default`
+            if len(arrs) == 0, returns ``default``
             if len(arrs) == 1, returns arrs[0],
             if len(arrs) >= 2, returns
                 ufunc(...ufunc(ufunc(arrs[0], arrs[1]), arrs[2]),...arrs[n-1])
@@ -239,7 +239,7 @@ def atleast_nd(arr, n, front=False):
 
 def argmaxima(arr, num, axis=None, ordered=True):
     """
-    Returns the top `num` maximum indicies.
+    Returns the top ``num`` maximum indicies.
 
     This can be significantly faster than using argsort.
 
@@ -355,7 +355,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
 
 def argminima(arr, num, axis=None, ordered=True):
     """
-    Returns the top `num` minimum indicies.
+    Returns the top ``num`` minimum indicies.
 
     This can be significantly faster than using argsort.
 

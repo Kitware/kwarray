@@ -348,7 +348,7 @@ class DataFrameLight(ub.NiceRepr):
 
     def extend(self, other):
         """
-        Extend `self` inplace using another dataframe array
+        Extend ``self`` inplace using another dataframe array
 
         Args:
             other (DataFrameLight | dict[str, Sequence]):

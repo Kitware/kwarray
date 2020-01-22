@@ -2,7 +2,7 @@
 """
 Handle and interchange between different random number generators (numpy,
 python, torch, ...). Also defines useful random iterator functions and
-`:func:ensure_rng`.
+:func:`ensure_rng`.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
@@ -58,7 +58,7 @@ def shuffle(items, rng=None):
 
 def random_combinations(items, size, num=None, rng=None):
     """
-    Yields `num` combinations of length `size` from items in random order
+    Yields ``num`` combinations of length ``size`` from items in random order
 
     Args:
         items (List): pool of items to choose from
@@ -67,27 +67,37 @@ def random_combinations(items, size, num=None, rng=None):
         rng (int | RandomState, default=None): seed or random number generator
 
     Yields:
-        tuple: combo
+        Tuple: a random combination of ``items`` of length ``size``.
 
     Example:
-        >>> import ubelt as ub  # NOQA
+        >>> import ubelt as ub
         >>> items = list(range(10))
         >>> size = 3
         >>> num = 5
         >>> rng = 0
         >>> combos = list(random_combinations(items, size, num, rng))
-        >>> result = ('combos = %s' % (ub.repr2(combos),))
-        >>> print(result)
+        >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
+        combos = [
+            (0, 6, 9),
+            (4, 7, 8),
+            (4, 6, 7),
+            (2, 3, 5),
+            (1, 2, 4),
+        ]
 
     Example:
-        >>> import ubelt as ub  # NOQA
+        >>> import ubelt as ub
         >>> items = list(zip(range(10), range(10)))
-        >>> size = 3
-        >>> num = 5
-        >>> rng = 0
-        >>> combos = list(random_combinations(items, size, num, rng))
-        >>> result = ('combos = %s' % (ub.repr2(combos),))
-        >>> print(result)
+        >>> combos = list(random_combinations(items, 3, num=5, rng=0))
+        >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
+        combos = [
+            ((0, 0), (6, 6), (9, 9)),
+            ((4, 4), (7, 7), (8, 8)),
+            ((4, 4), (6, 6), (7, 7)),
+            ((2, 2), (3, 3), (5, 5)),
+            ((1, 1), (2, 2), (4, 4)),
+        ]
+
     """
     import scipy.special
     rng = ensure_rng(rng, api='python')
@@ -116,27 +126,37 @@ def random_combinations(items, size, num=None, rng=None):
 
 def random_product(items, num=None, rng=None):
     """
-    Yields `num` items from the cartesian product of items in a random order.
+    Yields ``num`` items from the cartesian product of items in a random order.
 
     Args:
-        items (list of sequences): items to get caresian product of
-            packed in a list or tuple.
-            (note this deviates from api of it.product)
+        items (List[Sequence]):
+            items to get caresian product of packed in a list or tuple.
+            (note this deviates from api of :func:`itertools.product`)
 
-        num (int): maximum number of items to generate
+        num (int, default=None):
+            maximum number of items to generate. If None, all
 
-        rng (random.Random | np.random.RandomState | int): random number generator
+        rng (random.Random | np.random.RandomState | int):
+            random number generator
+
+    Yields:
+        Tuple: a random item in the cartesian product
 
     Example:
         >>> items = [(1, 2, 3), (4, 5, 6, 7)]
         >>> rng = 0
-        >>> list(random_product(items, rng=0))
-        >>> list(random_product(items, num=3, rng=0))
+        >>> products = list(random_product(items, rng=0))
+        >>> print(ub.repr2(products, nl=0))
+        [(3, 4), (1, 7), (3, 6), (2, 7),... (1, 6), (2, 5), (2, 4)]
+        >>> products = list(random_product(items, num=3, rng=0))
+        >>> print(ub.repr2(products, nl=0))
+        [(3, 4), (1, 7), (3, 6)]
 
     Example:
         >>> # xdoctest: +REQUIRES(--profile)
         >>> rng = ensure_rng(0)
-        >>> items = [np.array([15, 14]), np.array([27, 26]), np.array([21, 22]), np.array([32, 31])]
+        >>> items = [np.array([15, 14]), np.array([27, 26]),
+        >>>          np.array([21, 22]), np.array([32, 31])]
         >>> num = 2
         >>> for _ in range(100):
         >>>     list(random_product(items, num=num, rng=rng))
@@ -196,10 +216,10 @@ def random_product(items, num=None, rng=None):
 def _npstate_to_pystate(npstate):
     """
     Convert state of a NumPy RandomState object to a state
-    that can be used by Python's Random.
+    that can be used by Python's Random. Derived from [1]_.
 
     References:
-        https://stackoverflow.com/questions/44313620/converting-randomstate
+        .. [1] https://stackoverflow.com/questions/44313620/convert-randomstate
 
     Example:
         >>> py_rng = random.Random(0)
@@ -220,10 +240,10 @@ def _npstate_to_pystate(npstate):
 def _pystate_to_npstate(pystate):
     """
     Convert state of a Python Random object to state usable
-    by NumPy RandomState.
+    by NumPy RandomState. Derived from [2]_.
 
     References:
-        https://stackoverflow.com/questions/44313620/converting-randomstate
+        .. [2] https://stackoverflow.com/questions/44313620/convert-randomstate
 
     Example:
         >>> py_rng = random.Random(0)
@@ -294,13 +314,13 @@ def ensure_rng(rng, api='numpy'):
 
         api (str, default='numpy'): specify the type of random number
             generator to use. This can either be 'numpy' for a
-            `numpy.random.RandomState` object or 'python' for a `random.Random`
-            object.
+            :class:`numpy.random.RandomState` object or 'python' for a
+            :class:`random.Random` object.
 
     Returns:
         (numpy.random.RandomState | random.Random) : rng -
             either a numpy or python random number generator, depending on the
-            setting of `api`.
+            setting of ``api``.
 
     Example:
         >>> rng = ensure_rng(None)
