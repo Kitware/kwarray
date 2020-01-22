@@ -75,6 +75,7 @@ def random_combinations(items, size, num=None, rng=None):
         >>> size = 3
         >>> num = 5
         >>> rng = 0
+        >>> # xdoctest: +IGNORE_WANT
         >>> combos = list(random_combinations(items, size, num, rng))
         >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
         combos = [
@@ -88,6 +89,7 @@ def random_combinations(items, size, num=None, rng=None):
     Example:
         >>> import ubelt as ub
         >>> items = list(zip(range(10), range(10)))
+        >>> # xdoctest: +IGNORE_WANT
         >>> combos = list(random_combinations(items, 3, num=5, rng=0))
         >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
         combos = [
@@ -146,6 +148,7 @@ def random_product(items, num=None, rng=None):
         >>> import ubelt as ub
         >>> items = [(1, 2, 3), (4, 5, 6, 7)]
         >>> rng = 0
+        >>> # xdoctest: +IGNORE_WANT
         >>> products = list(random_product(items, rng=0))
         >>> print(ub.repr2(products, nl=0))
         [(3, 4), (1, 7), (3, 6), (2, 7),... (1, 6), (2, 5), (2, 4)]
@@ -411,5 +414,9 @@ def ensure_rng(rng, api='numpy'):
 
 
 if __name__ == '__main__':
+    """
+    CommandLine:
+        xdoctest -m kwarray.util_random
+    """
     import xdoctest
     xdoctest.doctest_module(__file__)
