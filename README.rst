@@ -7,7 +7,7 @@ The Kitware Array Module
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
 
-Read the docs here: https://kwarray.readthedocs.io/en/latest/
+Read the docs here: https://kwarray.readthedocs.io/en/master/
 
 The top-level API is:
 
@@ -134,8 +134,8 @@ my projects:
 .. |Downloads| image:: https://img.shields.io/pypi/dm/kwarray.svg
    :target: https://pypistats.org/packages/kwarray
 
-.. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=latest
-    :target: https://kwarray.readthedocs.io/en/latest/
+.. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=release
+    :target: https://kwarray.readthedocs.io/en/release/
 
 .. # See: https://ci.appveyor.com/project/jon.crall/kwarray/settings/badges
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true
