@@ -143,6 +143,7 @@ def random_product(items, num=None, rng=None):
         Tuple: a random item in the cartesian product
 
     Example:
+        >>> import ubelt as ub
         >>> items = [(1, 2, 3), (4, 5, 6, 7)]
         >>> rng = 0
         >>> products = list(random_product(items, rng=0))
