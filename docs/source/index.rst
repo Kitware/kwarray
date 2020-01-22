@@ -78,7 +78,6 @@ Welcome to kwarray's documentation!
 :func:`kwarray.TorchNumpyCompat`
 
 
-
 .. toctree::
    :maxdepth: 8
    :caption: Package Layout
