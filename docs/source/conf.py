@@ -24,6 +24,7 @@ Notes:
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/stable/config
+from os.path import exists
 from os.path import dirname
 from os.path import join
 
@@ -44,17 +45,38 @@ project = 'kwarray'
 copyright = '2020, Kitware Inc'
 author = 'Jon Crall'
 
-# The short X.Y version
-try:
-    import kwarray
-except Exception:
-    modpath = join(dirname(dirname(dirname(__file__))), 'kwarray')
-    import ubelt as ub
-    kwarray = ub.import_module_from_path(modpath)
 
-version = '.'.join(kwarray.__version__.split('.')[0:2])
+def parse_version(fpath):
+    """
+    Statically parse the version number from a python file
+    """
+    import ast
+    if not exists(fpath):
+        raise ValueError('fpath={!r} does not exist'.format(fpath))
+    with open(fpath, 'r') as file_:
+        sourcecode = file_.read()
+    pt = ast.parse(sourcecode)
+    class VersionVisitor(ast.NodeVisitor):
+        def visit_Assign(self, node):
+            for target in node.targets:
+                if getattr(target, 'id', None) == '__version__':
+                    self.version = node.value.s
+    visitor = VersionVisitor()
+    visitor.visit(pt)
+    return visitor.version
+
+# The short X.Y version
+# try:
+#     import kwarray
+# except Exception:
+#     import ubelt as ub
+#     kwarray = ub.import_module_from_path(modpath)
+
+modpath = join(dirname(dirname(dirname(__file__))), 'kwarray', '__init__.py')
 # The full version, including alpha/beta/rc tags
-release = kwarray.__version__
+release = parse_version(modpath)
+version = '.'.join(release.split('.')[0:2])
+# release = kwarray.__version__
 
 
 # -- General configuration ---------------------------------------------------
