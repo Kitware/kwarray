@@ -22,15 +22,27 @@ def gen_api_for_docs():
     import ubelt as ub
     module = ub.import_module_from_name(modname)
 
-    for attrname in module.__all__:
+    attrnames = module.__all__
+
+    if hasattr(module, '__protected__'):
+        # Hack for lazy imports
+        for subattr in module.__protected__:
+            submod = ub.import_module_from_name(modname + '.' + subattr)
+            setattr(module, subattr, submod)
+        attrnames += module.__protected__
+
+    for attrname in attrnames:
         member = getattr(module, attrname)
 
         submembers = getattr(member, '__all__', None)
 
-        if attrname.startswith('util_'):
-            if not submembers:
-                from mkinit.static_mkinit import _extract_attributes
+        # if attrname.startswith('util_'):
+        if not submembers:
+            from mkinit.static_mkinit import _extract_attributes
+            try:
                 submembers = _extract_attributes(member.__file__)
+            except AttributeError:
+                pass
 
         if submembers:
             print('\n:mod:`{}.{}`'.format(modname, attrname))
