@@ -79,7 +79,7 @@ def group_indices(idx_to_groupid, assume_sorted=False):
 
     Args:
         idx_to_groupid (ndarray):
-            The input array, where each item is interepreted as a group id.
+            The input array, where each item is interpreted as a group id.
             For the fastest runtime, the input array must be numeric (ideally
             with integer types).  If the type is non-numeric then the less
             efficient :func:`ubelt.group_items` is used.
@@ -278,7 +278,7 @@ def group_consecutive(arr, offset=1):
 
 def group_consecutive_indices(arr, offset=1):
     """
-    Returns lists of indices pointing to consecurive values
+    Returns lists of indices pointing to consecutive values
 
     Args:
         arr (ndarray):
@@ -291,8 +291,10 @@ def group_consecutive_indices(arr, offset=1):
         List[ndarray]: groupxs: a list of indices
 
     SeeAlso:
-        :func:group_consecutive
-        :func:apply_grouping
+
+        :func:`group_consecutive`
+
+        :func:`apply_grouping`
 
     Example:
         >>> arr = np.array([1, 2, 3, 5, 6, 7, 8, 9, 10, 15, 99, 100, 101])
