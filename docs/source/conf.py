@@ -24,6 +24,8 @@ Notes:
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/stable/config
+from os.path import dirname
+from os.path import join
 
 # -- Path setup --------------------------------------------------------------
 
@@ -43,7 +45,13 @@ copyright = '2020, Kitware Inc'
 author = 'Jon Crall'
 
 # The short X.Y version
-import kwarray
+try:
+    import kwarray
+except Exception:
+    modpath = join(dirname(dirname(dirname(__file__))), 'kwarray')
+    import ubelt as ub
+    kwarray = ub.import_module_from_path(modpath)
+
 version = '.'.join(kwarray.__version__.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
 release = kwarray.__version__
