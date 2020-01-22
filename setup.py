@@ -6,9 +6,6 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-repodir = dirname(__file__)
-
-
 def parse_version(fpath):
     """
     Statically parse the version number from a python file

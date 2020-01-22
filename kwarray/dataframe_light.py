@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+A faster-than-pandas pandas-like interface to column-major data, in the case
+where the data only needs to be accessed by index.
+
+For data where more complex ids are needed you must use pandas.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import ubelt as ub
 import pandas as pd
@@ -342,7 +348,7 @@ class DataFrameLight(ub.NiceRepr):
 
     def extend(self, other):
         """
-        Extend `self` inplace using another dataframe array
+        Extend ``self`` inplace using another dataframe array
 
         Args:
             other (DataFrameLight | dict[str, Sequence]):

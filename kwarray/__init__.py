@@ -1,5 +1,14 @@
+# -*- coding: utf-8 -*-
 """
-mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods -w
+The ``kwarray`` module implements a small set of pure-python extensions to
+numpy and torch.
+"""
+# flake8: noqa
+from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+AutogenInit:
+    mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods
+    mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods -w
 """
 
 __protected__ = [
@@ -11,7 +20,7 @@ __explicit__ = [
     'ArrayAPI'
 ]
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 from kwarray.arrayapi import ArrayAPI
 
@@ -30,7 +39,7 @@ from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
                          isect_flags, iter_reduce_ufunc,)
 from .util_random import (ensure_rng, random_combinations, random_product,
                           seed_global, shuffle,)
-from .util_torch import (one_hot_embedding,)
+from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
 __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'LocLight',
            'apply_grouping', 'arglexmax', 'argmaxima', 'argminima',
@@ -38,6 +47,6 @@ __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'LocLight',
            'group_consecutive_indices', 'group_indices', 'group_items',
            'isect_flags', 'iter_reduce_ufunc', 'maxvalue_assignment',
            'mincost_assignment', 'mindist_assignment', 'one_hot_embedding',
-           'random_combinations', 'random_product', 'seed_global', 'shuffle',
-           'standard_normal', 'standard_normal32', 'standard_normal64',
-           'stats_dict', 'uniform', 'uniform32']
+           'one_hot_lookup', 'random_combinations', 'random_product',
+           'seed_global', 'shuffle', 'standard_normal', 'standard_normal32',
+           'standard_normal64', 'stats_dict', 'uniform', 'uniform32']

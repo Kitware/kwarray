@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Currently just defines "stats_dict", which is a nice way to gather multiple
+numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
+geometric-mean, standard-deviation, etc...) about data in an array.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import collections
 import numpy as np
@@ -12,7 +17,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
 
     Args:
         inputs (ArrayLike): set of values to get statistics of
-        axis (int): if `inputs` is ndarray then this specifies the axis
+        axis (int): if ``inputs`` is ndarray then this specifies the axis
         nan (bool): report number of nan items
         sum (bool): report sum of values
         extreme (bool): report min and max values

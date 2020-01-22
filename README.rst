@@ -2,11 +2,12 @@ The Kitware Array Module
 ========================
 
 .. # TODO Get CI services running on gitlab 
-.. # |ReadTheDocs|
 
-|GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| 
+|GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| |ReadTheDocs|
 
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
+
+Read the docs here: https://kwarray.readthedocs.io/en/latest/
 
 The top-level API is:
 
@@ -94,6 +95,38 @@ indices.
 
 ``boolmask`` effectively inverts ``np.where``.
 
+Usefulness: 
+-----------
+
+This is the frequency that I've used various components of this library with in
+my projects:
+
+
+.. code:: python
+
+    {
+        'ensure_rng': 85,
+        'ArrayAPI': 79,
+        'DataFrameArray': 21,
+        'boolmask': 17,
+        'shuffle': 16,
+        'argmaxima': 13,
+        'group_indices': 12,
+        'stats_dict': 9,
+        'maxvalue_assignment': 7,
+        'seed_global': 7,
+        'iter_reduce_ufunc': 5,
+        'isect_flags': 5,
+        'group_items': 4,
+        'one_hot_embedding': 4,
+        'atleast_nd': 4,
+        'mincost_assignment': 3,
+        'standard_normal': 3,
+        'arglexmax': 2,
+        'DataFrameLight': 1,
+        'uniform': 1,
+    }
+
 
 .. |Pypi| image:: https://img.shields.io/pypi/v/kwarray.svg
    :target: https://pypi.python.org/pypi/kwarray
@@ -102,7 +135,7 @@ indices.
    :target: https://pypistats.org/packages/kwarray
 
 .. |ReadTheDocs| image:: https://readthedocs.org/projects/kwarray/badge/?version=latest
-    :target: http://kwarray.readthedocs.io/en/latest/
+    :target: https://kwarray.readthedocs.io/en/latest/
 
 .. # See: https://ci.appveyor.com/project/jon.crall/kwarray/settings/badges
 .. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true

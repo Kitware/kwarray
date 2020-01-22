@@ -1,13 +1,10 @@
 # -* -coding: utf-8 -*-
+"""
+Fast 32-bit random functions for numpy as of 2018. (More recent versions of
+numpy may have these natively supported).
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
-
-
-# __all__ = [
-#     'standard_normal',
-#     'standard_normal32',
-#     'standard_normal64',
-# ]
 
 
 def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
@@ -104,10 +101,11 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     """
     Fast normally distributed random variables using the Box–Muller transform
 
-    The difference between this function and `numpy.random.standard_normal` is
-    that we use float32 arrays in the backend instead of float64.  Halving the
-    amount of bits that need to be manipulated can significantly reduce the
-    execution time, and 32-bit precision is often good enough.
+    The difference between this function and
+    :func:`numpy.random.standard_normal` is that we use float32 arrays in the
+    backend instead of float64.  Halving the amount of bits that need to be
+    manipulated can significantly reduce the execution time, and 32-bit
+    precision is often good enough.
 
     Args:
         size (int | Tuple[int, *int]) : shape of the returned ndarray
@@ -210,7 +208,7 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
 def standard_normal64(size, mean=0, std=1, rng=np.random):
     """
     Simple wrapper around rng.standard_normal to make an API compatible with
-    `standard_normal32`.
+    :func:`standard_normal32`.
 
     Args:
         size (int | Tuple[int, *int]) : shape of the returned ndarray

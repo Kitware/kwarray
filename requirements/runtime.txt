@@ -4,3 +4,6 @@ numpy >= 1.9.0
 pandas >= 0.23.0
 ubelt >= 0.8.2
 six >= 1.11.0
+
+
+future;python_version<='2.7'  # not sure why this is needed, but tests fail on py27 if it doesnt exist.

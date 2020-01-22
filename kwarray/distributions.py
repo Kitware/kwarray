@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Defines data structures for efficient repeated sampling of specific
+distributions (e.g. Normal, Uniform, Binomial) with specific parameters.
+
 Inspired by ~/code/imgaug/imgaug/parameters.py
 
 Similar Libraries:
@@ -7,10 +10,9 @@ Similar Libraries:
     * https://github.com/phobson/paramnormal
 
 TODO:
-    change sample shape to just a single num.
+    - [ ] change sample shape to just a single num.
+    - [ ] Some Distributions will output vectors. Maybe we could just postpend the dimensions?
 
-    Some Distributions will output vectors (maybe we could just postpend the
-        dimensions?)
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import numpy as np

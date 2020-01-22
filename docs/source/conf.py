@@ -1,10 +1,35 @@
 # -*- coding: utf-8 -*-
+"""
+Notes:
+    http://docs.readthedocs.io/en/latest/getting_started.html
+
+    pip install sphinx sphinx-autobuild sphinx_rtd_theme sphinxcontrib-napoleon
+
+    pip install sphinx-autoapi
+
+
+    cd ~/code/kwarray
+    mkdir docs
+    cd docs
+
+    sphinx-quickstart
+
+    # need to edit the conf.py
+
+    cd ~/code/kwarray/docs
+    make html
+    sphinx-apidoc -f -o ~/code/kwarray/docs/source ~/code/kwarray/kwarray --separate
+    make html
+"""
 #
 # Configuration file for the Sphinx documentation builder.
 #
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/stable/config
+from os.path import exists
+from os.path import dirname
+from os.path import join
 
 # -- Path setup --------------------------------------------------------------
 
@@ -20,14 +45,41 @@
 # -- Project information -----------------------------------------------------
 
 project = 'kwarray'
-copyright = '2019, Jon Crall'
+copyright = '2020, Kitware Inc'
 author = 'Jon Crall'
 
+
+def parse_version(fpath):
+    """
+    Statically parse the version number from a python file
+    """
+    import ast
+    if not exists(fpath):
+        raise ValueError('fpath={!r} does not exist'.format(fpath))
+    with open(fpath, 'r') as file_:
+        sourcecode = file_.read()
+    pt = ast.parse(sourcecode)
+    class VersionVisitor(ast.NodeVisitor):
+        def visit_Assign(self, node):
+            for target in node.targets:
+                if getattr(target, 'id', None) == '__version__':
+                    self.version = node.value.s
+    visitor = VersionVisitor()
+    visitor.visit(pt)
+    return visitor.version
+
 # The short X.Y version
-import kwarray
-version = '.'.join(kwarray.__version__.split('.')[0:2])
+# try:
+#     import kwarray
+# except Exception:
+#     import ubelt as ub
+#     kwarray = ub.import_module_from_path(modpath)
+
+modpath = join(dirname(dirname(dirname(__file__))), 'kwarray', '__init__.py')
 # The full version, including alpha/beta/rc tags
-release = ''
+release = parse_version(modpath)
+version = '.'.join(release.split('.')[0:2])
+# release = kwarray.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,6 +92,7 @@ release = ''
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'autoapi.extension',
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
@@ -47,6 +100,17 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
 ]
+
+autoapi_modules = {
+    'kwarray': {
+        'override': False,
+        'output': 'auto'
+    }
+}
+
+
+autoapi_dirs = ['../../kwarray']
+# autoapi_keep_files = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -184,5 +248,6 @@ autodoc_member_order = 'bysource'
 html_theme_options = {
     'collapse_navigation': False,
     'display_version': True,
+    # 'navigation_depth': 4,
     # 'logo_only': True,
 }

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Numpy specific extensions
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 
@@ -6,8 +9,8 @@ import numpy as np
 def boolmask(indices, shape=None):
     """
     Constructs an array of booleans where an item is True if its position is in
-    `indices` otherwise it is False. This can be viewed as the inverse of
-    `numpy.where`.
+    ``indices`` otherwise it is False. This can be viewed as the inverse of
+    :func:`numpy.where`.
 
     Args:
         indices (ndarray): list of integer indices
@@ -63,7 +66,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
 
     Returns:
         ndarray:
-            if len(arrs) == 0, returns `default`
+            if len(arrs) == 0, returns ``default``
             if len(arrs) == 1, returns arrs[0],
             if len(arrs) >= 2, returns
                 ufunc(...ufunc(ufunc(arrs[0], arrs[1]), arrs[2]),...arrs[n-1])
@@ -147,18 +150,20 @@ def isect_flags(arr, other):
 def atleast_nd(arr, n, front=False):
     r"""
     View inputs as arrays with at least n dimensions.
-    TODO: Submit as a PR to numpy
 
     Args:
-        arr (array_like): One array-like object.  Non-array inputs are
-                converted to arrays.  Arrays that already have n or more
-                dimensions are preserved.
-        n (int): number of dimensions to ensure
-        tofront (bool): if True new dimensions are added to the front of the
-            array.  otherwise they are added to the back.
+        arr (array_like):
+            An array-like object.  Non-array inputs are converted to arrays.
+            Arrays that already have n or more dimensions are preserved.
 
-    Returns
-    -------
+        n (int):
+            number of dimensions to ensure
+
+        front (bool, default=False):
+            if True new dimensions are added to the front of the array.
+            otherwise they are added to the back.
+
+    Returns:
         ndarray :
             An array with ``a.ndim >= n``.  Copies are avoided where possible,
             and views with three or more dimensions are returned.  For example,
@@ -166,12 +171,10 @@ def atleast_nd(arr, n, front=False):
             ``(1, N, 1)``, and a 2-D array of shape ``(M, N)`` becomes a view
             of shape ``(M, N, 1)``.
 
-    See Also
-    ---------
-        ensure_shape, np.atleast_1d, np.atleast_2d, np.atleast_3d
+    See Also:
+        numpy.atleast_1d, numpy.atleast_2d, numpy.atleast_3d
 
-    Example
-    -------
+    Example:
         >>> n = 2
         >>> arr = np.array([1, 1, 1])
         >>> arr_ = atleast_nd(arr, n)
@@ -180,9 +183,7 @@ def atleast_nd(arr, n, front=False):
         >>> print(result)
         [[1], [1], [1]]
 
-    Example
-    -------
-
+    Example:
         >>> n = 4
         >>> arr1 = [1, 1, 1]
         >>> arr2 = np.array(0)
@@ -236,7 +237,7 @@ def atleast_nd(arr, n, front=False):
 
 def argmaxima(arr, num, axis=None, ordered=True):
     """
-    Returns the top `num` maximum indicies.
+    Returns the top ``num`` maximum indicies.
 
     This can be significantly faster than using argsort.
 
@@ -352,7 +353,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
 
 def argminima(arr, num, axis=None, ordered=True):
     """
-    Returns the top `num` minimum indicies.
+    Returns the top ``num`` minimum indicies.
 
     This can be significantly faster than using argsort.
 
