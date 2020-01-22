@@ -12,8 +12,9 @@ class UsageConfig(scfg.Config):
     }
 
 
-def count_usage():
-    config = UsageConfig(cmdline=True)
+def count_usage(cmdline=True):
+
+    config = UsageConfig(cmdline=cmdline)
 
     import ubelt as ub
     import glob
@@ -30,7 +31,6 @@ def count_usage():
             for fpath in fpaths:
                 all_fpaths.append((name, fpath))
 
-    print('all_fpaths = {}'.format(ub.repr2(all_fpaths)))
     print('names = {}'.format(ub.repr2(names)))
 
     import re

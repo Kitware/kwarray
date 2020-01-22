@@ -46,5 +46,9 @@ if __name__ == '__main__':
     CommandLine:
         cd ~/code/kwarray/dev
         python gen_api_for_docs.py
+        python gen_api_for_docs.py --extra_modnames=bioharn,
+
+        # Paste output into
+        ~/code/kwarray/docs/source/index.rst
     """
     gen_api_for_docs()
