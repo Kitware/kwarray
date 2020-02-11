@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 * Added better docs to `kwarray.util_groups`.
 
+### Fixed
+* `ArrayAPI.numpy` and other "api-methods" now correctly raise a TypeError on
+  unknown data types. Previous behavior returned None.
+
 
 ## [Version 0.5.2] - Unreleased
 
