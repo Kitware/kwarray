@@ -93,6 +93,8 @@ class _ImplRegistry(object):
                     return numpy_func(data, *args, **kwargs)
                 elif isinstance(data, (list, tuple)):
                     return numpy_func(np.asarray(data), *args, **kwargs)
+                else:
+                    raise TypeError('unknown type {}'.format(type(data)))
             func.__name__ = str(key)  # the str wrap is for python2
         else:
             func = key
