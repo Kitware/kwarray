@@ -507,10 +507,39 @@ class DataFrameLight(ub.NiceRepr):
 
     def iterrows(self):
         """
+        Iterate over rows as (index, Dict) pairs.
+
+        Yields:
+            Tuple[int, Dict]: the index and a dictionary representing a row
+
         Example:
-            df_light = DataFrameLight._demodata(num=7)
-            df_light.iterrows()
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight._demodata(num=3)
+            >>> print(ub.repr2(list(self.iterrows())))
+            [
+                (0, {'bar': 0, 'baz': 2.73, 'foo': 0}),
+                (1, {'bar': 1, 'baz': 2.73, 'foo': 0}),
+                (2, {'bar': 2, 'baz': 2.73, 'foo': 0}),
+            ]
+
+        Benchmark:
+            >>> # xdoc: +REQUIRES(--bench)
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> import ubelt as ub
+            >>> df_light = DataFrameLight._demodata(num=1000)
+            >>> df_heavy = df_light.pandas()
+            >>> ti = ub.Timerit(21, bestof=3, verbose=2, unit='ms')
+            >>> ti.reset('light').call(lambda: list(df_light.iterrows()))
+            >>> ti.reset('heavy').call(lambda: list(df_heavy.iterrows()))
+            >>> # xdoctest: +IGNORE_WANT
+            Timed light for: 21 loops, best of 3
+                time per loop: best=0.834 ms, mean=0.850 ± 0.0 ms
+            Timed heavy for: 21 loops, best of 3
+                time per loop: best=45.007 ms, mean=45.633 ± 0.5 ms
         """
+        for idx in range(len(self)):
+            row = self._getrow(idx)
+            yield idx, row
 
 
 class DataFrameArray(DataFrameLight):
