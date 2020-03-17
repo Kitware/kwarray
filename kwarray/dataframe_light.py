@@ -57,7 +57,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('====== to_dict conversions =====')
         >>> _keys = ['list', 'dict', 'series', 'split', 'records', 'index']
         >>> results = []
-        >>> df = DataFrameLight._demodata(num=NUM)._pandas()
+        >>> df = DataFrameLight._demodata(num=NUM).pandas()
         >>> ti = ub.Timerit(verbose=False, unit='ms')
         >>> for key in _keys:
         >>>     result = ti.reset(key).call(lambda: df.to_dict(orient=key))
@@ -69,9 +69,9 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('==============')
         >>> print('====== DFLight Conversions =======')
         >>> ti = ub.Timerit(verbose=True, unit='ms')
-        >>> key = 'self._pandas'
+        >>> key = 'self.pandas'
         >>> self = DataFrameLight(df)
-        >>> ti.reset(key).call(lambda: self._pandas())
+        >>> ti.reset(key).call(lambda: self.pandas())
         >>> key = 'light-from-pandas'
         >>> ti.reset(key).call(lambda: DataFrameLight(df))
         >>> key = 'light-from-dict'
@@ -80,7 +80,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('====== BENCHMARK: .LOC[] =======')
         >>> ti = ub.Timerit(num=20, bestof=4, verbose=True, unit='ms')
         >>> df_light = DataFrameLight._demodata(num=NUM)
-        >>> df_heavy = df_light._pandas()
+        >>> df_heavy = df_light.pandas()
         >>> series_data = df_heavy.to_dict(orient='series')
         >>> list_data = df_heavy.to_dict(orient='list')
         >>> np_data = {k: v.values for k, v in df_heavy.to_dict(orient='series').items()}
@@ -150,7 +150,7 @@ class DataFrameLight(ub.NiceRepr):
         """
         Example:
             >>> self = DataFrameLight._demodata(num=7)
-            >>> other = self._pandas()
+            >>> other = self.pandas()
             >>> assert np.all(self == other)
         """
         self_vals = self.values
@@ -163,19 +163,23 @@ class DataFrameLight(ub.NiceRepr):
         return self_vals == other_vals
 
     def to_string(self, *args, **kwargs):
-        return self._pandas().to_string(*args, **kwargs)
+        return self.pandas().to_string(*args, **kwargs)
 
-    def _pandas(self):
+    def pandas(self):
         """
         Convert back to pandas if you need the full API
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> got = DataFrameLight(df_heavy)
             >>> assert got._data == df_light._data
         """
         return pd.DataFrame(self._data)
+
+    def _pandas(self):
+        """ Deprecated, use self.pandas instead """
+        return self.pandas()
 
     @classmethod
     def _demodata(cls, num=7):
@@ -281,7 +285,7 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> sub1 = df_light['bar']
             >>> sub2 = df_heavy['bar']
             >>> assert np.all(sub1 == sub2)
@@ -296,7 +300,7 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> value = [2] * len(df_light)
             >>> df_light['bar'] = value
             >>> df_heavy['bar'] = value
@@ -325,7 +329,7 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> indices = [0, 2, 3]
             >>> sub1 = df_light.take(indices)
             >>> sub2 = df_heavy.take(indices)
@@ -409,6 +413,11 @@ class DataFrameLight(ub.NiceRepr):
         return cls.union(*others)
 
     @classmethod
+    def from_pandas(cls, df):
+        _raw = {k: v.values for k, v in df.to_dict(orient='series').items()}
+        return cls(_raw)
+
+    @classmethod
     def from_dict(cls, records):
         record_iter = iter(records)
         columns = {}
@@ -442,7 +451,7 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> res1 = list(df_light.groupby('bar'))
             >>> res2 = list(df_heavy.groupby('bar'))
             >>> assert len(res1) == len(res2)
@@ -454,7 +463,7 @@ class DataFrameLight(ub.NiceRepr):
             >>> self['cx'] = (np.random.rand(len(self)) * 10).astype(np.int)
             >>> # As expected, our custom restricted implementation is faster
             >>> # than pandas
-            >>> ub.Timerit(100).call(lambda: dict(list(self._pandas().groupby('cx')))).print()
+            >>> ub.Timerit(100).call(lambda: dict(list(self.pandas().groupby('cx')))).print()
             >>> ub.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
         """
         if len(args) == 0 and len(kwargs) == 0:
@@ -463,7 +472,7 @@ class DataFrameLight(ub.NiceRepr):
             groups = [self.take(idxs) for idxs in groupxs]
             return zip(unique, groups)
         else:
-            return self._pandas().groupby(by=by)
+            return self.pandas().groupby(by=by)
 
     def rename(self, mapper=None, columns=None, axis=None, inplace=False):
         """
@@ -471,7 +480,7 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light._pandas()
+            >>> df_heavy = df_light.pandas()
             >>> mapper = {'foo': 'fi'}
             >>> res1 = df_light.rename(columns=mapper)
             >>> res2 = df_heavy.rename(columns=mapper)
@@ -495,6 +504,13 @@ class DataFrameLight(ub.NiceRepr):
             if old in self._data:
                 self._data[new] = self._data.pop(old)
         return self
+
+    def iterrows(self):
+        """
+        Example:
+            df_light = DataFrameLight._demodata(num=7)
+            df_light.iterrows()
+        """
 
 
 class DataFrameArray(DataFrameLight):

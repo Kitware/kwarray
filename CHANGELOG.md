@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.5
 
+### Added
+* `DataFrameLight.from_pandas`
+* `DataFrameLight.iterrows`
+* `DataFrameLight.pandas` in favor of `_pandas`
 
 ## Version 0.5.4 - Released 2020-02-19 
 
