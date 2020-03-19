@@ -467,11 +467,13 @@ class DataFrameLight(ub.NiceRepr):
             >>> ub.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
         """
         if len(args) == 0 and len(kwargs) == 0:
+            # In this special case we can be fast
             import kwarray
             unique, groupxs = kwarray.group_indices(self[by])
             groups = [self.take(idxs) for idxs in groupxs]
             return zip(unique, groups)
         else:
+            # otherwise we need to use the slow method
             return self.pandas().groupby(by=by)
 
     def rename(self, mapper=None, columns=None, axis=None, inplace=False):
