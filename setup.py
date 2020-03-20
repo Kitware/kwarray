@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-from os.path import dirname, exists
+from os.path import dirname, exists, join
 from setuptools import setup
 from setuptools import find_packages
 
@@ -34,7 +34,6 @@ def parse_description():
         pandoc --from=markdown --to=rst --output=README.rst README.md
         python -c "import setup; print(setup.parse_description())"
     """
-    from os.path import dirname, join, exists
     readme_fpath = join(dirname(__file__), 'README.rst')
     # This breaks on pip install, so check that it exists.
     if exists(readme_fpath):
@@ -181,6 +180,12 @@ if __name__ == '__main__':
             # List of classifiers available at:
             # https://pypi.python.org/pypi?%3Aaction=list_classifiers
             'Development Status :: 4 - Beta',
+            'Intended Audience :: Developers',
+            'Intended Audience :: Science/Research',
+            'Topic :: Scientific/Engineering',
+            'Topic :: Software Development',
+            'Topic :: Software Development :: Libraries :: Python Modules',
+            'Topic :: Utilities',
             # This should be interpreted as Apache License v2.0
             'License :: OSI Approved :: Apache Software License',
             # Supported Python versions
