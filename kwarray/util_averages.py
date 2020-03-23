@@ -35,10 +35,11 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> from kwarray.util_averages import *  # NOQA
         >>> axis = 0
         >>> rng = np.random.RandomState(0)
         >>> inputs = rng.rand(10, 2).astype(np.float32)
-        >>> stats = stats_dict(inputs, axis=axis, nan=False)
+        >>> stats = stats_dict(inputs, axis=axis, nan=False, median=True)
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=1, precision=4, with_dtype=True))
         >>> print(result)
@@ -116,7 +117,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if shape:
             stats['shape'] = nparr.shape
         if median:
-            stats['med'] = np.nanmedian(nparr)
+            stats['med'] = np.nanmedian(nparr, axis=axis)
         if nan:
             stats['num_nan'] = np.isnan(nparr).sum()
         if sum:
