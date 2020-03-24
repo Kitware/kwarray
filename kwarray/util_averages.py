@@ -62,7 +62,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=0, precision=1, strkeys=True))
         >>> print(result)
-        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, shape: (100,), num_nan: 1}
+        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, num_nan: 1, shape: (100,)}
     """
     stats = collections.OrderedDict([])
 
