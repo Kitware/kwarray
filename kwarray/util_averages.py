@@ -35,10 +35,11 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> from kwarray.util_averages import *  # NOQA
         >>> axis = 0
         >>> rng = np.random.RandomState(0)
         >>> inputs = rng.rand(10, 2).astype(np.float32)
-        >>> stats = stats_dict(inputs, axis=axis, nan=False)
+        >>> stats = stats_dict(inputs, axis=axis, nan=False, median=True)
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=1, precision=4, with_dtype=True))
         >>> print(result)
@@ -47,6 +48,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             'std': np.array([ 0.2854,  0.2517], dtype=np.float32),
             'min': np.array([ 0.0202,  0.0871], dtype=np.float32),
             'max': np.array([ 0.9637,  0.9256], dtype=np.float32),
+            'med': np.array([0.5584, 0.6805], dtype=np.float32),
             'shape': (10, 2),
         }
 
@@ -60,7 +62,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=0, precision=1, strkeys=True))
         >>> print(result)
-        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, shape: (100,), num_nan: 1}
+        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, num_nan: 1, shape: (100,)}
     """
     stats = collections.OrderedDict([])
 
@@ -111,17 +113,17 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if n_extreme:
             stats['nMin'] = np.int32(nMin)
             stats['nMax'] = np.int32(nMax)
-        if size:
-            stats['size'] = nparr.size
-        if shape:
-            stats['shape'] = nparr.shape
         if median:
-            stats['med'] = np.nanmedian(nparr)
+            stats['med'] = np.nanmedian(nparr, axis=axis)
         if nan:
             stats['num_nan'] = np.isnan(nparr).sum()
         if sum:
             sumfunc = np.nansum if nan else np.sum
             stats['sum'] = sumfunc(nparr, axis=axis)
+        if size:
+            stats['size'] = nparr.size
+        if shape:
+            stats['shape'] = nparr.shape
     return stats
 
 
