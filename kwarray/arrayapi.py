@@ -641,8 +641,27 @@ class TorchImpls(object):
         return torch.ceil(data, out=out).int()
 
     @_torchmethod(func_type='data_func')
-    def round(data, out=None):
-        return torch.round(data, out=out)
+    def round(data, decimals=0, out=None):
+        """
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> np_data = rng.random(10) * 100
+            >>> pt_data = torch.from_numpy(np_data)
+            >>> a = kwarray.ArrayAPI.round(np_data)
+            >>> b = kwarray.ArrayAPI.round(pt_data)
+            >>> assert np.all(a == b.numpy())
+            >>> a = kwarray.ArrayAPI.round(np_data, 2)
+            >>> b = kwarray.ArrayAPI.round(pt_data, 2)
+            >>> assert np.all(a == b.numpy())
+        """
+        if decimals == 0:
+            return torch.round(data, out=out)
+        else:
+            factor = 10 ** decimals
+            result = torch.round(data * factor, out=out)
+            result /= factor
+            return result
 
     @_torchmethod(func_type='data_func')
     def iround(data, out=None, dtype=np.int):
@@ -849,8 +868,8 @@ class NumpyImpls(object):
         return np.ceil(data, out=out).astype(np.int32)
 
     @_numpymethod(func_type='data_func')
-    def round(data, out=None):
-        return np.round(data, out=out)
+    def round(data, decimals=0, out=None):
+        return np.round(data, decimals=decimals, out=out)
 
     @_numpymethod(func_type='data_func')
     def iround(data, out=None, dtype=np.int):

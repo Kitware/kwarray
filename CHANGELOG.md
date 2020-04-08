@@ -3,7 +3,13 @@
 This changelog follows the specifications detailed in: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
-## Version 0.5.6 - Unreleased
+
+## Version 0.5.7 - Unreleased
+
+### Added
+* `ArrayAPI.round` now accepts decimals keyword arg
+
+## Version 0.5.6 - 2020-04-08
 
 ### Fixed
 * `stats_dict` median now respects axis kwarg
@@ -85,5 +91,3 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `dataframe_light.py`
     - `arrayapi.py`
     - `algo_assignment.py`
-
-## Version 0.5.7 - Unreleased
