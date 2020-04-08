@@ -646,7 +646,7 @@ class TorchImpls(object):
         Example:
             >>> import kwarray
             >>> rng = kwarray.ensure_rng(0)
-            >>> np_data = rng.random(10) * 100
+            >>> np_data = rng.rand(10) * 100
             >>> pt_data = torch.from_numpy(np_data)
             >>> a = kwarray.ArrayAPI.round(np_data)
             >>> b = kwarray.ArrayAPI.round(pt_data)
