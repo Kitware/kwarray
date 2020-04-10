@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 * `ArrayAPI.round` now accepts decimals keyword arg
+* `algo_setcover`
 
 ## Version 0.5.6 - 2020-04-08
 
