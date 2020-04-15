@@ -94,3 +94,5 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `algo_assignment.py`
 
 ## Version 0.5.8 - Unreleased
+
+## Version 0.5.9 - Unreleased
