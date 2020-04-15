@@ -87,6 +87,9 @@ that you lose ``loc``, but ``iloc`` is available.
 ``mincost_assignment`` is the Munkres / Hungarian algorithm. It solves the
 assignment problem.
 
+``setcover`` - solves the minimum weighted set cover problem using either an
+approximate or an exact solution.
+
 ``one_hot_embedding`` is a fast numpy / torch way to perform the often needed OHE
 deep-learning trick.
 
