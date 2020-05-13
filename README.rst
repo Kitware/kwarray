@@ -5,7 +5,16 @@ The Kitware Array Module
 
 |GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| |ReadTheDocs|
 
+The main webpage for this project is: https://gitlab.kitware.com/computer-vision/kwarray
+
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
+
+The ``kwarray`` module started as extensions for numpy + a simplified
+pandas-like DataFrame object with much faster item row and column access. But
+it also include an ArrayAPI, which is a wrapper that allows 100%
+interoperability between torch and numpy. It also contains a few algorithms
+like setcover and mincost_assignment. 
+
 
 Read the docs here: https://kwarray.readthedocs.io/en/master/
 
@@ -30,7 +39,6 @@ The top-level API is:
     from .util_random import (ensure_rng, random_combinations, random_product,
                               seed_global, shuffle,)
     from .util_torch import (one_hot_embedding, one_hot_lookup,)
-
 
 
 The ArrayAPI
