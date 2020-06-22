@@ -5,7 +5,16 @@ The Kitware Array Module
 
 |GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| |ReadTheDocs|
 
+The main webpage for this project is: https://gitlab.kitware.com/computer-vision/kwarray
+
 The ``kwarray`` module implements a small set of pure-python extensions to numpy and torch.
+
+The ``kwarray`` module started as extensions for numpy + a simplified
+pandas-like DataFrame object with much faster item row and column access. But
+it also include an ArrayAPI, which is a wrapper that allows 100%
+interoperability between torch and numpy. It also contains a few algorithms
+like setcover and mincost_assignment. 
+
 
 Read the docs here: https://kwarray.readthedocs.io/en/master/
 
@@ -13,10 +22,10 @@ The top-level API is:
 
 .. code:: python
 
-    from .arrayapi import ArrayAPI
-    from . import distributions
+    from kwarray.arrayapi import ArrayAPI
     from .algo_assignment import (maxvalue_assignment, mincost_assignment,
                                   mindist_assignment,)
+    from .algo_setcover import (setcover,)
     from .dataframe_light import (DataFrameArray, DataFrameLight, LocLight,)
     from .fast_rand import (standard_normal, standard_normal32, standard_normal64,
                             uniform, uniform32,)
@@ -24,11 +33,12 @@ The top-level API is:
     from .util_groups import (apply_grouping, group_consecutive,
                               group_consecutive_indices, group_indices,
                               group_items,)
+    from .util_misc import (FlatIndexer,)
     from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
                              isect_flags, iter_reduce_ufunc,)
     from .util_random import (ensure_rng, random_combinations, random_product,
                               seed_global, shuffle,)
-    from .util_torch import (one_hot_embedding,)
+    from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
 
 The ArrayAPI
@@ -84,6 +94,9 @@ that you lose ``loc``, but ``iloc`` is available.
 
 ``mincost_assignment`` is the Munkres / Hungarian algorithm. It solves the
 assignment problem.
+
+``setcover`` - solves the minimum weighted set cover problem using either an
+approximate or an exact solution.
 
 ``one_hot_embedding`` is a fast numpy / torch way to perform the often needed OHE
 deep-learning trick.

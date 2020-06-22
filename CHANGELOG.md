@@ -4,7 +4,17 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.7 - Unreleased
+## Version 0.5.9 - Unreleased
+
+### Added:
+* `DataFrameLight.to_dict`
+
+## Version 0.5.8 - 2020-04-15
+
+### Changed
+* Fixed publish issues with previous versions
+
+## Version 0.5.7 - 2020-04-14
 
 ### Added
 * `ArrayAPI.round` now accepts decimals keyword arg
@@ -92,5 +102,3 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `dataframe_light.py`
     - `arrayapi.py`
     - `algo_assignment.py`
-
-## Version 0.5.8 - Unreleased
