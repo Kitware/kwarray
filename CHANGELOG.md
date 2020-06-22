@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.9 - Unreleased
 
+### Added:
+* `DataFrameLight.to_dict`
+
 ## Version 0.5.8 - 2020-04-15
 
 ### Changed

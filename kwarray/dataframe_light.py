@@ -165,6 +165,36 @@ class DataFrameLight(ub.NiceRepr):
     def to_string(self, *args, **kwargs):
         return self.pandas().to_string(*args, **kwargs)
 
+    def to_dict(self, orient='dict', into=dict):
+        """
+        Convert the data frame into a dictionary.
+
+        Args:
+            orient (str): Currently naitively suports orient in
+                {'dict', 'list'}, otherwise we fallback to pandas conversion
+                and call its to_dict method.
+
+            into (type): type of dictionary to transform into
+
+        Returns:
+           dict
+
+        Example:
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight._demodata(num=7)
+            >>> print(self.to_dict(orient='dict'))
+            >>> print(self.to_dict(orient='list'))
+        """
+        if orient == 'dict':
+            out = into(self.iterrows())
+        elif orient == 'list':
+            import kwarray
+            out = into((k, kwarray.ArrayAPI.tolist(v))
+                        for k, v in self._data.items())
+        else:
+            out = self.pandas().to_dict(orient=orient, into=into)
+        return out
+
     def pandas(self):
         """
         Convert back to pandas if you need the full API
