@@ -5,9 +5,16 @@ algorithm (also known as Munkres or maximum linear-sum-assignment).
 
 The core implementation of munkres in in scipy. Recent versions are written in
 C, so their speed should be reflected here.
+
+TODO:
+   - [ ] Implement linear-time maximum weight matching approximation algorithm
+     from this paper: https://web.eecs.umich.edu/~pettie/papers/ApproxMWM-JACM.pdf
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
+# from distutils.version import LooseVersion
+# import scipy
+# SCIPY_GE_1_4 = LooseVersion(scipy.__version__) >= LooseVersion('1.4.0')
 
 
 def mindist_assignment(vecs1, vecs2, p=2):
@@ -53,7 +60,8 @@ def mincost_assignment(cost):
     """
     Finds the minimum cost assignment based on a NxM cost matrix, subject to
     the constraint that each row can match at most one column and each column
-    can match at most one row.
+    can match at most one row. Any pair with a cost of infinity will not be
+    assigned.
 
     Args:
         cost (ndarray): NxM matrix, cost[i, j] is the cost to match i and j
@@ -64,6 +72,7 @@ def mincost_assignment(cost):
 
     CommandLine:
         xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mincost_assignment
+
 
     Example:
         >>> # Costs to match item i in set1 with item j in set2.
@@ -95,8 +104,8 @@ def mincost_assignment(cost):
         >>> cost = np.array([
         >>>     [0, 0, 0, 0],
         >>>     [4, 1, 5, -3],
-        >>>     [1, 9, np.inf, 4],
-        >>>     [9, -2, np.inf, 4],
+        >>>     [1, 9, np.inf, 0.1],
+        >>>     [np.inf, np.inf, np.inf, 100],
         >>> ])
         >>> ret = mincost_assignment(cost)
         >>> print('Assignment: {}'.format(ret[0]))
@@ -117,6 +126,8 @@ def mincost_assignment(cost):
     is_positive = cost_matrix > 0
     is_negative = cost_matrix < 0
     # Note: in scipy 1.4 input costs may be infinte, should fix for this case
+    # (also note, they don't allow a budgeted solution, so maybe we have to use
+    # effective values)
     feasible_pos_vals = cost_matrix[(is_finite & is_positive)]
     feasible_neg_vals = cost_matrix[(is_finite & is_negative)]
     feasible_extent = feasible_pos_vals.sum() - feasible_neg_vals.sum()
@@ -139,7 +150,8 @@ def mincost_assignment(cost):
 
 def maxvalue_assignment(value):
     """
-    Finds the maximum value assignment based on a NxM value matrix
+    Finds the maximum value assignment based on a NxM value matrix. Any pair
+    with a non-positive value will not be assigned.
 
     Args:
         value (ndarray): NxM matrix, value[i, j] is the value of matching i and j
