@@ -110,8 +110,8 @@ def mincost_assignment(cost):
         >>> ret = mincost_assignment(cost)
         >>> print('Assignment: {}'.format(ret[0]))
         >>> print('Total cost: {}'.format(ret[1]))
-        Assignment: [(0, 2), (1, 3), (2, 0), (3, 1)]
-        Total cost: -4.0
+        Assignment: [(0, 2), (1, 1), (2, 0), (3, 3)]
+        Total cost: 102.0
     """
     from scipy.optimize import linear_sum_assignment
     n1, n2 = cost.shape
