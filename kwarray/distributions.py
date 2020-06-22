@@ -843,8 +843,8 @@ class TruncNormal(Distribution):
 
     Example:
         >>> self = TruncNormal(rng=0)
-        >>> self()
-        0.1226...
+        >>> self()  # output of this changes before/after scipy version 1.5
+        ...0.1226...
 
     Example:
         >>> low = -np.pi / 16
