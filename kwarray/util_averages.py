@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import collections
 import numpy as np
 import torch
+import ubelt as ub
 
 
 def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
@@ -169,3 +170,127 @@ def _gmean(a, axis=0, dtype=None, clobber=False):
     # And reuse memory again when computing the final result
     result = np.exp(mean_log_a, out=mean_log_a)
     return result
+
+
+class RunningStats(ub.NiceRepr):
+    """
+    Dynamically records per-element array statistics and can summarized them
+    per-element, across channels, or globally.
+
+    TODO:
+        - [ ] This may need a few API tweaks and good documentation
+
+    Example:
+        >>> run = RunningStats()
+        >>> ch1 = np.array([[0, 1], [3, 4]])
+        >>> ch2 = np.zeros((2, 2))
+        >>> img = np.dstack([ch1, ch2])
+        >>> run.update(np.dstack([ch1, ch2]))
+        >>> run.update(np.dstack([ch1 + 1, ch2]))
+        >>> run.update(np.dstack([ch1 + 2, ch2]))
+        >>> # Scalar averages
+        >>> print(ub.repr2(run.simple(), nobr=1, si=True))
+        >>> # Per channel averages
+        >>> print(ub.repr2(ub.map_vals(lambda x: np.array(x).tolist(), run.simple()), nobr=1, si=True, nl=1))
+        >>> # Per-pixel averages
+        >>> print(ub.repr2(ub.map_vals(lambda x: np.array(x).tolist(), run.detail()), nobr=1, si=True, nl=1))
+        """
+
+    def __init__(run):
+        run.raw_max = -np.inf
+        run.raw_min = np.inf
+        run.raw_total = 0
+        run.raw_squares = 0
+        run.n = 0
+
+    def __nice__(self):
+        return '{}'.format(self.shape)
+
+    @property
+    def shape(run):
+        try:
+            return run.raw_total.shape
+        except Exception:
+            return None
+
+    def update(run, data):
+        """
+        Updates statistics across all data dimensions on a per-element basis
+        """
+        run.n += 1
+        run.raw_max = np.maximum(run.raw_max, data)
+        run.raw_min = np.minimum(run.raw_min, data)
+        run.raw_total += data
+        run.raw_squares += data ** 2
+
+    def _sumsq_std(run, total, squares, n):
+        """
+        Sum of squares method to compute standard deviation
+        """
+        numer = (n * squares - total ** 2)
+        denom = (n * (n - 1.0))
+        std = np.sqrt(numer / denom)
+        return std
+
+    def summarize(run, axis=None):
+        """
+        Compute summary statistics across a one or more dimension
+
+        Args:
+            axis (int | List[int] | None): axis or axes to summarize over,
+                if None, all axes are summarized.
+
+        Returns:
+            Dict: containing minimum, maximum, mean, std, etc..
+        """
+        if run.n <= 0:
+            raise RuntimeError('No statistics have been accumulated')
+        maxi    = run.raw_max.max(axis=axis, keepdims=True)
+        mini    = run.raw_min.min(axis=axis, keepdims=True)
+        total   = run.raw_total.sum(axis=axis, keepdims=True)
+        squares = run.raw_squares.sum(axis=axis, keepdims=True)
+        if not hasattr(run.raw_total, 'shape'):
+            n = run.n
+        elif axis is None:
+            n = run.n * np.prod(run.raw_total.shape)
+        else:
+            n = run.n * np.prod(np.take(run.raw_total.shape, axis))
+        info = ub.odict([
+            ('n', n),
+            ('max', maxi),
+            ('min', mini),
+            ('total', total),
+            ('squares', squares),
+            ('mean', total / n),
+            ('std', run._sumsq_std(total, squares, n)),
+        ])
+        return info
+
+    def current(run):
+        """
+        Returns current staticis on a per-element basis
+        (not summarized over any axis)
+
+        TODO:
+            - [ ] I want this method and summarize to be unified somehow.
+                I don't know how to paramatarize it because axis=None usually
+                means summarize over everything, and I need to way to encode,
+                summarize over nothing but the "sequence" dimension (which was
+                given incrementally by the update function), which is what
+                this function does.
+        """
+        total = run.raw_total
+        squares = run.raw_squares
+        maxi = run.raw_max
+        mini = run.raw_min
+        n = run.n
+        info = ub.odict([
+            ('n', n),
+            ('max', maxi),
+            ('min', mini),
+            ('total', total),
+            ('squares', squares),
+            ('mean', total / n),
+            ('std', run._sumsq_std(total, squares, n)),
+        ])
+        return info
