@@ -188,12 +188,17 @@ class RunningStats(ub.NiceRepr):
         >>> run.update(np.dstack([ch1, ch2]))
         >>> run.update(np.dstack([ch1 + 1, ch2]))
         >>> run.update(np.dstack([ch1 + 2, ch2]))
-        >>> # Scalar averages
-        >>> print(ub.repr2(run.simple(), nobr=1, si=True))
-        >>> # Per channel averages
-        >>> print(ub.repr2(ub.map_vals(lambda x: np.array(x).tolist(), run.simple()), nobr=1, si=True, nl=1))
-        >>> # Per-pixel averages
-        >>> print(ub.repr2(ub.map_vals(lambda x: np.array(x).tolist(), run.detail()), nobr=1, si=True, nl=1))
+        >>> # No marginalization
+        >>> print('current-ave = ' + ub.repr2(run.summarize(axis=ub.NoParam), nl=2, precision=3))
+        >>> # Average over channels (keeps spatial dims separate)
+        >>> print('chann-ave(k=1) = ' + ub.repr2(run.summarize(axis=0), nl=2, precision=3))
+        >>> print('chann-ave(k=0) = ' + ub.repr2(run.summarize(axis=0, keepdims=0), nl=2, precision=3))
+        >>> # Average over spatial dims (keeps channels separate)
+        >>> print('spatial-ave(k=1) = ' + ub.repr2(run.summarize(axis=(1, 2)), nl=2, precision=3))
+        >>> print('spatial-ave(k=0) = ' + ub.repr2(run.summarize(axis=(1, 2), keepdims=0), nl=2, precision=3))
+        >>> # Average over all dims
+        >>> print('alldim-ave(k=1) = ' + ub.repr2(run.summarize(axis=None), nl=2, precision=3))
+        >>> print('alldim-ave(k=0) = ' + ub.repr2(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
         """
 
     def __init__(run):
@@ -232,39 +237,63 @@ class RunningStats(ub.NiceRepr):
         std = np.sqrt(numer / denom)
         return std
 
-    def summarize(run, axis=None):
+    def summarize(run, axis=None, keepdims=True):
         """
         Compute summary statistics across a one or more dimension
 
         Args:
-            axis (int | List[int] | None): axis or axes to summarize over,
+            axis (int | List[int] | None | ub.NoParam):
+                axis or axes to summarize over,
                 if None, all axes are summarized.
+                if ub.NoParam, no axes are summarized the current result is
+                    returned.
+
+            keepdims (bool, default=True):
+                if False removes the dimensions that are summarized over
 
         Returns:
             Dict: containing minimum, maximum, mean, std, etc..
         """
-        if run.n <= 0:
-            raise RuntimeError('No statistics have been accumulated')
-        maxi    = run.raw_max.max(axis=axis, keepdims=True)
-        mini    = run.raw_min.min(axis=axis, keepdims=True)
-        total   = run.raw_total.sum(axis=axis, keepdims=True)
-        squares = run.raw_squares.sum(axis=axis, keepdims=True)
-        if not hasattr(run.raw_total, 'shape'):
+        if axis is ub.NoParam:
+            total = run.raw_total
+            squares = run.raw_squares
+            maxi = run.raw_max
+            mini = run.raw_min
             n = run.n
-        elif axis is None:
-            n = run.n * np.prod(run.raw_total.shape)
+            info = ub.odict([
+                ('n', n),
+                ('max', maxi),
+                ('min', mini),
+                ('total', total),
+                ('squares', squares),
+                ('mean', total / n),
+                ('std', run._sumsq_std(total, squares, n)),
+            ])
+            return info
         else:
-            n = run.n * np.prod(np.take(run.raw_total.shape, axis))
-        info = ub.odict([
-            ('n', n),
-            ('max', maxi),
-            ('min', mini),
-            ('total', total),
-            ('squares', squares),
-            ('mean', total / n),
-            ('std', run._sumsq_std(total, squares, n)),
-        ])
-        return info
+            if run.n <= 0:
+                raise RuntimeError('No statistics have been accumulated')
+            total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+            squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
+            maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
+            mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
+            if not hasattr(run.raw_total, 'shape'):
+                n = run.n
+            elif axis is None:
+                n = run.n * np.prod(run.raw_total.shape)
+            else:
+                n = run.n * np.prod(np.take(run.raw_total.shape, axis))
+
+            info = ub.odict([
+                ('n', n),
+                ('max', maxi),
+                ('min', mini),
+                ('total', total),
+                ('squares', squares),
+                ('mean', total / n),
+                ('std', run._sumsq_std(total, squares, n)),
+            ])
+            return info
 
     def current(run):
         """
@@ -272,25 +301,20 @@ class RunningStats(ub.NiceRepr):
         (not summarized over any axis)
 
         TODO:
-            - [ ] I want this method and summarize to be unified somehow.
+            - [X] I want this method and summarize to be unified somehow.
                 I don't know how to paramatarize it because axis=None usually
                 means summarize over everything, and I need to way to encode,
                 summarize over nothing but the "sequence" dimension (which was
                 given incrementally by the update function), which is what
                 this function does.
         """
-        total = run.raw_total
-        squares = run.raw_squares
-        maxi = run.raw_max
-        mini = run.raw_min
-        n = run.n
-        info = ub.odict([
-            ('n', n),
-            ('max', maxi),
-            ('min', mini),
-            ('total', total),
-            ('squares', squares),
-            ('mean', total / n),
-            ('std', run._sumsq_std(total, squares, n)),
-        ])
+        info = run.summarize(axis=ub.NoParam)
         return info
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        python ~/code/kwarray/kwarray/util_averages.py
+    """
+    import xdoctest
+    xdoctest.doctest_module(__file__)
