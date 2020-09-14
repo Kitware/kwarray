@@ -118,10 +118,25 @@ def one_hot_lookup(probs, labels):
         >>> labels = np.array([0, 1, 2, 1])
         >>> one_hot_lookup(probs, labels)
         array([ 0,  4,  8, 10])
+
+    Example:
+        >>> import torch
+        >>> probs = torch.from_numpy(np.array([
+        >>>     [0, 1, 2],
+        >>>     [3, 4, 5],
+        >>>     [6, 7, 8],
+        >>>     [9, 10, 11],
+        >>> ]))
+        >>> labels = torch.from_numpy(np.array([0, 1, 2, 1]))
+        >>> one_hot_lookup(probs, labels)
+        tensor([ 0,  4,  8, 10])
     """
-    assert not torch.is_tensor(labels), 'not implemented yet'
-    # ohe = kwarray.one_hot_embedding(labels, probs.shape[1]).astype(np.bool)
-    # Constructing the OHE with a small dtype offers a sizable speed advantage
-    ohe = np.eye(probs.shape[1], dtype=np.bool)[labels]
-    out = probs[ohe]
+    if torch.is_tensor(labels):
+        ohe = torch.eye(probs.shape[1], dtype=torch.bool, device=labels.device)[labels]
+        out = probs[ohe]
+    else:
+        # ohe = kwarray.one_hot_embedding(labels, probs.shape[1]).astype(np.bool)
+        # Constructing the OHE with a small dtype offers a sizable speed advantage
+        ohe = np.eye(probs.shape[1], dtype=np.bool)[labels]
+        out = probs[ohe]
     return out
