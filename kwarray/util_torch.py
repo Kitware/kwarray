@@ -129,7 +129,7 @@ def one_hot_lookup(probs, labels):
         >>> ]))
         >>> labels = torch.from_numpy(np.array([0, 1, 2, 1])).long()
         >>> one_hot_lookup(probs, labels)
-        tensor([ 0,  4,  8, 10])
+        tensor([ 0,  4,  8, 10]...)
     """
     if torch.is_tensor(labels):
         ohe = torch.eye(probs.shape[1], dtype=torch.bool, device=labels.device)[labels]
