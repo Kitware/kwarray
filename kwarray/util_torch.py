@@ -127,7 +127,7 @@ def one_hot_lookup(probs, labels):
         >>>     [6, 7, 8],
         >>>     [9, 10, 11],
         >>> ]))
-        >>> labels = torch.from_numpy(np.array([0, 1, 2, 1]))
+        >>> labels = torch.from_numpy(np.array([0, 1, 2, 1])).long()
         >>> one_hot_lookup(probs, labels)
         tensor([ 0,  4,  8, 10])
     """
