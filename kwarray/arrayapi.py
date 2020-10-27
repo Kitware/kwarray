@@ -13,6 +13,10 @@ Example:
     >>> impl2 = ArrayAPI.impl(data2)
     >>> result1 = impl1.sum(data1, axis=0)
     >>> result2 = impl2.sum(data2, axis=0)
+    >>> res1_np = ArrayAPI.numpy(result1)
+    >>> res2_np = ArrayAPI.numpy(result2)
+    >>> print('res1_np = {!r}'.format(res1_np))
+    >>> print('res2_np = {!r}'.format(res2_np))
     >>> assert np.all(impl1.numpy(result1) == impl2.numpy(result2))
     >>> # Method 2: choose the impl on the fly
     >>> result1 = ArrayAPI.sum(data1, axis=0)
