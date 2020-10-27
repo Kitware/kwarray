@@ -90,7 +90,8 @@ class _ImplRegistry(object):
             # numpy_func = self.registered['numpy'][key]['func']
             # torch_func = self.registered['torch'][key]['func']
             numpy_func = getattr(NumpyImpls, key)
-            torch_func = getattr(TorchImpls, key)
+            if torch is not None:
+                torch_func = getattr(TorchImpls, key)
             def func(data, *args, **kwargs):
                 if torch is not None and torch.is_tensor(data):
                     return torch_func(data, *args, **kwargs)
