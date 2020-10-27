@@ -1086,7 +1086,7 @@ class ArrayAPI(object):
 TorchNumpyCompat = ArrayAPI  # backwards compat
 
 
-if __debug__:
+if __debug__ and torch is not None:
     _REGISTERY._ensure_datamethods_names_are_registered()
 
 
