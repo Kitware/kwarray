@@ -3,6 +3,7 @@
 Attempts to expose a common API that works for both Tensors and ndarrays
 
 Example:
+    >>> # xdoctest: +REQUIRES(module:torch)
     >>> import torch
     >>> import numpy as np
     >>> data1 = torch.rand(10, 10)
@@ -19,6 +20,7 @@ Example:
     >>> assert np.all(ArrayAPI.numpy(result1) == ArrayAPI.numpy(result2))
 
 Example:
+    >>> # xdoctest: +REQUIRES(module:torch)
     >>> import torch
     >>> import numpy as np
     >>> data1 = torch.rand(10, 10)
