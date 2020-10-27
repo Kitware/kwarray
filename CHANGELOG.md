@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added:
 * `DataFrameLight.to_dict`
 
+### Changed
+* Torch is now an optional dependency
+* Pandas is now an optional dependency
+
 ## Version 0.5.8 - 2020-04-15
 
 ### Changed
@@ -102,3 +106,5 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `dataframe_light.py`
     - `arrayapi.py`
     - `algo_assignment.py`
+
+## Version 0.5.10 - Unreleased

@@ -7,9 +7,13 @@ For data where more complex ids are needed you must use pandas.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import ubelt as ub
-import pandas as pd
 import numpy as np
 import copy
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
 
 
 __version__ = '0.0.1'
@@ -80,6 +84,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('====== BENCHMARK: .LOC[] =======')
         >>> ti = ub.Timerit(num=20, bestof=4, verbose=True, unit='ms')
         >>> df_light = DataFrameLight._demodata(num=NUM)
+        >>> # xdoctest: +REQUIRES(module:pandas)
         >>> df_heavy = df_light.pandas()
         >>> series_data = df_heavy.to_dict(orient='series')
         >>> list_data = df_heavy.to_dict(orient='list')
@@ -149,6 +154,7 @@ class DataFrameLight(ub.NiceRepr):
     def __eq__(self, other):
         """
         Example:
+            >>> # xdoctest: +REQUIRES(module:pandas)
             >>> self = DataFrameLight._demodata(num=7)
             >>> other = self.pandas()
             >>> assert np.all(self == other)
@@ -156,7 +162,7 @@ class DataFrameLight(ub.NiceRepr):
         self_vals = self.values
         if isinstance(other, DataFrameLight):
             other_vals = other.values
-        if isinstance(other, pd.DataFrame):
+        if pd is not None and isinstance(other, pd.DataFrame):
             other_vals = other.reindex(columns=self.columns).values
         else:
             other_vals = other
@@ -200,11 +206,14 @@ class DataFrameLight(ub.NiceRepr):
         Convert back to pandas if you need the full API
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:pandas)
             >>> df_light = DataFrameLight._demodata(num=7)
             >>> df_heavy = df_light.pandas()
             >>> got = DataFrameLight(df_heavy)
             >>> assert got._data == df_light._data
         """
+        if pd is None:
+            raise Exception('Pandas is not available')
         return pd.DataFrame(self._data)
 
     def _pandas(self):
@@ -262,7 +271,7 @@ class DataFrameLight(ub.NiceRepr):
                 assert ub.allsame(lens)
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
-        elif isinstance(self._raw, pd.DataFrame):
+        elif pd is not None and isinstance(self._raw, pd.DataFrame):
             self._data = self._raw.to_dict(orient='list')
         else:
             raise TypeError('Unknown _raw type')
@@ -315,8 +324,9 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> sub1 = df_light['bar']
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> sub2 = df_heavy['bar']
             >>> assert np.all(sub1 == sub2)
         """
@@ -330,9 +340,10 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> value = [2] * len(df_light)
             >>> df_light['bar'] = value
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> df_heavy['bar'] = value
             >>> assert np.all(df_light == df_heavy)
         """
@@ -359,9 +370,10 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> indices = [0, 2, 3]
             >>> sub1 = df_light.take(indices)
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> sub2 = df_heavy.take(indices)
             >>> assert np.all(sub1 == sub2)
         """
@@ -481,8 +493,9 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> res1 = list(df_light.groupby('bar'))
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> res2 = list(df_heavy.groupby('bar'))
             >>> assert len(res1) == len(res2)
             >>> assert all([np.all(a[1] == b[1]) for a, b in zip(res1, res2)])
@@ -512,11 +525,12 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> mapper = {'foo': 'fi'}
             >>> res1 = df_light.rename(columns=mapper)
-            >>> res2 = df_heavy.rename(columns=mapper)
             >>> res3 = df_light.rename(mapper, axis=1)
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
+            >>> res2 = df_heavy.rename(columns=mapper)
             >>> res4 = df_heavy.rename(mapper, axis=1)
             >>> assert np.all(res1 == res2)
             >>> assert np.all(res3 == res2)
@@ -603,7 +617,7 @@ class DataFrameArray(DataFrameLight):
                 )
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
-        elif isinstance(self._raw, pd.DataFrame):
+        elif pd is not None and isinstance(self._raw, pd.DataFrame):
             self._data = {k: v.values for k, v in self._raw.to_dict(orient='series').items()}
         else:
             raise TypeError('Unknown _raw type')
