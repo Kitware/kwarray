@@ -154,6 +154,7 @@ class DataFrameLight(ub.NiceRepr):
     def __eq__(self, other):
         """
         Example:
+            >>> # xdoctest: +REQUIRES(module:pandas)
             >>> self = DataFrameLight._demodata(num=7)
             >>> other = self.pandas()
             >>> assert np.all(self == other)
