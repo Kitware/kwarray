@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added:
 * `DataFrameLight.to_dict`
 
+### Changed
+* Torch is now an optional dependency
+
 ## Version 0.5.8 - 2020-04-15
 
 ### Changed

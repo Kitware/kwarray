@@ -1,8 +1,11 @@
 """
 Torch specific extensions
 """
-import torch
 import numpy as np
+try:
+    import torch
+except Exception:
+    torch = None
 
 
 def one_hot_embedding(labels, num_classes, dim=1):
@@ -22,6 +25,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
 
     Example:
         >>> # each element in target has to have 0 <= value < C
+        >>> # xdoctest: +REQUIRES(module:torch)
         >>> labels = torch.LongTensor([0, 0, 1, 4, 2, 3])
         >>> num_classes = max(labels) + 1
         >>> t = one_hot_embedding(labels, num_classes)
@@ -43,6 +47,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
         >>>     assert np.all(t3.cpu().numpy() == t.numpy())
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:torch)
         >>> nC = num_classes = 3
         >>> labels = (torch.rand(10, 11, 12) * nC).long()
         >>> assert one_hot_embedding(labels, nC, dim=0).shape == (3, 10, 11, 12)
@@ -56,7 +61,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
         >>> assert one_hot_embedding(labels, nC, dim=0).shape == (3, 10)
         >>> assert one_hot_embedding(labels, nC, dim=1).shape == (10, 3)
     """
-    if torch.is_tensor(labels):
+    if torch is not None and torch.is_tensor(labels):
         in_dims = labels.ndimension()
         if dim < 0:
             dim = in_dims - dim + 1
@@ -120,6 +125,7 @@ def one_hot_lookup(probs, labels):
         array([ 0,  4,  8, 10])
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:torch)
         >>> import torch
         >>> probs = torch.from_numpy(np.array([
         >>>     [0, 1, 2],
@@ -131,7 +137,7 @@ def one_hot_lookup(probs, labels):
         >>> one_hot_lookup(probs, labels)
         tensor([ 0,  4,  8, 10]...)
     """
-    if torch.is_tensor(labels):
+    if torch is not None and torch.is_tensor(labels):
         ohe = torch.eye(probs.shape[1], dtype=torch.bool, device=labels.device)[labels]
         out = probs[ohe]
     else:

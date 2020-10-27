@@ -7,8 +7,13 @@ geometric-mean, standard-deviation, etc...) about data in an array.
 from __future__ import absolute_import, division, print_function, unicode_literals
 import collections
 import numpy as np
-import torch
 import ubelt as ub
+
+
+try:
+    import torch
+except Exception:
+    torch = None
 
 
 def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
@@ -72,7 +77,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         nparr = inputs
     elif isinstance(inputs, list):
         nparr = np.array(inputs)
-    elif isinstance(inputs, torch.Tensor):
+    elif torch is not None and isinstance(inputs, torch.Tensor):
         nparr = inputs.data.cpu().numpy()
     else:
         nparr = np.array(list(inputs))
