@@ -84,6 +84,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('====== BENCHMARK: .LOC[] =======')
         >>> ti = ub.Timerit(num=20, bestof=4, verbose=True, unit='ms')
         >>> df_light = DataFrameLight._demodata(num=NUM)
+        >>> # xdoctest: +REQUIRES(module:pandas)
         >>> df_heavy = df_light.pandas()
         >>> series_data = df_heavy.to_dict(orient='series')
         >>> list_data = df_heavy.to_dict(orient='list')
@@ -204,6 +205,7 @@ class DataFrameLight(ub.NiceRepr):
         Convert back to pandas if you need the full API
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:pandas)
             >>> df_light = DataFrameLight._demodata(num=7)
             >>> df_heavy = df_light.pandas()
             >>> got = DataFrameLight(df_heavy)
@@ -321,8 +323,9 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> sub1 = df_light['bar']
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> sub2 = df_heavy['bar']
             >>> assert np.all(sub1 == sub2)
         """
@@ -336,9 +339,10 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> value = [2] * len(df_light)
             >>> df_light['bar'] = value
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> df_heavy['bar'] = value
             >>> assert np.all(df_light == df_heavy)
         """
@@ -365,9 +369,10 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> indices = [0, 2, 3]
             >>> sub1 = df_light.take(indices)
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> sub2 = df_heavy.take(indices)
             >>> assert np.all(sub1 == sub2)
         """
@@ -487,8 +492,9 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> res1 = list(df_light.groupby('bar'))
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
             >>> res2 = list(df_heavy.groupby('bar'))
             >>> assert len(res1) == len(res2)
             >>> assert all([np.all(a[1] == b[1]) for a, b in zip(res1, res2)])
@@ -518,11 +524,12 @@ class DataFrameLight(ub.NiceRepr):
 
         Example:
             >>> df_light = DataFrameLight._demodata(num=7)
-            >>> df_heavy = df_light.pandas()
             >>> mapper = {'foo': 'fi'}
             >>> res1 = df_light.rename(columns=mapper)
-            >>> res2 = df_heavy.rename(columns=mapper)
             >>> res3 = df_light.rename(mapper, axis=1)
+            >>> # xdoctest: +REQUIRES(module:pandas)
+            >>> df_heavy = df_light.pandas()
+            >>> res2 = df_heavy.rename(columns=mapper)
             >>> res4 = df_heavy.rename(mapper, axis=1)
             >>> assert np.all(res1 == res2)
             >>> assert np.all(res3 == res2)

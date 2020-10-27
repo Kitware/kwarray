@@ -415,8 +415,7 @@ test_full/cp27-cp27mu-linux:
             cd $HOME/kwarray
             git checkout dev/0.5.10
 
-            python setup.py bdist_wheel --universal
-
+            # python setup.py bdist_wheel --universal
 
             python -V  # Print out python version for debugging
             export PYVER=$(python -c "import sys; print('{}{}'.format(*sys.version_info[0:2]))")
