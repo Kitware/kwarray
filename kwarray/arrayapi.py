@@ -17,7 +17,7 @@ Example:
     >>> res2_np = ArrayAPI.numpy(result2)
     >>> print('res1_np = {!r}'.format(res1_np))
     >>> print('res2_np = {!r}'.format(res2_np))
-    >>> assert np.all(impl1.numpy(result1) == impl2.numpy(result2))
+    >>> assert np.allclose(res1_np, res2_np)
     >>> # Method 2: choose the impl on the fly
     >>> result1 = ArrayAPI.sum(data1, axis=0)
     >>> result2 = ArrayAPI.sum(data2, axis=0)
@@ -25,7 +25,7 @@ Example:
     >>> res2_np = ArrayAPI.numpy(result2)
     >>> print('res1_np = {!r}'.format(res1_np))
     >>> print('res2_np = {!r}'.format(res2_np))
-    >>> assert np.all(res1_np == res2_np)
+    >>> assert np.allclose(res1_np, res2_np)
 
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
