@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 * Torch is now an optional dependency
+* Pandas is now an optional dependency
 
 ## Version 0.5.8 - 2020-04-15
 

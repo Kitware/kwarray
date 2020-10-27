@@ -40,6 +40,7 @@ def mindist_assignment(vecs1, vecs2, p=2):
         xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mindist_assignment
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Rows are detections in img1, cols are detections in img2
         >>> rng = np.random.RandomState(43)
         >>> vecs1 = rng.randint(0, 10, (5, 2))
@@ -75,6 +76,7 @@ def mincost_assignment(cost):
 
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Costs to match item i in set1 with item j in set2.
         >>> cost = np.array([
         >>>     [9, 2, 1, 9],
@@ -88,6 +90,7 @@ def mincost_assignment(cost):
         Total cost: 6
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> cost = np.array([
         >>>     [0, 0, 0, 0],
         >>>     [4, 1, 5, -np.inf],
@@ -101,6 +104,7 @@ def mincost_assignment(cost):
         Total cost: -inf
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> cost = np.array([
         >>>     [0, 0, 0, 0],
         >>>     [4, 1, 5, -3],
@@ -164,6 +168,7 @@ def maxvalue_assignment(value):
         xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py maxvalue_assignment
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Costs to match item i in set1 with item j in set2.
         >>> value = np.array([
         >>>     [9, 2, 1, 3],

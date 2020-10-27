@@ -7,9 +7,13 @@ For data where more complex ids are needed you must use pandas.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import ubelt as ub
-import pandas as pd
 import numpy as np
 import copy
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
 
 
 __version__ = '0.0.1'
@@ -156,7 +160,7 @@ class DataFrameLight(ub.NiceRepr):
         self_vals = self.values
         if isinstance(other, DataFrameLight):
             other_vals = other.values
-        if isinstance(other, pd.DataFrame):
+        if pd is not None and isinstance(other, pd.DataFrame):
             other_vals = other.reindex(columns=self.columns).values
         else:
             other_vals = other
@@ -205,6 +209,8 @@ class DataFrameLight(ub.NiceRepr):
             >>> got = DataFrameLight(df_heavy)
             >>> assert got._data == df_light._data
         """
+        if pd is None:
+            raise Exception('Pandas is not available')
         return pd.DataFrame(self._data)
 
     def _pandas(self):
@@ -262,7 +268,7 @@ class DataFrameLight(ub.NiceRepr):
                 assert ub.allsame(lens)
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
-        elif isinstance(self._raw, pd.DataFrame):
+        elif pd is not None and isinstance(self._raw, pd.DataFrame):
             self._data = self._raw.to_dict(orient='list')
         else:
             raise TypeError('Unknown _raw type')
@@ -603,7 +609,7 @@ class DataFrameArray(DataFrameLight):
                 )
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
-        elif isinstance(self._raw, pd.DataFrame):
+        elif pd is not None and isinstance(self._raw, pd.DataFrame):
             self._data = {k: v.values for k, v in self._raw.to_dict(orient='series').items()}
         else:
             raise TypeError('Unknown _raw type')

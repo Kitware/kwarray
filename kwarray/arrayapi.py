@@ -542,7 +542,8 @@ class TorchImpls(object):
     # @_torchmethod(func_type='data_func')
     # def matmul(data1, data2, out=None):
     #     return torch.matmul(data1, data2, out=out)
-    matmul = _torchmethod(torch.matmul)
+    if torch is not None:
+        matmul = _torchmethod(torch.matmul)
 
     @_torchmethod(func_type='data_func')
     def sum(data, axis=None):
@@ -562,10 +563,11 @@ class TorchImpls(object):
     def copy(data):
         return torch.clone(data)
 
-    log = _torchmethod(torch.log)
-    log2 = _torchmethod(torch.log2)
-    any = _torchmethod(torch.any)
-    all = _torchmethod(torch.all)
+    if torch is not None:
+        log = _torchmethod(torch.log)
+        log2 = _torchmethod(torch.log2)
+        any = _torchmethod(torch.any)
+        all = _torchmethod(torch.all)
 
     @_torchmethod(func_type='data_func')
     def nonzero(data):
