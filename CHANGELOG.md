@@ -4,7 +4,10 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.9 - Unreleased
+## Version 0.5.11 - Unreleased
+
+
+## Version 0.5.9 - Released 2020-10-27
 
 ### Added:
 * `DataFrameLight.to_dict`
@@ -50,7 +53,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   unknown data types. Previous behavior returned None.
 
 
-## [Version 0.5.2] - Unreleased
+## [Version 0.5.2] - Released 2020-10-27
 
 ### Fixed 
 * `ensure_rng` now correctly coerce the `random` and `np.random` modules.
@@ -107,4 +110,4 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     - `arrayapi.py`
     - `algo_assignment.py`
 
-## Version 0.5.10 - Unreleased
+## Version 0.5.10 - Released 2020-10-27
