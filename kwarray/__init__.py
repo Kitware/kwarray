@@ -32,7 +32,7 @@ from .algo_setcover import (setcover,)
 from .dataframe_light import (DataFrameArray, DataFrameLight, LocLight,)
 from .fast_rand import (standard_normal, standard_normal32, standard_normal64,
                         uniform, uniform32,)
-from .util_averages import (stats_dict,)
+from .util_averages import (RunningStats, stats_dict,)
 from .util_groups import (apply_grouping, group_consecutive,
                           group_consecutive_indices, group_indices,
                           group_items,)
@@ -44,12 +44,12 @@ from .util_random import (ensure_rng, random_combinations, random_product,
 from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
 __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'FlatIndexer',
-           'LocLight', 'apply_grouping', 'arglexmax', 'argmaxima', 'argminima',
-           'atleast_nd', 'boolmask', 'ensure_rng', 'group_consecutive',
-           'group_consecutive_indices', 'group_indices', 'group_items',
-           'isect_flags', 'iter_reduce_ufunc', 'maxvalue_assignment',
-           'mincost_assignment', 'mindist_assignment', 'one_hot_embedding',
-           'one_hot_lookup', 'random_combinations', 'random_product',
-           'seed_global', 'setcover', 'shuffle', 'standard_normal',
-           'standard_normal32', 'standard_normal64', 'stats_dict', 'uniform',
-           'uniform32']
+           'LocLight', 'RunningStats', 'apply_grouping', 'arglexmax',
+           'argmaxima', 'argminima', 'atleast_nd', 'boolmask', 'ensure_rng',
+           'group_consecutive', 'group_consecutive_indices', 'group_indices',
+           'group_items', 'isect_flags', 'iter_reduce_ufunc',
+           'maxvalue_assignment', 'mincost_assignment', 'mindist_assignment',
+           'one_hot_embedding', 'one_hot_lookup', 'random_combinations',
+           'random_product', 'seed_global', 'setcover', 'shuffle',
+           'standard_normal', 'standard_normal32', 'standard_normal64',
+           'stats_dict', 'uniform', 'uniform32']
