@@ -53,6 +53,7 @@ class DataFrameLight(ub.NiceRepr):
     Benchmark:
         >>> # BENCHMARK
         >>> # xdoc: +REQUIRES(--bench)
+        >>> from kwarray.dataframe_light import *  # NOQA
         >>> import ubelt as ub
         >>> NUM = 1000
         >>> print('NUM = {!r}'.format(NUM))
@@ -125,6 +126,33 @@ class DataFrameLight(ub.NiceRepr):
         >>>     with timer:
         >>>         for i in range(NUM):
         >>>             df_light._getrow(i)
+        NUM = 1000
+        ==============
+        ====== to_dict conversions =====
+        Timed best=0.022 ms, mean=0.022 ± 0.0 ms for series
+        Timed best=0.059 ms, mean=0.059 ± 0.0 ms for series+numpy
+        Timed best=0.315 ms, mean=0.315 ± 0.0 ms for list
+        Timed best=0.895 ms, mean=0.895 ± 0.0 ms for dict
+        Timed best=2.705 ms, mean=2.705 ± 0.0 ms for split
+        Timed best=5.474 ms, mean=5.474 ± 0.0 ms for records
+        Timed best=7.320 ms, mean=7.320 ± 0.0 ms for index
+        ==============
+        ====== DFLight Conversions =======
+        Timed best=1.798 ms, mean=1.798 ± 0.0 ms for self.pandas
+        Timed best=0.064 ms, mean=0.064 ± 0.0 ms for light-from-pandas
+        Timed best=0.010 ms, mean=0.010 ± 0.0 ms for light-from-dict
+        ==============
+        ====== BENCHMARK: .LOC[] =======
+        Timed best=101.365 ms, mean=101.564 ± 0.2 ms for DF-heavy.iloc
+        Timed best=102.038 ms, mean=102.273 ± 0.2 ms for DF-heavy.loc
+        Timed best=29.357 ms, mean=29.449 ± 0.1 ms for dict[SERIES].loc
+        Timed best=21.701 ms, mean=22.014 ± 0.3 ms for dict[SERIES].iloc
+        Timed best=11.469 ms, mean=11.566 ± 0.1 ms for dict[SERIES][]
+        Timed best=0.807 ms, mean=0.826 ± 0.0 ms for dict[NDARRAY][]
+        Timed best=0.478 ms, mean=0.492 ± 0.0 ms for dict[list][]
+        Timed best=0.969 ms, mean=0.994 ± 0.0 ms for DF-Light.iloc/loc
+        Timed best=0.760 ms, mean=0.776 ± 0.0 ms for DF-Light._getrow
+
     """
     def __init__(self, data=None, columns=None):
         if columns is not None:
