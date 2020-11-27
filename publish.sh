@@ -66,7 +66,8 @@ check_variable(){
 }
 
 # Options
-CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}
+#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}
+CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch --show-current)}
 DEPLOY_BRANCH=${DEPLOY_BRANCH:=release}
 DEPLOY_REMOTE=${DEPLOY_REMOTE:=origin}
 NAME=${NAME:=$(python -c "import setup; print(setup.NAME)")}
