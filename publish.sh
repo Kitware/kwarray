@@ -50,6 +50,11 @@ Usage:
     MB_PYTHON_TAG=py2.py3-none-any ./publish.sh
 '''
 
+
+# Fail if any of the commands fail
+#set -e 
+#set -o pipefail
+
 check_variable(){
     KEY=$1
     VAL=${!KEY}
@@ -110,7 +115,6 @@ echo "
 "
 
 
-
 echo "LIVE BUILDING"
 # Build wheel and source distribution
 
@@ -129,11 +133,11 @@ for _MODE in "${MODE_LIST[@]}"
 do
     echo "_MODE = $_MODE"
     if [[ "$_MODE" == "sdist" ]]; then
-        python setup.py sdist 
+        python setup.py sdist || { echo 'failed to build sdist wheel' ; exit 1; }
         WHEEL_PATH=$(ls dist/$NAME-$VERSION*.tar.gz)
         WHEEL_PATHS+=($WHEEL_PATH)
     elif [[ "$_MODE" == "universal" ]]; then
-        python setup.py bdist_wheel --universal
+        python setup.py bdist_wheel --universal || { echo 'failed to build universal wheel' ; exit 1; }
         UNIVERSAL_TAG="py2.py3-none-any"
         WHEEL_PATH=$(ls dist/$NAME-$VERSION-$UNIVERSAL_TAG*.whl)
         WHEEL_PATHS+=($WHEEL_PATH)
@@ -174,20 +178,19 @@ do
         # secure gpg --export-secret-keys > all.gpg
 
         # REQUIRES GPG >= 2.2
-        check_variable GPG_EXECUTABLE
+        check_variable GPG_EXECUTABLE 
         check_variable GPG_KEYID
 
         echo "Signing wheels"
         GPG_SIGN_CMD="$GPG_EXECUTABLE --batch --yes --detach-sign --armor --local-user $GPG_KEYID"
-        ls wheelhouse
         echo "GPG_SIGN_CMD = $GPG_SIGN_CMD"
         $GPG_SIGN_CMD --output $WHEEL_PATH.asc $WHEEL_PATH
 
         echo "Checking wheels"
-        twine check $WHEEL_PATH.asc $WHEEL_PATH
+        twine check $WHEEL_PATH.asc $WHEEL_PATH || { echo 'could not check wheels' ; exit 1; }
 
         echo "Verifying wheels"
-        $GPG_EXECUTABLE --verify $WHEEL_PATH.asc $WHEEL_PATH 
+        $GPG_EXECUTABLE --verify $WHEEL_PATH.asc $WHEEL_PATH || { echo 'could not verify wheels' ; exit 1; }
     else
         echo "USE_GPG=False, Skipping GPG sign"
     fi
@@ -210,6 +213,7 @@ if [[ "$TAG_AND_UPLOAD" != "yes" ]]; then
         TAG_AND_UPLOAD="$ANS"
     else
         echo "WRONG BRANCH: Not ready to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
+        exit 1
     fi
 else
     echo "Do not want to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
@@ -217,7 +221,7 @@ fi
 
 
 if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
-    check_variable TWINE_USERNAME
+    check_variable TWINE_USERNAME 
     check_variable TWINE_PASSWORD
 
     #git tag $VERSION -m "tarball tag $VERSION"
@@ -226,16 +230,15 @@ if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
     for WHEEL_PATH in "${WHEEL_PATHS[@]}"
     do
         if [ "$USE_GPG" == "True" ]; then
-            twine upload --username $TWINE_USERNAME --password=$TWINE_PASSWORD --sign $WHEEL_PATH.asc $WHEEL_PATH
+            twine upload --username $TWINE_USERNAME --password=$TWINE_PASSWORD --sign $WHEEL_PATH.asc $WHEEL_PATH  || { echo 'failed to twine upload' ; exit 1; }
         else
-            twine upload --username $TWINE_USERNAME --password=$TWINE_PASSWORD $WHEEL_PATH 
+            twine upload --username $TWINE_USERNAME --password=$TWINE_PASSWORD $WHEEL_PATH  || { echo 'failed to twine upload' ; exit 1; }
         fi
     done
     echo """
         !!! FINISH: LIVE RUN !!!
     """
 else
-    ls wheelhouse
     echo """
         DRY RUN ... Skiping tag and upload
 

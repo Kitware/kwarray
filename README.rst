@@ -29,7 +29,7 @@ The top-level API is:
     from .dataframe_light import (DataFrameArray, DataFrameLight, LocLight,)
     from .fast_rand import (standard_normal, standard_normal32, standard_normal64,
                             uniform, uniform32,)
-    from .util_averages import (stats_dict,)
+    from .util_averages import (RunningStats, stats_dict,)
     from .util_groups import (apply_grouping, group_consecutive,
                               group_consecutive_indices, group_indices,
                               group_items,)
