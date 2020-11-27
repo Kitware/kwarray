@@ -199,24 +199,22 @@ echo "
 === <END GPG SIGN> ===
 "
 
+# Verify that we want to publish
 if [[ "$CURRENT_BRANCH" != "$DEPLOY_BRANCH" ]]; then
     TAG_AND_UPLOAD="no"
     echo "current branch is not the deploy branch. Forcing tag_and_upload=no"
-fi
-
-
-# Verify that we want to publish
-if [[ "$TAG_AND_UPLOAD" != "yes" ]]; then
-    if [[ "$TAG_AND_UPLOAD" != "no" ]]; then
-        read -p "Are you ready to publish version='$VERSION' on branch='$CURRENT_BRANCH'? (input 'yes' to confirm)" ANS
-        echo "ANS = $ANS"
-        TAG_AND_UPLOAD="$ANS"
-    else
-        echo "WRONG BRANCH: Not ready to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
-        exit 1
-    fi
 else
-    echo "Do not want to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
+    if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
+        echo "About to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
+    else
+        if [[ "$TAG_AND_UPLOAD" == "no" ]]; then
+            echo "We are NOT about to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
+        else
+            read -p "Are you ready to publish version='$VERSION' on branch='$CURRENT_BRANCH'? (input 'yes' to confirm)" ANS
+            echo "ANS = $ANS"
+            TAG_AND_UPLOAD="$ANS"
+        fi
+    fi
 fi
 
 
