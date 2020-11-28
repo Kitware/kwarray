@@ -45,7 +45,7 @@ Usage:
 
     echo "MB_PYTHON_TAG = $MB_PYTHON_TAG"
     MB_PYTHON_TAG=$MB_PYTHON_TAG ./run_multibuild.sh
-    DEPLOY_BRANCH=master DEPLOY_REMOTE=ibeis MB_PYTHON_TAG=$MB_PYTHON_TAG ./publish.sh yes
+    DEPLOY_REMOTE=ibeis MB_PYTHON_TAG=$MB_PYTHON_TAG ./publish.sh yes
 
     MB_PYTHON_TAG=py2.py3-none-any ./publish.sh
 '''
@@ -66,9 +66,9 @@ check_variable(){
 }
 
 # Options
-#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}
-CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch --show-current)}
-DEPLOY_BRANCH=${DEPLOY_BRANCH:=release}
+#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}  # FIXME doesnt work on gitlab sometimes
+#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch --show-current)}
+#DEPLOY_BRANCH=${DEPLOY_BRANCH:=release}
 DEPLOY_REMOTE=${DEPLOY_REMOTE:=origin}
 NAME=${NAME:=$(python -c "import setup; print(setup.NAME)")}
 VERSION=$(python -c "import setup; print(setup.VERSION)")
@@ -79,8 +79,8 @@ MB_PYTHON_TAG=${MB_PYTHON_TAG:=$(python -c "import setup; print(setup.native_mb_
 DEFAULT_MODE_LIST=("sdist" "universal")
 #DEFAULT_MODE_LIST=("sdist" "bdist")
 
-check_variable CURRENT_BRANCH
-check_variable DEPLOY_BRANCH
+#check_variable CURRENT_BRANCH
+#check_variable DEPLOY_BRANCH
 check_variable DEPLOY_REMOTE
 check_variable VERSION || exit 1
 
@@ -102,13 +102,13 @@ GPG_KEYID=${GPG_KEYID:=$(git config --global user.signingkey)}
 
 echo "
 === PYPI BUILDING SCRIPT ==
-CURRENT_BRANCH='$CURRENT_BRANCH'
-DEPLOY_BRANCH='$DEPLOY_BRANCH'
 VERSION='$VERSION'
 TWINE_USERNAME='$TWINE_USERNAME'
 GPG_KEYID = '$GPG_KEYID'
 MB_PYTHON_TAG = '$MB_PYTHON_TAG'
 "
+#CURRENT_BRANCH='$CURRENT_BRANCH'
+#DEPLOY_BRANCH='$DEPLOY_BRANCH'
 
 
 echo "
@@ -201,22 +201,22 @@ echo "
 "
 
 # Verify that we want to publish
-if [[ "$CURRENT_BRANCH" != "$DEPLOY_BRANCH" ]]; then
-    TAG_AND_UPLOAD="no"
-    echo "current branch is not the deploy branch. Forcing tag_and_upload=no"
+#if [[ "$CURRENT_BRANCH" != "$DEPLOY_BRANCH" ]]; then
+#    TAG_AND_UPLOAD="no"
+#    echo "current branch is not the deploy branch. Forcing tag_and_upload=no"
+#else
+if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
+    echo "About to publish VERSION='$VERSION'" 
 else
-    if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
-        echo "About to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
+    if [[ "$TAG_AND_UPLOAD" == "no" ]]; then
+        echo "We are NOT about to publish VERSION='$VERSION'" 
     else
-        if [[ "$TAG_AND_UPLOAD" == "no" ]]; then
-            echo "We are NOT about to publish VERSION='$VERSION' on branch='$CURRENT_BRANCH'" 
-        else
-            read -p "Are you ready to publish version='$VERSION' on branch='$CURRENT_BRANCH'? (input 'yes' to confirm)" ANS
-            echo "ANS = $ANS"
-            TAG_AND_UPLOAD="$ANS"
-        fi
+        read -p "Are you ready to publish version='$VERSION'? (input 'yes' to confirm)" ANS
+        echo "ANS = $ANS"
+        TAG_AND_UPLOAD="$ANS"
     fi
 fi
+#fi
 
 
 if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
@@ -243,8 +243,6 @@ else
 
         VERSION = '$VERSION'
         DEPLOY_REMOTE = '$DEPLOY_REMOTE'
-        CURRENT_BRANCH = '$CURRENT_BRANCH'
-        DEPLOY_BRANCH = '$DEPLOY_BRANCH'
         TAG_AND_UPLOAD = '$TAG_AND_UPLOAD'
         WHEEL_PATH = '$WHEEL_PATH'
         WHEEL_PATHS_STR = '$WHEEL_PATHS_STR'
@@ -254,4 +252,6 @@ else
 
         !!! FINISH: DRY RUN !!!
     """
+    #CURRENT_BRANCH = '$CURRENT_BRANCH'
+    #DEPLOY_BRANCH = '$DEPLOY_BRANCH'
 fi
