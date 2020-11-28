@@ -66,9 +66,6 @@ check_variable(){
 }
 
 # Options
-#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch | grep \* | cut -d ' ' -f2)}  # FIXME doesnt work on gitlab sometimes
-#CURRENT_BRANCH=${CURRENT_BRANCH:=$(git branch --show-current)}
-#DEPLOY_BRANCH=${DEPLOY_BRANCH:=release}
 DEPLOY_REMOTE=${DEPLOY_REMOTE:=origin}
 NAME=${NAME:=$(python -c "import setup; print(setup.NAME)")}
 VERSION=$(python -c "import setup; print(setup.VERSION)")
@@ -79,8 +76,6 @@ MB_PYTHON_TAG=${MB_PYTHON_TAG:=$(python -c "import setup; print(setup.native_mb_
 DEFAULT_MODE_LIST=("sdist" "universal")
 #DEFAULT_MODE_LIST=("sdist" "bdist")
 
-#check_variable CURRENT_BRANCH
-#check_variable DEPLOY_BRANCH
 check_variable DEPLOY_REMOTE
 check_variable VERSION || exit 1
 
@@ -107,8 +102,6 @@ TWINE_USERNAME='$TWINE_USERNAME'
 GPG_KEYID = '$GPG_KEYID'
 MB_PYTHON_TAG = '$MB_PYTHON_TAG'
 "
-#CURRENT_BRANCH='$CURRENT_BRANCH'
-#DEPLOY_BRANCH='$DEPLOY_BRANCH'
 
 
 echo "
@@ -201,10 +194,6 @@ echo "
 "
 
 # Verify that we want to publish
-#if [[ "$CURRENT_BRANCH" != "$DEPLOY_BRANCH" ]]; then
-#    TAG_AND_UPLOAD="no"
-#    echo "current branch is not the deploy branch. Forcing tag_and_upload=no"
-#else
 if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
     echo "About to publish VERSION='$VERSION'" 
 else
@@ -216,7 +205,6 @@ else
         TAG_AND_UPLOAD="$ANS"
     fi
 fi
-#fi
 
 
 if [[ "$TAG_AND_UPLOAD" == "yes" ]]; then
@@ -252,6 +240,4 @@ else
 
         !!! FINISH: DRY RUN !!!
     """
-    #CURRENT_BRANCH = '$CURRENT_BRANCH'
-    #DEPLOY_BRANCH = '$DEPLOY_BRANCH'
 fi
