@@ -99,50 +99,200 @@ def one_hot_embedding(labels, num_classes, dim=1):
     return y_onehot
 
 
-def one_hot_lookup(probs, labels):
+def one_hot_lookup(data, indices):
     """
-    Return probability of a particular label (usually true labels) for each item
+    Return value of a particular column for each row in data.
 
-    Each item in labels corresonds to a row in probs. Returns the index
+    Each item in labels corresonds to a row in ``data``. Returns the index
     specified at each row.
 
     Args:
-        probs (ArrayLike): N x C float array of probabilities
-        labels (ArrayLike): N integer array between 0 and C
+        data (ArrayLike): N x C float array of values
+        indices (ArrayLike): N integer array between 0 and C.
+            This is an column index for each row in ``data``.
 
     Returns:
         ArrayLike: the selected probability for each row
 
+    Notes:
+        This is functionally equivalent to
+        ``[row[c] for row, c in zip(data, indices)]`` except that it is
+        works with pure matrix operations.
+
+    TODO:
+        - [ ] Allow the user to specify which dimension indices should be
+              zipped over. By default it should be dim=0
+
+        - [ ] Allow the user to specify which dimension indices should select
+              from. By default it should be dim=1.
+
     Example:
-        >>> probs = np.array([
+        >>> from kwarray.util_torch import *  # NOQA
+        >>> data = np.array([
         >>>     [0, 1, 2],
         >>>     [3, 4, 5],
         >>>     [6, 7, 8],
         >>>     [9, 10, 11],
         >>> ])
-        >>> labels = np.array([0, 1, 2, 1])
-        >>> one_hot_lookup(probs, labels)
-        array([ 0,  4,  8, 10])
+        >>> indices = np.array([0, 1, 2, 1])
+        >>> res = one_hot_lookup(data, indices)
+        >>> print('res = {!r}'.format(res))
+        res = array([ 0,  4,  8, 10])
+        >>> alt = np.array([row[c] for row, c in zip(data, indices)])
+        >>> assert np.all(alt == res)
+
 
     Example:
         >>> # xdoctest: +REQUIRES(module:torch)
         >>> import torch
-        >>> probs = torch.from_numpy(np.array([
+        >>> data = torch.from_numpy(np.array([
         >>>     [0, 1, 2],
         >>>     [3, 4, 5],
         >>>     [6, 7, 8],
         >>>     [9, 10, 11],
         >>> ]))
-        >>> labels = torch.from_numpy(np.array([0, 1, 2, 1])).long()
-        >>> one_hot_lookup(probs, labels)
-        tensor([ 0,  4,  8, 10]...)
+        >>> indices = torch.from_numpy(np.array([0, 1, 2, 1])).long()
+        >>> res = one_hot_lookup(data, indices)
+        >>> print('res = {!r}'.format(res))
+        res = tensor([ 0,  4,  8, 10]...)
+        >>> alt = torch.LongTensor([row[c] for row, c in zip(data, indices)])
+        >>> assert torch.all(alt == res)
+
+    Ignore:
+        >>> # xdoctest: +REQUIRES(module:torch, module:onnx, module:onnx_tf)
+        >>> # Test if this converts to ONNX
+        >>> from kwarray.util_torch import *  # NOQA
+        >>> import torch.onnx
+        >>> import io
+        >>> import onnx
+        >>> import onnx_tf.backend
+        >>> import numpy as np
+        >>> data = torch.from_numpy(np.array([
+        >>>     [0, 1, 2],
+        >>>     [3, 4, 5],
+        >>>     [6, 7, 8],
+        >>>     [9, 10, 11],
+        >>> ]))
+        >>> indices = torch.from_numpy(np.array([0, 1, 2, 1])).long()
+        >>> class TFConvertWrapper(torch.nn.Module):
+        >>>     def forward(self, data, indices):
+        >>>         return one_hot_lookup(data, indices)
+        >>> ###
+        >>> # Test the ONNX export
+        >>> wrapped = TFConvertWrapper()
+        >>> onnx_file = io.BytesIO()
+        >>> torch.onnx.export(
+        >>>     wrapped, tuple([data, indices]),
+        >>>     input_names=['data', 'indices'],
+        >>>     output_names=['out'],
+        >>>     f=onnx_file,
+        >>>     opset_version=11,
+        >>>     verbose=1,
+        >>> )
+        >>> onnx_file.seek(0)
+        >>> onnx_model = onnx.load(onnx_file)
+        >>> onnx_tf_model = onnx_tf.backend.prepare(onnx_model)
+        >>> # Test that the resulting graph tensors are concretely sized.
+        >>> import tensorflow as tf
+        >>> onnx_gd = onnx_tf_model.graph.as_graph_def()
+        >>> output_tensors = tf.import_graph_def(
+        >>>     onnx_gd,
+        >>>     input_map={},
+        >>>     return_elements=[onnx_tf_model.tensor_dict[ol].name for ol in onnx_tf_model.outputs]
+        >>> )
+        >>> assert all(isinstance(d.value, int) for t in output_tensors for d in t.shape)
+        >>> tf_outputs = onnx_tf_model.run([data, indices])
+        >>> pt_outputs = wrapped(data, indices)
+        >>> print('tf_outputs = {!r}'.format(tf_outputs))
+        >>> print('pt_outputs = {!r}'.format(pt_outputs))
+        >>> ###
+        >>> # Test if data is more than 2D
+        >>> shape = (4, 3, 8)
+        >>> data = torch.arange(int(np.prod(shape))).view(*shape).float()
+        >>> indices = torch.from_numpy(np.array([0, 1, 2, 1])).long()
+        >>> onnx_file = io.BytesIO()
+        >>> torch.onnx.export(
+        >>>     wrapped, tuple([data, indices]),
+        >>>     input_names=['data', 'indices'],
+        >>>     output_names=['out'],
+        >>>     f=onnx_file,
+        >>>     opset_version=11,
+        >>>     verbose=1,
+        >>> )
+        >>> onnx_file.seek(0)
+        >>> onnx_model = onnx.load(onnx_file)
+        >>> onnx_tf_model = onnx_tf.backend.prepare(onnx_model)
+        >>> # Test that the resulting graph tensors are concretely sized.
+        >>> import tensorflow as tf
+        >>> onnx_gd = onnx_tf_model.graph.as_graph_def()
+        >>> output_tensors = tf.import_graph_def(
+        >>>     onnx_gd,
+        >>>     input_map={},
+        >>>     return_elements=[onnx_tf_model.tensor_dict[ol].name for ol in onnx_tf_model.outputs]
+        >>> )
+        >>> assert all(isinstance(d.value, int) for t in output_tensors for d in t.shape)
+        >>> tf_outputs = onnx_tf_model.run([data, indices])
+        >>> pt_outputs = wrapped(data, indices)
+        >>> print('tf_outputs = {!r}'.format(tf_outputs))
+        >>> print('pt_outputs = {!r}'.format(pt_outputs))
     """
-    if torch is not None and torch.is_tensor(labels):
-        ohe = torch.eye(probs.shape[1], dtype=torch.bool, device=labels.device)[labels]
-        out = probs[ohe]
+    if torch is not None and torch.is_tensor(indices):
+        if torch.onnx.is_in_onnx_export():
+
+            # Don't use eye for ONNX
+            ASSUME_OPTSET = 10
+
+            device = indices.device
+
+            n = data.shape[1]
+            # Have to construct eye manually to satisfy onnx
+            # Manually construct diag indices
+            row_idxs = torch.arange(n, device=device)
+            eye_idxs = row_idxs + (row_idxs * n)
+
+            if ASSUME_OPTSET >= 11:
+                # With opset 11 we use the "put" operation to directly
+                # populate the diagonal elements.
+                eye = torch.zeros((n, n), dtype=data.dtype, device=device)
+                flat_eye = eye.view(n * n)
+                diag_elem = torch.ones(n, dtype=data.dtype, device=device)
+                flat_eye[eye_idxs] = diag_elem
+            elif ASSUME_OPTSET >= 10:
+                # With opset 10 we cannot use "put", so we have to get spicey
+                # Construct the flat indexes of an NxN matrix
+                flat_idxs = torch.arange(n * n)
+                # Broadcast and check if these flat indexes are equal to the
+                # target indexes, then sum over the broadcast dimension
+                flat_eye = (flat_idxs[:, None] == eye_idxs[None, :]).to(data.dtype).sum(dim=1)
+            else:
+                raise AssertionError('ASSUME_OPTSET = {}'.format(ASSUME_OPTSET))
+
+            eye = flat_eye.view(n, n)
+
+            # Do the normal lookup in the eye matrix to get the OHE
+            ohe = eye[indices]
+            # need to pad OHE with extra dimensions for broadcasting
+            extra_dims = len(data.shape) - 2
+            if extra_dims > 0:
+                ohe = ohe[(Ellipsis,) + (None,) * extra_dims]
+
+            # Have to use multiply trick to satisfy onnx
+            out = (data * ohe).sum(dim=1)
+        else:
+            ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
+            out = data[ohe]
     else:
-        # ohe = kwarray.one_hot_embedding(labels, probs.shape[1]).astype(np.bool)
+        # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(np.bool)
         # Constructing the OHE with a small dtype offers a sizable speed advantage
-        ohe = np.eye(probs.shape[1], dtype=np.bool)[labels]
-        out = probs[ohe]
+        ohe = np.eye(data.shape[1], dtype=np.bool)[indices]
+        out = data[ohe]
     return out
+
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        python -m kwarray.util_torch all
+    """
+    import xdoctest
+    xdoctest.doctest_module(__file__)

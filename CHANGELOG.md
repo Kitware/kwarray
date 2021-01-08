@@ -4,7 +4,16 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.12 - Unreleased
+## Version 0.5.13 - Unreleased
+
+### Added:
+* Add `kwarray.normalize` (moved from kwimage)
+
+### Fixed
+* Fixed issue in `one_hot_lookup` with ONNX
+
+
+## Version 0.5.12 - Released 2020-11-27
 
 
 ## Version 0.5.11 - Released 2020-11-20
