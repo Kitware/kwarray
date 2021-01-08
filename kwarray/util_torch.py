@@ -274,7 +274,7 @@ def one_hot_lookup(data, indices):
             # need to pad OHE with extra dimensions for broadcasting
             extra_dims = len(data.shape) - 2
             if extra_dims > 0:
-                ohe = ohe[(...,) + (None,) * extra_dims]
+                ohe = ohe[(Ellipsis,) + (None,) * extra_dims]
 
             # Have to use multiply trick to satisfy onnx
             out = (data * ohe).sum(dim=1)
@@ -287,3 +287,12 @@ def one_hot_lookup(data, indices):
         ohe = np.eye(data.shape[1], dtype=np.bool)[indices]
         out = data[ohe]
     return out
+
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        python -m kwarray.util_torch all
+    """
+    import xdoctest
+    xdoctest.doctest_module(__file__)
