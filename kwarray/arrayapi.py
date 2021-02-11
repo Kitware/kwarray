@@ -485,6 +485,32 @@ class TorchImpls(object):
         return torch.argmax(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
+    def argsort(data, axis=-1, descending=False):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> rng = np.random.RandomState(0)
+            >>> data2 = rng.rand(5, 5)
+            >>> data1 = torch.from_numpy(data2)
+            >>> res1 = ArrayAPI.argsort(data1)
+            >>> res2 = ArrayAPI.argsort(data2)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=1)
+            >>> res2 = ArrayAPI.argsort(data2, axis=1)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=1, descending=True)
+            >>> res2 = ArrayAPI.argsort(data2, axis=1, descending=True)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> data2 = rng.rand(5)
+            >>> data1 = torch.from_numpy(data2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=0, descending=True)
+            >>> res2 = ArrayAPI.argsort(data2, axis=0, descending=True)
+            >>> assert np.all(res1.numpy() == res2)
+        """
+        return torch.argsort(data, dim=axis, descending=descending)
+
+    @_torchmethod(func_type='data_func')
     def max(data, axis=None):
         """
         Example:
@@ -799,6 +825,13 @@ class NumpyImpls(object):
     @_numpymethod
     def argmax(data, axis=None):
         return np.argmax(data, axis=axis)
+
+    @_numpymethod
+    def argsort(data, axis=-1, descending=False):
+        sortx = np.argsort(data, axis=axis)
+        if descending:
+            sortx = np.flip(sortx, axis=axis)
+        return sortx
 
     @_numpymethod
     def max(data, axis=None):
