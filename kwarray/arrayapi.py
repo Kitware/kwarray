@@ -1074,6 +1074,7 @@ class ArrayAPI(object):
 
     sum = _apimethod('sum')
     argmax = _apimethod('argmax')
+    argsort = _apimethod('argsort')
     max = _apimethod('max')
     maximum = _apimethod('maximum')
     minimum = _apimethod('minimum')
