@@ -1,6 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Attempts to expose a common API that works for both Tensors and ndarrays
+The ArrayAPI is a common API that works exactly the same on both torch.Tensors
+and numpy.ndarrays.
+
+
+The ArrayAPI is a combination of efficiency and convinience. It is convinient
+because you can just use an operation directly, it will type check the data,
+and apply the appropriate method. But it is also efficient because it can be
+used with minimal type checking by accessing a type-specific backend.
+
+For example, you can do:
+
+.. code:: python
+
+    impl = kwarray.ArrayAPI.coerce(data)
+
+And then impl will give you direct access to the appropriate methods without
+any type checking overhead.  e..g. ``impl.<op-you-want>(data)``
+
+But you can also do ``kwarray.ArrayAPI.<op-you-want>(data)`` on anything and it
+will do type checking and then do the operation you want.
 
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
