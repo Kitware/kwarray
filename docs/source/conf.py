@@ -20,6 +20,18 @@ Notes:
     make html
     sphinx-apidoc -f -o ~/code/kwarray/docs/source ~/code/kwarray/kwarray --separate
     make html
+
+    Also:
+        To turn on PR checks
+
+        https://docs.readthedocs.io/en/stable/guides/autobuild-docs-for-pull-requests.html
+
+        https://readthedocs.org/dashboard/kwarray/advanced/
+            * Click "Build pull requests for this project"
+
+        ensure your github account is connected to readthedocs
+        https://readthedocs.org/accounts/social/connections/
+
 """
 #
 # Configuration file for the Sphinx documentation builder.
