@@ -737,7 +737,7 @@ class TorchImpls(object):
             return result
 
     @_torchmethod(func_type='data_func')
-    def iround(data, out=None, dtype=np.int):
+    def iround(data, out=None, dtype=int):
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.round(data, out=out).to(dtype)
 
@@ -954,7 +954,7 @@ class NumpyImpls(object):
         return np.round(data, decimals=decimals, out=out)
 
     @_numpymethod(func_type='data_func')
-    def iround(data, out=None, dtype=np.int):
+    def iround(data, out=None, dtype=int):
         return np.round(data, out=out).astype(dtype)
 
     clip = _numpymethod(np.clip)

@@ -59,7 +59,7 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
         raise ValueError('dtype = {!r}'.format(dtype))
 
 
-def standard_normal(size, mean=0, std=1, dtype=np.float, rng=np.random):
+def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
     """
     Draw samples from a standard Normal distribution with a specified mean and
     standard deviation.

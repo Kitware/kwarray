@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 * Add `argsort` to ArrayAPI.
 
+### Changed
+* Fixed warnings by changing np.int and np.float to int and float
+
 
 ## Version 0.5.13 - Released 2021-01-08
 
