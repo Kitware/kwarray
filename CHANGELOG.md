@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 * Add `argsort` to ArrayAPI.
+* Add `dtype_info`.
 
 ### Changed
 * Fixed warnings by changing np.int and np.float to int and float

@@ -1215,3 +1215,44 @@ def _torch_dtype_lut():
         for k, v in torch.utils.data.dataloader.numpy_type_map.items():
             assert lut[k] == v.dtype
     return lut
+
+
+def dtype_info(dtype):
+    """
+    Args:
+        dtype (type): a numpy, torch, or python numeric data type
+
+    Returns:
+        struct: an iinfo of finfo structure depending on the input type.
+
+    References:
+        https://higra.readthedocs.io/en/stable/_modules/higra/hg_utils.html#dtype_info
+
+    Example:
+        >>> results = []
+        >>> results += [dtype_info(float)]
+        >>> results += [dtype_info(int)]
+        >>> results += [dtype_info(complex)]
+        >>> results += [dtype_info(np.float32)]
+        >>> results += [dtype_info(np.int32)]
+        >>> results += [dtype_info(np.uint32)]
+        >>> results += [dtype_info(np.complex256)]
+        >>> results += [dtype_info(torch.float32)]
+        >>> results += [dtype_info(torch.int64)]
+        >>> results += [dtype_info(torch.complex64)]
+
+        for info in results:
+            print('info.bits = {!r}'.format(info.bits))
+    """
+    if torch is not None and isinstance(dtype, torch.dtype):
+        if dtype.is_floating_point or dtype.is_complex:
+            info = torch.finfo(dtype)
+        else:
+            info = torch.iinfo(dtype)
+    else:
+        np_dtype = np.dtype(dtype)
+        if np_dtype.kind in {'f', 'c'}:
+            info = np.finfo(np_dtype)
+        else:
+            info = np.iinfo(np_dtype)
+    return info
