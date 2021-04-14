@@ -1237,12 +1237,12 @@ def dtype_info(dtype):
         >>> results += [dtype_info(np.int32)]
         >>> results += [dtype_info(np.uint32)]
         >>> results += [dtype_info(np.complex256)]
-        >>> results += [dtype_info(torch.float32)]
-        >>> results += [dtype_info(torch.int64)]
-        >>> results += [dtype_info(torch.complex64)]
-
-        for info in results:
-            print('info.bits = {!r}'.format(info.bits))
+        >>> if torch is not None:
+        >>>     results += [dtype_info(torch.float32)]
+        >>>     results += [dtype_info(torch.int64)]
+        >>>     results += [dtype_info(torch.complex64)]
+        >>> for info in results:
+        >>>     print('info = {!r}'.format(info))
     """
     if torch is not None and isinstance(dtype, torch.dtype):
         if dtype.is_floating_point or dtype.is_complex:
