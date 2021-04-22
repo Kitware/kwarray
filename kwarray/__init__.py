@@ -20,7 +20,7 @@ __explicit__ = [
     'ArrayAPI', 'dtype_info',
 ]
 
-__version__ = '0.5.14'
+__version__ = '0.5.15'
 
 from kwarray.arrayapi import ArrayAPI, dtype_info
 
