@@ -639,3 +639,32 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
     if float_out is not out:
         out[:] = float_out.astype(out.dtype)
     return out
+
+
+# def argsort_threshold(arr, threshold=None, num_top=None, descending=False):
+#     """
+#     TODO: Cleanup
+
+#     Find all indexes over a threshold, but always return at least the
+#     `num_top`.
+#     """
+#     import kwarray
+
+#     # Find the "best" indices and their scores
+#     sortx = arr.argsort(descending=descending)
+#     sorted_arr = arr[sortx]
+#     # Mark any index "better" than the score threshold
+#     if descending:
+#         flags = sorted_arr > threshold
+#     else:
+#         flags = sorted_arr < threshold
+
+#     if num_top is not None:
+#         # Always return at least `num_top`
+#         flags[0:num_top] = True
+
+#         fallback_thresh = sorted_arr[num_top - 1]
+#         threshold = min(fallback_thresh, threshold)
+
+#     top_inds = sortx[flags]
+#     return top_inds

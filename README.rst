@@ -157,5 +157,5 @@ my projects:
 .. |GitlabCIPipeline| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/pipeline.svg
    :target: https://gitlab.kitware.com/computer-vision/kwarray/-/jobs
 
-.. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/coverage.svg?job=coverage
-    :target: https://gitlab.kitware.com/computer-vision/kwarray/commits/master
+.. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/coverage.svg
+    :target: https://gitlab.kitware.com/computer-vision/kwarray/-/commits/master

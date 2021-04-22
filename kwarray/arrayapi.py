@@ -1,6 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Attempts to expose a common API that works for both Tensors and ndarrays
+The ArrayAPI is a common API that works exactly the same on both torch.Tensors
+and numpy.ndarrays.
+
+
+The ArrayAPI is a combination of efficiency and convinience. It is convinient
+because you can just use an operation directly, it will type check the data,
+and apply the appropriate method. But it is also efficient because it can be
+used with minimal type checking by accessing a type-specific backend.
+
+For example, you can do:
+
+.. code:: python
+
+    impl = kwarray.ArrayAPI.coerce(data)
+
+And then impl will give you direct access to the appropriate methods without
+any type checking overhead.  e..g. ``impl.<op-you-want>(data)``
+
+But you can also do ``kwarray.ArrayAPI.<op-you-want>(data)`` on anything and it
+will do type checking and then do the operation you want.
 
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
@@ -485,6 +504,32 @@ class TorchImpls(object):
         return torch.argmax(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
+    def argsort(data, axis=-1, descending=False):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> rng = np.random.RandomState(0)
+            >>> data2 = rng.rand(5, 5)
+            >>> data1 = torch.from_numpy(data2)
+            >>> res1 = ArrayAPI.argsort(data1)
+            >>> res2 = ArrayAPI.argsort(data2)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=1)
+            >>> res2 = ArrayAPI.argsort(data2, axis=1)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=1, descending=True)
+            >>> res2 = ArrayAPI.argsort(data2, axis=1, descending=True)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> data2 = rng.rand(5)
+            >>> data1 = torch.from_numpy(data2)
+            >>> res1 = ArrayAPI.argsort(data1, axis=0, descending=True)
+            >>> res2 = ArrayAPI.argsort(data2, axis=0, descending=True)
+            >>> assert np.all(res1.numpy() == res2)
+        """
+        return torch.argsort(data, dim=axis, descending=descending)
+
+    @_torchmethod(func_type='data_func')
     def max(data, axis=None):
         """
         Example:
@@ -517,9 +562,9 @@ class TorchImpls(object):
         """
         Note: this isn't always gaurenteed to be compatibile with numpy
         if there are equal elements in data. See:
-        >>> np.ones(10).argmax()
+        >>> np.ones(10).argmax()   # xdoctest: +IGNORE_WANT
         0
-        >>> torch.ones(10).argmax()
+        >>> torch.ones(10).argmax()   # xdoctest: +IGNORE_WANT
         tensor(9)
         """
         return torch.max(data, dim=axis)
@@ -692,7 +737,7 @@ class TorchImpls(object):
             return result
 
     @_torchmethod(func_type='data_func')
-    def iround(data, out=None, dtype=np.int):
+    def iround(data, out=None, dtype=int):
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.round(data, out=out).to(dtype)
 
@@ -801,6 +846,13 @@ class NumpyImpls(object):
         return np.argmax(data, axis=axis)
 
     @_numpymethod
+    def argsort(data, axis=-1, descending=False):
+        sortx = np.argsort(data, axis=axis)
+        if descending:
+            sortx = np.flip(sortx, axis=axis)
+        return sortx
+
+    @_numpymethod
     def max(data, axis=None):
         return data.max(axis=axis)
 
@@ -902,7 +954,7 @@ class NumpyImpls(object):
         return np.round(data, decimals=decimals, out=out)
 
     @_numpymethod(func_type='data_func')
-    def iround(data, out=None, dtype=np.int):
+    def iround(data, out=None, dtype=int):
         return np.round(data, out=out).astype(dtype)
 
     clip = _numpymethod(np.clip)
@@ -1041,6 +1093,7 @@ class ArrayAPI(object):
 
     sum = _apimethod('sum')
     argmax = _apimethod('argmax')
+    argsort = _apimethod('argsort')
     max = _apimethod('max')
     maximum = _apimethod('maximum')
     minimum = _apimethod('minimum')
@@ -1162,3 +1215,94 @@ def _torch_dtype_lut():
         for k, v in torch.utils.data.dataloader.numpy_type_map.items():
             assert lut[k] == v.dtype
     return lut
+
+
+def dtype_info(dtype):
+    """
+    Args:
+        dtype (type): a numpy, torch, or python numeric data type
+
+    Returns:
+        struct: an iinfo of finfo structure depending on the input type.
+
+    References:
+        https://higra.readthedocs.io/en/stable/_modules/higra/hg_utils.html#dtype_info
+
+    Example:
+        >>> results = []
+        >>> results += [dtype_info(float)]
+        >>> results += [dtype_info(int)]
+        >>> results += [dtype_info(complex)]
+        >>> results += [dtype_info(np.float32)]
+        >>> results += [dtype_info(np.int32)]
+        >>> results += [dtype_info(np.uint32)]
+        >>> if hasattr(np, 'complex256'):
+        >>>     results += [dtype_info(np.complex256)]
+        >>> if torch is not None:
+        >>>     results += [dtype_info(torch.float32)]
+        >>>     results += [dtype_info(torch.int64)]
+        >>>     results += [dtype_info(torch.complex64)]
+        >>> for info in results:
+        >>>     print('info = {!r}'.format(info))
+        >>> for info in results:
+        >>>     print('info.bits = {!r}'.format(info.bits))
+    """
+    if torch is not None and isinstance(dtype, torch.dtype):
+        # Using getattr on is_complex for torch 1.4
+        if dtype.is_floating_point or getattr(dtype, 'is_complex', False):
+            try:
+                info = torch.finfo(dtype)
+            except Exception:
+                # if not hasattr(dtype, 'is_complex'):
+                """
+                # Helper for dev
+                zs = [torch.complex32, torch.complex64, torch.complex128]
+                for z in zs:
+                    z = torch.finfo(z)
+                    args = [f + '=' + repr(getattr(z, f))
+                        for f in finfo_ducktype._fields]
+                    print('finfo_ducktype({})'.format(', '.join(args)))
+                """
+                # Return a ducktype for older torches without complex finfo
+                # https://github.com/pytorch/pytorch/issues/35954
+                from collections import namedtuple
+                finfo_ducktype = namedtuple('finfo_ducktype', [
+                    'bits', 'dtype', 'eps', 'max', 'min', 'resolution',
+                    'tiny'])
+                from collections import namedtuple
+                finfo_ducktype(bits=32, dtype='float32',
+                               eps=1.1920928955078125e-07,
+                               max=3.4028234663852886e+38,
+                               min=-3.4028234663852886e+38,
+                               resolution=1e-06,
+                               tiny=1.1754943508222875e-38)
+                if dtype == torch.complex32:
+                    info = finfo_ducktype(bits=16, dtype='float16',
+                                          eps=0.0009765625, max=65504.0,
+                                          min=-65504.0, resolution=0.001,
+                                          tiny=6.103515625e-05)
+                elif dtype == torch.complex64:
+                    info = finfo_ducktype(bits=32, dtype='float32',
+                                          eps=1.1920928955078125e-07,
+                                          max=3.4028234663852886e+38,
+                                          min=-3.4028234663852886e+38,
+                                          resolution=1e-06,
+                                          tiny=1.1754943508222875e-38)
+                elif dtype == torch.complex128:
+                    info = finfo_ducktype(bits=64, dtype='float64',
+                                          eps=2.220446049250313e-16,
+                                          max=1.7976931348623157e+308,
+                                          min=-1.7976931348623157e+308,
+                                          resolution=1e-15,
+                                          tiny=2.2250738585072014e-308)
+                else:
+                    raise TypeError(dtype)
+        else:
+            info = torch.iinfo(dtype)
+    else:
+        np_dtype = np.dtype(dtype)
+        if np_dtype.kind in {'f', 'c'}:
+            info = np.finfo(np_dtype)
+        else:
+            info = np.iinfo(np_dtype)
+    return info
