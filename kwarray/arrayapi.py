@@ -1236,7 +1236,8 @@ def dtype_info(dtype):
         >>> results += [dtype_info(np.float32)]
         >>> results += [dtype_info(np.int32)]
         >>> results += [dtype_info(np.uint32)]
-        >>> results += [dtype_info(np.complex256)]
+        >>> if hasattr(np, 'complex256'):
+        >>>     results += [dtype_info(np.complex256)]
         >>> if torch is not None:
         >>>     results += [dtype_info(torch.float32)]
         >>>     results += [dtype_info(torch.int64)]
