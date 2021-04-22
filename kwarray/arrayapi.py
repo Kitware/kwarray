@@ -1280,7 +1280,7 @@ def dtype_info(dtype):
                                               eps=0.0009765625, max=65504.0,
                                               min=-65504.0, resolution=0.001,
                                               tiny=6.103515625e-05)
-                    if dtype == torch.complex64:
+                    elif dtype == torch.complex64:
                         info = finfo_ducktype(bits=32, dtype='float32',
                                               eps=1.1920928955078125e-07,
                                               max=3.4028234663852886e+38,
