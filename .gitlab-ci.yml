@@ -410,12 +410,16 @@ test_full/cp27-cp27mu-linux:
 
 .__local_docker_heredoc__:
         - |
-            docker run -it python:3.8 bash
+            docker run -it python:3.5 bash
+
+            docker login gitlab.kitware.com:4567
+
+            docker run -it gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.5
 
             cd $HOME
             git clone https://gitlab.kitware.com/computer-vision/kwarray.git
             cd $HOME/kwarray
-            git checkout dev/0.5.10
+            git checkout dev/0.5.14
 
             # python setup.py bdist_wheel --universal
 
@@ -427,7 +431,7 @@ test_full/cp27-cp27mu-linux:
             pip install pip -U
             pip install pip setuptools -U
             python -V  # Print out python version for debugging
-            pip install .[tests]
+            pip install .[all]
 
             # Fixes the LibGL error
             #apt update && apt install libgl1-mesa-glx -y && rm -rf /var/lib/apt/lists/*
