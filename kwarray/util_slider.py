@@ -198,6 +198,7 @@ class SlidingWindow(ub.NiceRepr):
         Example:
             >>> from kwarray.util_slider import *  # NOQA
             >>> window = (10, 10)
+            >>> shape = (20, 20)
             >>> self = SlidingWindow(shape, window, stride=5)
             >>> itered_items = list(self)
             >>> assert len(itered_items) == len(self)
