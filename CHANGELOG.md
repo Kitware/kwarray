@@ -4,7 +4,13 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.14 - Unreleased
+## Version 0.5.15 - Unreleased
+
+### Added
+* Add `util_slider`.
+
+
+## Version 0.5.14 - Released 2021-04-22
 
 ### Added
 * Add `argsort` to ArrayAPI.

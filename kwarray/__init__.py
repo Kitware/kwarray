@@ -20,7 +20,7 @@ __explicit__ = [
     'ArrayAPI', 'dtype_info',
 ]
 
-__version__ = '0.5.14'
+__version__ = '0.5.15'
 
 from kwarray.arrayapi import ArrayAPI, dtype_info
 
@@ -41,13 +41,15 @@ from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
                          isect_flags, iter_reduce_ufunc, normalize,)
 from .util_random import (ensure_rng, random_combinations, random_product,
                           seed_global, shuffle,)
+from .util_slider import (SlidingWindow, Stitcher,)
 from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
 __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'FlatIndexer',
-           'LocLight', 'RunningStats', 'apply_grouping', 'arglexmax',
-           'argmaxima', 'argminima', 'atleast_nd', 'boolmask', 'dtype_info',
-           'ensure_rng', 'group_consecutive', 'group_consecutive_indices',
-           'group_indices', 'group_items', 'isect_flags', 'iter_reduce_ufunc',
+           'LocLight', 'RunningStats', 'SlidingWindow', 'Stitcher',
+           'apply_grouping', 'arglexmax', 'argmaxima', 'argminima',
+           'atleast_nd', 'boolmask', 'dtype_info', 'ensure_rng',
+           'group_consecutive', 'group_consecutive_indices', 'group_indices',
+           'group_items', 'isect_flags', 'iter_reduce_ufunc',
            'maxvalue_assignment', 'mincost_assignment', 'mindist_assignment',
            'normalize', 'one_hot_embedding', 'one_hot_lookup',
            'random_combinations', 'random_product', 'seed_global', 'setcover',
