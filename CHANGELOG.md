@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.16 - Unreleased
 
+### Added
+* Add `util_slices` with `padded_slice` and `embed_slice`
+
 
 ## Version 0.5.15 - Released 2021-04-25
 
