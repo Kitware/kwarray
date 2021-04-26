@@ -259,6 +259,27 @@ stages:
 
 ### JOBS ###
 # Define the actual jobs
+#
+# ---------------
+# Python 3.9 Jobs
+
+build/cp39-cp39-linux:
+    <<:
+        - *build_template
+    image:
+        gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
+
+test_full/cp39-cp39-linux:
+    <<:
+        - *test_full_template
+    image:
+        gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
+
+test_minimal/cp39-cp39-linux:
+    <<:
+        - *test_minimal_template
+    image:
+        gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
 
 # ---------------
 # Python 3.8 Jobs
