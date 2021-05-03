@@ -201,6 +201,10 @@ def embed_slice(slices, data_dims, pad=None):
 
     # Determine the real part of the image that can be sliced out
     for D_img, d_low, d_high, d_pad in zip(data_dims, low_dims, high_dims, pad_slice):
+        if d_low is None:
+            d_low = 0
+        if d_high is None:
+            d_high = D_img
         if d_low > d_high:
             raise ValueError('d_low > d_high: {} > {}'.format(d_low, d_high))
         # Determine where the bounds would be if the image size was inf
