@@ -411,18 +411,25 @@ class Distribution(Parameterized, _RBinOpMixin):
         raise NotImplementedError('overwrite me')
 
     @classmethod
-    def cast(cls, arg):
+    def coerce(cls, arg, rng=None):
         if isinstance(arg, cls):
-            return arg
+            self = arg
         elif isinstance(arg, Distribution):
             # allow distribution substitution
-            return arg
+            self = arg
         elif isinstance(arg, (list, tuple)):
-            return cls(*arg)
+            self = cls(*arg, rng=rng)
         elif isinstance(arg, dict):
-            return cls(**arg)
+            self = cls(**arg, rng=rng)
         else:
-            raise CastError('cannot cast {} as {}'.format(arg, cls))
+            raise CoerceError('cannot coerce {} as {}'.format(arg, cls))
+        return self
+
+    @classmethod
+    def cast(cls, arg):
+        import warnings
+        warnings.warn('Distributions.cast is deprecated. Use coerce')
+        return cls.coerce(arg)
 
     @classmethod
     def seeded(cls, rng=0):
@@ -545,13 +552,17 @@ def _trysample(arg, shape):
         return arg
 
 
-class CastError(ValueError):
+class CoerceError(ValueError):
     pass
+
+
+# Temporary backwards compat
+CastError = CoerceError
 
 
 class Uniform(Distribution):
     """
-    Defaults to a uniform distribution between 0 and 1
+    Defaults to a uniform distribution over floats between 0 and 1
 
     Example:
         >>> self = Uniform(rng=0)
@@ -579,10 +590,10 @@ class Uniform(Distribution):
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
 
     @classmethod
-    def cast(cls, arg):
+    def coerce(cls, arg):
         try:
-            self = super(Uniform, cls).cast(arg)
-        except CastError:
+            self = super(Uniform, cls).coerce(arg)
+        except CoerceError:
             if isinstance(arg, (int, float)):
                 self = cls(low=0, high=arg)
             else:
@@ -631,10 +642,14 @@ class Constant(Distribution):
 
 class DiscreteUniform(Distribution):
     """
-    Max is exclusive
+    Uniform distribution over integers.
+
+    Args:
+        min (int): inclusive minimum
+        max (int): exclusive maximum
 
     Example:
-        >>> self = DiscreteUniform.cast(4)
+        >>> self = DiscreteUniform.coerce(4)
         >>> self.sample(100)
     """
     def __init__(self, min=0, max=1, rng=None):
@@ -649,12 +664,12 @@ class DiscreteUniform(Distribution):
         return idx
 
     @classmethod
-    def cast(cls, arg):
+    def coerce(cls, arg, rng=None):
         try:
-            self = super(DiscreteUniform, cls).cast(arg)
-        except CastError:
+            self = super(DiscreteUniform, cls).coerce(arg, rng=rng)
+        except CoerceError:
             if isinstance(arg, (int, float)):
-                self = cls(max=arg)
+                self = cls(max=arg, rng=rng)
             else:
                 raise
         return self
@@ -691,10 +706,10 @@ class Bernoulli(Distribution):
         return self.rng.rand(*shape) < self.p
 
     @classmethod
-    def cast(cls, arg):
+    def coerce(cls, arg):
         try:
-            self = super(Bernoulli, cls).cast(arg)
-        except CastError:
+            self = super(Bernoulli, cls).coerce(arg)
+        except CoerceError:
             if isinstance(arg, (int, float)):
                 self = cls(p=arg)
             else:
