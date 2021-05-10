@@ -15,6 +15,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 * Renamed `cast` to `coerce` in distributions.
 
+### Changed
+* `SlidingWindow` no longer returns slices that start at negative indexes.
+
 
 ## Version 0.5.16 - Released 2021-04-26
 

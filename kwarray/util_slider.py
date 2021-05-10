@@ -84,6 +84,17 @@ class SlidingWindow(ub.NiceRepr):
          [(4, 0), (4, 1), (4, 2), (4, 3), (4, 4)],
          [(5, 0), (5, 1), (5, 2), (5, 3), (5, 4)],
          [(6, 0), (6, 1), (6, 2), (6, 3), (6, 4)]]
+
+    Example:
+        >>> # Test shapes that dont fit
+        >>> from kwarray.util_slider import *  # NOQA
+        >>> # When the window is bigger than the shape, the left-aligned slices
+        >>> # are returend.
+        >>> shape = (3, 3)
+        >>> window = (12, 12)
+        >>> self = SlidingWindow(shape, window, allow_overshoot=True, keepbound=True)
+        >>> for i, index in enumerate(self):
+        >>>     print('i={}, index={}'.format(i, index))
     """
     def __init__(self, shape, window, overlap=None, stride=None,
                  keepbound=False, allow_overshoot=False):
@@ -387,13 +398,15 @@ def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
     Helper to generates slices in a single dimension.
 
     Args:
-        start (int): starting point (in most cases set this to 0)
 
         margin (int): the length of the slice (window)
 
         stop (int): the length of the image dimension
 
-        step (int): the length of each step / distance between slices
+        step (int, default=None): the length of each step / distance between
+            slices
+
+        start (int, default=0): starting point (in most cases set this to 0)
 
         keepbound (bool): if True, a non-uniform step will be taken to ensure
             that the right / bottom of the image is returned as a slice if
@@ -455,5 +468,7 @@ def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
                 # Ensure the boundary is always used even if steps
                 # would overshoot Could do some other strategy here
                 pos = stop - margin
+                if pos < 0:
+                    break
             else:
                 break
