@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.19 - Unreleased
 
+### Changed
+* `SlidingWindow` no longer returns slices that start at negative indexes.
+* `SlidingWindow` can now handle None values in the window.
+
 
 ## Version 0.5.18 - Released 2021-05-10
 
@@ -14,9 +18,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 * Renamed `cast` to `coerce` in distributions.
-
-### Changed
-* `SlidingWindow` no longer returns slices that start at negative indexes.
 
 
 ## Version 0.5.16 - Released 2021-04-26

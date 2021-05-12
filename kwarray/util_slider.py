@@ -87,33 +87,21 @@ class SlidingWindow(ub.NiceRepr):
 
     Example:
         >>> # Test shapes that dont fit
-        >>> from kwarray.util_slider import *  # NOQA
         >>> # When the window is bigger than the shape, the left-aligned slices
         >>> # are returend.
-        >>> shape = (3, 3)
-        >>> window = (12, 12)
-        >>> self = SlidingWindow(shape, window, allow_overshoot=True, keepbound=True)
-        >>> for i, index in enumerate(self):
-        >>>     print('i={}, index={}'.format(i, index))
+        >>> self = SlidingWindow((3, 3), (12, 12), allow_overshoot=True, keepbound=True)
+        >>> print(list(self))
+        [(slice(0, 12, None), slice(0, 12, None))]
+        >>> print(list(SlidingWindow((3, 3), None, allow_overshoot=True, keepbound=True)))
+        [(slice(0, 3, None), slice(0, 3, None))]
+        >>> print(list(SlidingWindow((3, 3), (None, 2), allow_overshoot=True, keepbound=True)))
+        [(slice(0, 3, None), slice(0, 2, None)), (slice(0, 3, None), slice(1, 3, None))]
     """
     def __init__(self, shape, window, overlap=None, stride=None,
                  keepbound=False, allow_overshoot=False):
-        if overlap is None and stride is None:
-            overlap = 0
 
-        assert len(window) == len(shape), (
-            'incompatible dims: {} {}'.format(len(window),
-                                              len(shape)))
-        # assert all(d <= D for d, D in zip(window, shape)), (
-        #         'window must be smaller than shape')
-
-        stride, overlap = self._compute_stride(overlap, stride, shape,
-                                               window)
-
-        # print('stride = {!r}'.format(stride))
-        if not all(stride):
-            raise ValueError(
-                'Step must be positive everywhere. Got={}'.format(stride))
+        stride, overlap, window = self._compute_stride(
+            overlap, stride, shape, window)
 
         stide_kw = [dict(margin=d, stop=D, step=s, keepbound=keepbound,
                          check=not keepbound and not allow_overshoot)
@@ -165,10 +153,24 @@ class SlidingWindow(ub.NiceRepr):
         Ensures that stride hasoverlap the correct shape.  If stride is not
         provided, compute stride from desired overlap.
         """
+        if window is None:
+            window = shape
+
         if isinstance(stride, np.ndarray):
             stride = tuple(stride)
+
         if isinstance(overlap, np.ndarray):
             overlap = tuple(overlap)
+
+        if len(window) != len(shape):
+            raise ValueError('incompatible dims: {} {}'.format(len(window),
+                                                               len(shape)))
+
+        if any(d is None for d in window):
+            window = [D if d is None else d for d, D in zip(window, shape)]
+
+        if overlap is None and stride is None:
+            overlap = 0
 
         if not (overlap is None) ^ (stride is None):
             raise ValueError('specify overlap({}) XOR stride ({})'.format(
@@ -187,8 +189,13 @@ class SlidingWindow(ub.NiceRepr):
                 stride = [stride] * len(window)
         # Recompute fractional overlap after integer stride is computed
         overlap = [(d - s) / d for s, d in zip(stride, window)]
+
         assert len(stride) == len(shape), 'incompatible dims'
-        return stride, overlap
+
+        if not all(stride):
+            raise ValueError(
+                'Step must be positive everywhere. Got={}'.format(stride))
+        return stride, overlap, window
 
     def __len__(self):
         return self.n_total
