@@ -4,7 +4,14 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.18 - Unreleased
+## Version 0.5.19 - Unreleased
+
+### Changed
+* `SlidingWindow` no longer returns slices that start at negative indexes.
+* `SlidingWindow` can now handle None values in the window.
+
+
+## Version 0.5.18 - Released 2021-05-10
 
 
 ## Version 0.5.17 - Released 2021-05-05
