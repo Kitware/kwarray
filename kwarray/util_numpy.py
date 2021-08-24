@@ -620,6 +620,10 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             # This chooses alpha such the original min/max value will be pushed
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
+
+        if alpha == 0:
+            alpha = 1
+
         energy = float_out
         energy -= beta
         energy /= alpha
