@@ -621,7 +621,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
 
-        if alpha == 0:
+        if np.isclose(alpha, 0):
             alpha = 1
 
         energy = float_out
