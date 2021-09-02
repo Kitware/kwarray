@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.20 - Unreleased
 
+### Added
+* Added weights argument to RunningStats
+
 
 ## Version 0.5.19 - Released 2021-05-13
 
