@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 * Added weights argument to RunningStats
 * argminima now supports axis
+* Add `unique_rows`
 
 
 ## Version 0.5.19 - Released 2021-05-13

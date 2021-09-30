@@ -479,6 +479,62 @@ def argminima(arr, num, axis=None, ordered=True):
     return idxs
 
 
+# def unique_axis(arr, axis):
+#     """
+#     Like unique and unique_rows, but looks over any single axis
+
+#     Args:
+#         axis (int): axis to consider as a whole unit
+
+#     References:
+#         https://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array
+
+#     >>> import kwarray
+#     rng = kwarray.ensure_rng(0)
+#     arr = rng.randint(0, 2, size=(2, 2, 3, 2, 2)).T
+#     axis = 2
+#     """
+#     raise NotImplementedError
+#     orig_shape = arr.shape
+#     axis_len = arr.shape[axis]
+#     dtype_view = np.dtype((np.void, arr.dtype.itemsize * axis_len))
+#     arr_swap = arr.swapaxes(axis, 0)
+#     arr_swap_flat = arr_swap.reshape(axis_len, -1).T
+#     arr_swap_view = np.ascontiguousarray(arr_swap).view(dtype_view)
+#     arr_swap_view_unique = np.unique(arr_swap_view)
+#     arr_swap_unique = arr_swap_view_unique.view(arr.dtype)
+#     arr_unique =
+#     arr_swap_unique.reshape(-1, axis_len).T
+#     # return (
+#     #     .reshape(-1, arr.shape[1])
+#     # )
+
+def unique_rows(arr):
+    """
+    Like unique, but works on rows
+
+    Args:
+        arr (ndarray): must be a contiguous C style array
+
+    References:
+        https://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array
+
+    Example:
+        >>> import kwarray
+        >>> from kwarray.util_numpy import *  # NOQA
+        >>> rng = kwarray.ensure_rng(0)
+        >>> arr = rng.randint(0, 2, size=(12, 3))
+        >>> arr_unique = unique_rows(arr)
+        >>> print('arr_unique = {!r}'.format(arr_unique))
+    """
+    dtype_view = np.dtype((np.void, arr.dtype.itemsize * arr.shape[1]))
+    arr_view = arr.view(dtype_view)
+    arr_view_unique = np.unique(arr_view)
+    arr_flat_unique = arr_view_unique.view(arr.dtype)
+    arr_unique = arr_flat_unique.reshape(-1, arr.shape[1])
+    return arr_unique
+
+
 def arglexmax(keys, multi=False):
     """
     Find the index of the maximum element in a sequence of keys.
