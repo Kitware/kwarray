@@ -8,6 +8,14 @@ except Exception:
     torch = None
 
 
+def _is_in_onnx_export():
+    try:
+        # Does not exist for older torch versions
+        return torch.onnx.is_in_onnx_export()
+    except AttributeError:
+        return False
+
+
 def one_hot_embedding(labels, num_classes, dim=1):
     """
     Embedding labels to one-hot form.
@@ -237,7 +245,7 @@ def one_hot_lookup(data, indices):
         >>> print('pt_outputs = {!r}'.format(pt_outputs))
     """
     if torch is not None and torch.is_tensor(indices):
-        if torch.onnx.is_in_onnx_export():
+        if _is_in_onnx_export():
 
             # Don't use eye for ONNX
             ASSUME_OPTSET = 10
