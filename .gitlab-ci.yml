@@ -261,9 +261,9 @@ stages:
 #.image_python3_10: &image_python3_10
 #    #gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.10
 #    python:3.10
-#.image_python39: &image_python39
-#    #gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
-#    python:3.9
+.image_python39: &image_python39
+    gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
+    #python:3.9
 .image_python38: &image_python38
     gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.8
     #python:3.8
@@ -284,6 +284,91 @@ stages:
 
 ### JOBS ###
 # Define the actual jobs
+
+# ---------------
+# Python 3.10 Jobs
+
+
+build/cp3_10-cp3_10-linux:
+    <<: 
+        - *build_template
+    image:
+        *image_python3_10
+
+test_full_loose/cp3_10-cp3_10-linux:
+    <<: 
+        - *test_full_loose_template
+    image:
+        *image_python3_10
+    needs: 
+        -  build/cp3_10-cp3_10-linux
+
+test_minimal_loose/cp3_10-cp3_10-linux:
+    <<: 
+        - *test_minimal_loose_template
+    image:
+        *image_python3_10
+    needs: 
+        -  build/cp3_10-cp3_10-linux
+
+test_full_strict/cp3_10-cp3_10-linux:
+    <<: 
+        - *test_full_strict_template
+    image:
+        *image_python3_10
+    needs: 
+        -  build/cp3_10-cp3_10-linux
+
+test_minimal_strict/cp3_10-cp3_10-linux:
+    <<: 
+        - *test_minimal_strict_template
+    image:
+        *image_python3_10
+    needs: 
+        -  build/cp3_10-cp3_10-linux
+
+# ---------------
+# Python 3.9 Jobs
+
+
+build/cp39-cp39-linux:
+    <<: 
+        - *build_template
+    image:
+        *image_python39
+
+test_full_loose/cp39-cp39-linux:
+    <<: 
+        - *test_full_loose_template
+    image:
+        *image_python39
+    needs: 
+        -  build/cp39-cp39-linux
+
+test_minimal_loose/cp39-cp39-linux:
+    <<: 
+        - *test_minimal_loose_template
+    image:
+        *image_python39
+    needs: 
+        -  build/cp39-cp39-linux
+
+test_full_strict/cp39-cp39-linux:
+    <<: 
+        - *test_full_strict_template
+    image:
+        *image_python39
+    needs: 
+        -  build/cp39-cp39-linux
+
+test_minimal_strict/cp39-cp39-linux:
+    <<: 
+        - *test_minimal_strict_template
+    image:
+        *image_python39
+    needs: 
+        -  build/cp39-cp39-linux
+
 
 # ---------------
 # Python 3.8 Jobs
