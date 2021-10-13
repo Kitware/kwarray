@@ -296,7 +296,7 @@ def one_hot_lookup(data, indices):
             if _TORCH_HAS_BOOL_COMP:
                 ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
             else:
-                ohe = torch.eye(data.shape[1], dtype=torch.byte, device=indices.device)[indices]
+                ohe = torch.eye(data.shape[1], dtype=torch.uint8, device=indices.device)[indices]
             out = data[ohe]
     else:
         # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(np.bool)
