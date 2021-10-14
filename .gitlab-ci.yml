@@ -601,7 +601,7 @@ test_minimal_strict/cp27-cp27m-linux:
             #docker run -it gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.5
             
             # Test with strict requirements
-            IMAGE_NAME=gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.6
+            IMAGE_NAME=gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.9
             docker run -v $PWD:/io -v $HOME/.cache/pip:/pip_cache -it $IMAGE_NAME bash
             ###############
             # Inside Docker
