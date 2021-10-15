@@ -201,27 +201,13 @@ def atleast_nd(arr, n, front=False):
         [[[[0]]]]
         [[[[[1]]]]]
 
-    Ignore:
-        # Hmm, mine is actually faster
-        %timeit atleast_nd(arr, 3)
-        %timeit np.atleast_3d(arr)
+    Notes:
+        Extensive benchmarks are in
+        kwarray/dev/bench_atleast_nd.py
 
-    Benchmark:
-
-        import ubelt
-        N = 100
-
-        t1 = ubelt.Timerit(N, label='mine')
-        for timer in t1:
-            arr = np.empty((10, 10))
-            with timer:
-                atleast_nd(arr, 3)
-
-        t2 = ubelt.Timerit(N, label='baseline')
-        for timer in t2:
-            arr = np.empty((10, 10))
-            with timer:
-                np.atleast_3d(arr)
+        These demonstrate that this function is statistically faster than the
+        numpy variants, although the difference is small.  On average this
+        function takes 480ns versus numpy which takes 790ns.
     """
     arr_ = np.asanyarray(arr)
     ndims = len(arr_.shape)
