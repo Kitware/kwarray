@@ -3,6 +3,7 @@
 Numpy specific extensions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import math
 import numpy as np
 
 
@@ -616,8 +617,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
         >>> raw_f = np.random.rand(8, 8) * 100
         >>> norm_f = normalize(raw_f)
-        >>> assert np.isclose(norm_f.min(), 0)
-        >>> assert np.isclose(norm_f.max(), 1)
+        >>> assert math.isclose(norm_f.min(), 0)
+        >>> assert math.isclose(norm_f.max(), 1)
 
         >>> raw_u = (np.random.rand(8, 8) * 255).astype(np.uint8)
         >>> norm_u = normalize(raw_u)
@@ -744,7 +745,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
 
-        if np.isclose(alpha, 0):
+        if math.isclose(alpha, 0):
             alpha = 1
 
         energy = float_out
@@ -765,6 +766,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
     if float_out is not out:
         out[:] = float_out.astype(out.dtype)
+
     return out
 
 

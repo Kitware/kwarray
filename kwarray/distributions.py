@@ -12,6 +12,7 @@ Similar Libraries:
 TODO:
     - [ ] change sample shape to just a single num.
     - [ ] Some Distributions will output vectors. Maybe we could just postpend the dimensions?
+    - [ ] Expose as kwstats?
 
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
@@ -19,6 +20,19 @@ import numpy as np
 import ubelt as ub
 import functools
 from kwarray.util_random import ensure_rng
+
+__all__ =  [
+    # __primary__ = [
+    'Bernoulli',
+    'Binomial',
+    'Categorical',
+    'Exponential',
+    'Constant',
+    'DiscreteUniform',
+    'Normal',
+    'TruncNormal',
+    'Uniform',
+]
 
 
 def _issubclass2(child, parent):
@@ -898,7 +912,7 @@ class PDF(Distribution):
     """
     BROKEN?
 
-    Similar to Catigorical, but interpolates to approximate a continuous random
+    Similar to Categorical, but interpolates to approximate a continuous random
     variable.
 
     Returns a value x with probability p.
