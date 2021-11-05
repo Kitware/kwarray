@@ -3,8 +3,14 @@
 Numpy specific extensions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-import math
 import numpy as np
+
+try:
+    # The math variant only exists in Python 3+ but is faster for scalars
+    # so try and use it
+    from math import isclose
+except Exception:
+    from numpy import isclose
 
 
 def boolmask(indices, shape=None):
@@ -617,8 +623,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
         >>> raw_f = np.random.rand(8, 8) * 100
         >>> norm_f = normalize(raw_f)
-        >>> assert math.isclose(norm_f.min(), 0)
-        >>> assert math.isclose(norm_f.max(), 1)
+        >>> assert isclose(norm_f.min(), 0)
+        >>> assert isclose(norm_f.max(), 1)
 
         >>> raw_u = (np.random.rand(8, 8) * 255).astype(np.uint8)
         >>> norm_u = normalize(raw_u)
@@ -745,7 +751,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
 
-        if math.isclose(alpha, 0):
+        if isclose(alpha, 0):
             alpha = 1
 
         energy = float_out
