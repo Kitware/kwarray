@@ -22,7 +22,7 @@ The top-level API is:
 
 .. code:: python
 
-    from kwarray.arrayapi import ArrayAPI
+    from kwarray.arrayapi import ArrayAPI, dtype_info
     from .algo_assignment import (maxvalue_assignment, mincost_assignment,
                                   mindist_assignment,)
     from .algo_setcover import (setcover,)
@@ -41,6 +41,7 @@ The top-level API is:
     from .util_slices import (embed_slice, padded_slice,)
     from .util_slider import (SlidingWindow, Stitcher,)
     from .util_torch import (one_hot_embedding, one_hot_lookup,)
+
 
 
 The ArrayAPI
