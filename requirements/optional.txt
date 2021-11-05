@@ -1,2 +1,10 @@
-torch >= 1.0.0
-pandas >= 0.23.0
+# See ~/local/tools/supported_python_versions_pip.py for helper script
+pandas>=1.2.0     ;                              python_version >= '3.7.1'    # Python 3.7.1+
+pandas>=1.0.0     ; python_version < '3.7.1' and python_version >= '3.6.1'    # Python 3.6.1
+pandas>=0.25.0    ; python_version < '3.6.1' and python_version >= '3.5.3'    # Python 3.5.3
+pandas>=0.23.0    ; python_version < '3.5.3' and python_version >= '2.7'      # Python 2.7
+
+
+torch >= 1.9.0            ;                              python_version >= '3.9.0'   # Python 3.9+
+torch >= 1.6.0            ; python_version < '3.9.0' and python_version >= '3.6.0'   # Python 3.6-3.8
+torch >= 1.0.0, < 1.6.0   ; python_version < '3.6.0'                                 # Python 3.5-

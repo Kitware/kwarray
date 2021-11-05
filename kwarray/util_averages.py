@@ -186,7 +186,8 @@ class RunningStats(ub.NiceRepr):
         - [ ] This may need a few API tweaks and good documentation
 
     Example:
-        >>> run = RunningStats()
+        >>> import kwarray
+        >>> run = kwarray.RunningStats()
         >>> ch1 = np.array([[0, 1], [3, 4]])
         >>> ch2 = np.zeros((2, 2))
         >>> img = np.dstack([ch1, ch2])
@@ -223,11 +224,22 @@ class RunningStats(ub.NiceRepr):
         except Exception:
             return None
 
-    def update(run, data):
+    def update(run, data, weights=1):
         """
         Updates statistics across all data dimensions on a per-element basis
+
+        Example:
+            >>> import kwarray
+            >>> data = np.full((7, 5), fill_value=1.3)
+            >>> weights = np.ones((7, 5), dtype=np.float32)
+            >>> run = kwarray.RunningStats()
+            >>> run.update(data, weights=1)
+            >>> run.update(data, weights=weights)
+            >>> rng = np.random
+            >>> weights[rng.rand(*weights.shape) > 0.5] = 0
+            >>> run.update(data, weights=weights)
         """
-        run.n += 1
+        run.n += weights
         run.raw_max = np.maximum(run.raw_max, data)
         run.raw_min = np.minimum(run.raw_min, data)
         run.raw_total += data
@@ -276,7 +288,7 @@ class RunningStats(ub.NiceRepr):
             ])
             return info
         else:
-            if run.n <= 0:
+            if np.all(run.n <= 0):
                 raise RuntimeError('No statistics have been accumulated')
             total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
             squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)

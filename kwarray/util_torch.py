@@ -2,10 +2,24 @@
 Torch specific extensions
 """
 import numpy as np
+from distutils.version import LooseVersion
+
+
 try:
     import torch
 except Exception:
     torch = None
+    _TORCH_HAS_BOOL_COMP = False
+else:
+    _TORCH_HAS_BOOL_COMP = LooseVersion(torch.__version__) >= LooseVersion('1.2.0')
+
+
+def _is_in_onnx_export():
+    try:
+        # Does not exist for older torch versions
+        return torch.onnx.is_in_onnx_export()
+    except AttributeError:
+        return False
 
 
 def one_hot_embedding(labels, num_classes, dim=1):
@@ -237,7 +251,7 @@ def one_hot_lookup(data, indices):
         >>> print('pt_outputs = {!r}'.format(pt_outputs))
     """
     if torch is not None and torch.is_tensor(indices):
-        if torch.onnx.is_in_onnx_export():
+        if _is_in_onnx_export():
 
             # Don't use eye for ONNX
             ASSUME_OPTSET = 10
@@ -279,7 +293,10 @@ def one_hot_lookup(data, indices):
             # Have to use multiply trick to satisfy onnx
             out = (data * ohe).sum(dim=1)
         else:
-            ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
+            if _TORCH_HAS_BOOL_COMP:
+                ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
+            else:
+                ohe = torch.eye(data.shape[1], dtype=torch.uint8, device=indices.device)[indices]
             out = data[ohe]
     else:
         # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(np.bool)

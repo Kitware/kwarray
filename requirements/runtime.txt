@@ -1,7 +1,12 @@
-scipy >= 1.2.1
-numpy >= 1.9.0
 ubelt >= 0.8.2
 six >= 1.11.0
+
+# tensorflow requires 1.19.3
+numpy >= 1.19.3  ;                              python_version >= '3.6.0'  # Python 3.6+
+numpy >= 1.16.6  ; python_version < '3.6.0' and python_version >= '2.7.0'  # Python 2.7 - 3.6
+
+scipy>=1.6.0     ;                              python_version >= '3.7'    # Python 3.7+
+scipy>=1.2.1     ; python_version < '3.7.0' and python_version >= '2.7.0'  # Python 2.7 - 3.6
 
 
 future;python_version<='2.7'  # not sure why this is needed, but tests fail on py27 if it doesnt exist.

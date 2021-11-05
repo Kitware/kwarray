@@ -3,6 +3,11 @@ Utilities related to slicing
 
 References:
     https://stackoverflow.com/questions/41153803/zero-padding-slice-past-end-of-array-in-numpy
+
+TODO:
+    - [ ] Could have a kwarray function to expose this inverse slice
+          functionality. Also having a top-level call to apply an embedded slice
+          would be good.
 """
 import ubelt as ub
 import numpy as np
@@ -82,11 +87,8 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
     # separate requested slice into an in-bounds part and a padding part
     data_slice, extra_padding = embed_slice(slices, data_dims, pad=pad)
 
-    # Get the parts of the image that are in-bounds
-    data_clipped = data[data_slice]
-
-    # Apply the padding part
-    data_sliced = _apply_padding(data_clipped, extra_padding, **padkw)
+    # Crop to the data slice, and then extend with requested padding
+    data_sliced = apply_embedded_slice(data, data_slice, extra_padding, **padkw)
 
     if return_info:
         st_dims = [(sl.start - pad_[0], sl.stop + pad_[1])
@@ -99,6 +101,52 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
         return data_sliced, transform
     else:
         return data_sliced
+
+
+__TODO__ = """
+
+    - [ ] Could have a kwarray function to expose this inverse slice
+          functionality. Also having a top-level call to apply an embedded slice
+          would be good.
+
+    chip_index = tuple([slice(tl_y, br_y), slice(tl_x, br_x)])
+    data_slice, padding = kwarray.embed_slice(chip_index, imdata.shape)
+    # TODO: could have a kwarray function to expose this inverse slice
+    # functionality. Also having a top-level call to apply an embedded
+    # slice would be good
+    inverse_slice = (
+        slice(padding[0][0], imdata.shape[0] - padding[0][1]),
+        slice(padding[1][0], imdata.shape[1] - padding[1][1]),
+    )
+    chip = kwarray.padded_slice(imdata, chip_index)
+    chip = imdata[chip_index]
+
+    fgdata = function(chip)
+
+    # Apply just the data part back to the original
+    imdata[tl_y:br_y, tl_x:br_x, :] = fgdata[inverse_slice]
+"""
+
+
+def apply_embedded_slice(data, data_slice, extra_padding, **padkw):
+    """
+    Apply a precomputed embedded slice.
+
+    This is used as a subroutine in padded_slice.
+
+    Args:
+        data (ndarray): data to slice
+        data_slice (Tuple[slice]) first output of embed_slice
+        extra_padding (Tuple[slice]) second output of embed_slice
+
+    Returns:
+        ndarray
+    """
+    # Get the parts of the image that are in-bounds
+    data_clipped = data[data_slice]
+    # Apply the padding part
+    data_sliced = _apply_padding(data_clipped, extra_padding, **padkw)
+    return data_sliced
 
 
 def _apply_padding(array, pad_width, **padkw):
@@ -134,6 +182,9 @@ def embed_slice(slices, data_dims, pad=None):
     Given a slices for each dimension, image dimensions, and a padding get the
     corresponding slice from the image and any extra padding needed to achieve
     the requested window size.
+
+    TODO:
+        - [ ] Add the option to return the inverse slice
 
     Args:
         slices (Tuple[slice, ...]):

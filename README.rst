@@ -35,9 +35,11 @@ The top-level API is:
                               group_items,)
     from .util_misc import (FlatIndexer,)
     from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
-                             isect_flags, iter_reduce_ufunc,)
+                             isect_flags, iter_reduce_ufunc, normalize,)
     from .util_random import (ensure_rng, random_combinations, random_product,
                               seed_global, shuffle,)
+    from .util_slices import (embed_slice, padded_slice,)
+    from .util_slider import (SlidingWindow, Stitcher,)
     from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
 
