@@ -191,7 +191,7 @@ stages:
         - CI_SECRET=${!VARNAME_CI_SECRET}
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc | $GPG_EXECUTABLE --import-ownertrust
-        - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
+        - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_subkeys.pgp.enc | $GPG_EXECUTABLE --import
         - $GPG_EXECUTABLE --list-keys  || echo "first one fails for some reason"
         - $GPG_EXECUTABLE --list-keys
         # The publish script only tags and uploads the built wheels if DO_TAG=True DO_UPLOAD=True
@@ -235,7 +235,7 @@ stages:
         - CI_SECRET=${!VARNAME_CI_SECRET}
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc | $GPG_EXECUTABLE --import-ownertrust
-        - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
+        - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_subkeys.pgp.enc | $GPG_EXECUTABLE --import
         - $GPG_EXECUTABLE --list-keys  || echo "first one fails for some reason"
         - $GPG_EXECUTABLE --list-keys
         # Install twine
