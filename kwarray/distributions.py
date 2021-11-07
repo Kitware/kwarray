@@ -48,14 +48,14 @@ class Value(ub.NiceRepr):
     For class param Values
 
     Examle:
-        from kwarray.distributions import *  # NOQA
-        self = Value(43.5)
-        print(Value(name='lucy'))
-        print(Value(name='jeff', default=1))
-        self = Value(name='fred', default=1.0)
-        print('self = {}'.format(ub.repr2(self, nl=1)))
-        print(Value(name='bob', default=1.0, min=-5, max=5))
-        print(Value(name='alice', default=1.0, min=-5))
+        >>> from kwarray.distributions import *  # NOQA
+        >>> self = Value(43.5)
+        >>> print(Value(name='lucy'))
+        >>> print(Value(name='jeff', default=1))
+        >>> self = Value(name='fred', default=1.0)
+        >>> print('self = {}'.format(ub.repr2(self, nl=1)))
+        >>> print(Value(name='bob', default=1.0, min=-5, max=5))
+        >>> print(Value(name='alice', default=1.0, min=-5))
     """
     def __init__(self, default=None, min=None, max=None, help=None,
                  constraints=None, type=None, name=None):
@@ -524,17 +524,23 @@ class Distribution(Parameterized, _RBinOpMixin):
     """
     __params__ = NotImplemented  # overwrite!
 
-    def __init__(self, rng=None, **_vals):
+    def __init__(self, *args, **kwargs):
         super().__init__()
+        rng = kwargs.pop('rng', None)
         self.rng = ensure_rng(rng)
         constraints = []
         __params__ = self.__params__
         if __params__ is NotImplemented:
-            print('Warning, no params')
+            print('Warning, no params: self={!r}'.format(self))
         elif isinstance(__params__, dict):
-            for key, info in __params__.items():
+            for paramx, (key, info) in enumerate(__params__.items()):
                 info.name = key
-                val = _vals.get(key, info.default)
+                if paramx < len(args):
+                    val = args[paramx]
+                    if key in kwargs:
+                        raise ValueError('arg pased as both positional and keyword')
+                else:
+                    val = kwargs.get(key, info.default)
                 self._setparam(key, val)
                 if info.min:
                     constraints.append(lambda: val >= info.min)
@@ -564,19 +570,19 @@ class Distribution(Parameterized, _RBinOpMixin):
             xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
 
         Example:
-            >>> import kwarray
             >>> from kwarray.distributions import *  # NOQA
-            >>> cls = kwarray.Distribution
+            >>> cls = Distribution
             >>> components = []
-            >>> for _ in range(10):
-            >>>     self = kwarray.Distribution.random()
-            >>>     print('self = {!r}'.format(self))
+            >>> for _ in range(5):
+            >>>     self = cls.random()
             >>>     components.append(self)
             >>> mixed = Mixture(components)
+            >>> print('mixed = {!r}'.format(mixed))
             >>> # xdoctest: +REQUIRES(--show)
             >>> import kwplot
             >>> kwplot.autompl()
-            >>> self.plot(50)
+            >>> kwplot.figure(fnum=1, doclf=True)
+            >>> mixed.plot('1s', bins=256)
             >>> kwplot.show_if_requested()
         """
         rng = ensure_rng(rng)
@@ -585,30 +591,29 @@ class Distribution(Parameterized, _RBinOpMixin):
                 # Bernoulli,
                 # Binomial,
                 # Categorical,
-                # Exponential,
                 # Constant,
                 # DiscreteUniform,
                 Normal,
+                Exponential,
                 # TruncNormal,
                 # Uniform,
             ]
             chosen = rng.choice(_PRIMATIVES)
             self = chosen.random(rng=rng)
         else:
-            kw = {}
-            for k, v in cls.__params__.items():
-                type = v.type
-                if type is not None:
-                    sample = v.sample(rng=rng)
-                kw[k] = sample
-            self = cls(rng=rng, **kw)
+            try:
+                kw = {}
+                for k, v in cls.__params__.items():
+                    type = v.type
+                    if type is not None:
+                        sample = v.sample(rng=rng)
+                    kw[k] = sample
+                self = cls(rng=rng, **kw)
+            except Exception:
+                print('Error constructing random cls = {!r}'.format(cls))
+                raise
+                pass
         return self
-        # while True:
-        #     except Exception:
-        #         print('error choosing chosen = {!r}'.format(chosen))
-        #         pass
-        #     else:
-        #         return self
 
     @classmethod
     def coerce(cls, arg, rng=None):
@@ -635,7 +640,7 @@ class Distribution(Parameterized, _RBinOpMixin):
     def seeded(cls, rng=0):
         return Seeded(rng, cls)
 
-    def plot(self, n, bins='auto', stat='count', color=None, kde=False,
+    def plot(self, n='0.01s', bins='auto', stat='count', color=None, kde=True,
              ax=None, **kwargs):
         """
         Plots ``n`` samples from the distribution.
@@ -656,12 +661,16 @@ class Distribution(Parameterized, _RBinOpMixin):
             >>> # xdoctest: +REQUIRES(--show)
             >>> import kwplot
             >>> kwplot.autompl()
-            >>> self.plot(50)
+            >>> self.plot(n=1000)
         """
         import seaborn as sns
-        data = self.sample(n)
-        sns.histplot(data, ax=ax, bins=bins, color=color, stat=stat,
-                     kde=kde, **kwargs)
+        if isinstance(n, str):
+            data = generate_on_a_time_budget(func=lambda: self.sample(100), maxiters=1000, budget=n)
+            print(len(data))
+        else:
+            data = self.sample(n)
+        return sns.histplot(data, ax=ax, bins=bins, color=color, stat=stat,
+                            kde=kde, **kwargs)
 
     def _show(self, n, bins=None, ax=None, color=None, label=None):
         """ plot samples monte-carlo style """
@@ -672,6 +681,38 @@ class Distribution(Parameterized, _RBinOpMixin):
             ax = plt.gca()
         data = self.sample(n)
         ax.hist(data, bins=bins, color=color, label=label)
+
+
+def coerce_timedelta(data):
+    import pytimeparse
+    import datetime
+    if isinstance(data, datetime.timedelta):
+        delta = data
+        num_seconds = delta.total_seconds()
+    elif isinstance(data, numbers.Number):
+        num_seconds = data
+    else:
+        num_seconds = pytimeparse.parse(data)
+        if num_seconds is None:
+            raise ValueError(f'{data} is not a parsable delta')
+    return num_seconds
+
+
+def generate_on_a_time_budget(func, maxiters, budget):
+    """
+    budget = 60
+    """
+    seconds = coerce_timedelta(budget)
+    timer = ub.Timer().tic()
+    accum = []
+    accum.append(func())
+    if timer.toc() < seconds / 2.0:
+        for i in range(1, maxiters):
+            if timer.toc() >= seconds:
+                break
+            accum.append(func())
+    data = np.hstack(accum)
+    return data
 
 
 class Mixture(Distribution):
@@ -698,6 +739,9 @@ class Mixture(Distribution):
         https://stephens999.github.io/fiveMinuteStats/intro_to_mixture_models.html
         .. [GrosseMixture] https://www.cs.toronto.edu/~rgrosse/csc321/mixture_models.pdf
 
+    CommandLine:
+        xdoctest -m kwarray.distributions Mixture:1 --show
+
     Example:
         >>> # In this examle we create a bimodal mixture of normals
         >>> pdfs = [Normal(mean=10, std=2), Normal(18, 2)]
@@ -722,16 +766,17 @@ class Mixture(Distribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, pnum=(2, 2, 1))
         >>> ax = kwplot.figure(pnum=(2, 1, 1), title='n1 & n2').gca()
-        >>> n = 100_000
+        >>> n = 10_000
         >>> plotkw = dict(stat='density', kde=1, bins=1000)
         >>> plotkw = dict(stat='count', kde=1, bins=1000)
-        >>> plotkw = dict(stat='frequency', kde=1, bins='auto')
+        >>> #plotkw = dict(stat='frequency', kde=1, bins='auto')
         >>> n1.plot(n, ax=ax, **plotkw)
         >>> n2.plot(n, ax=ax, **plotkw)
         >>> ax=kwplot.figure(pnum=(2, 2, 3), title='composed').gca()
         >>> composed.plot(n, ax=ax, **plotkw)
         >>> ax=kwplot.figure(pnum=(2, 2, 4), title='mixture').gca()
         >>> mixture.plot(n, ax=ax, **plotkw)
+        >>> kwplot.show_if_requested()
     """
     def __init__(self, pdfs, weights=None, rng=None):
         super().__init__(rng=rng)
@@ -758,6 +803,29 @@ class Mixture(Distribution):
             subsample = self.pdfs[idx].sample(n)
             out[mask] = subsample
         return out
+
+    @classmethod
+    def random(cls, n=3, rng=None):
+        """
+        Example:
+            >>> from kwarray.distributions import *  # NOQA
+            >>> self = Mixture.random(1)
+            >>> print('self = {!r}'.format(self))
+            >>> import kwplot
+            >>> kwplot.autompl()
+            >>> kwplot.figure(fnum=1, doclf=True)
+            >>> self.plot('1s', bins=256)
+            >>> kwplot.show_if_requested()
+        """
+        rng = ensure_rng(rng)
+        components = []
+        for _ in range(n):
+            item = Distribution.random(rng=rng)
+            components.append(item)
+        weights = rng.rand(n)
+        weights = weights / weights.sum()
+        self = Mixture(components, weights)
+        return self
 
 
 class Composed(Distribution):
@@ -812,8 +880,8 @@ class Composed(Distribution):
 
     """
     __params__ = dict(
-        operation=Value(ub.NoParam),
-        operands=Value(ub.NoParam),
+        operation=Value(),
+        operands=Value(),
     )
 
     def sample(self, *shape):
@@ -892,7 +960,7 @@ class Exponential(Distribution):
         >>> self.plot(500, bins=25)
     """
     __params__ = dict(
-        scale=Value(1),
+        scale=Value(1, min=0),
     )
     def sample(self, *shape):
         return self.rng.exponential(self.scale, *shape)
@@ -1302,5 +1370,3 @@ def _test_distributions():
         assert not ub.iterable(scalar_sample)
         assert ub.iterable(vector_sample)
         assert vector_sample.shape == (1,)
-
-
