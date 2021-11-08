@@ -737,7 +737,11 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             float_out -= old_min
     elif mode == 'sigmoid':
         # nonlinear case
+        # Notes:
+        #  * could generalize to a general logicstic function
+        #    https://en.wikipedia.org/wiki/Generalised_logistic_function
         # out = new_span * sigmoid((arr - beta) / alpha) + new_min
+        # from scipy.stats import genlogistic as genlogistic
         from scipy.special import expit as sigmoid
         if beta is None:
             # should center the desired distribution to visualize on zero
@@ -803,3 +807,61 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
 #     top_inds = sortx[flags]
 #     return top_inds
+
+def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, growth=1, v=1):
+    """
+    Richards curve
+
+    References:
+        https://en.wikipedia.org/wiki/Generalised_logistic_function
+
+    Example:
+        from kwarray.util_numpy import *  # NOQA
+        import kwplot
+        plt = kwplot.autoplt()
+        ax = plt.gca()
+        ax.plot(x, y)
+
+        import sympy as sym
+        A, K, C, B, Q, v, x, y = sym.symbols('A, K, C, B, Q, v, x, y')
+        expr = A + (K - A) / (C + Q * sym.exp(-B * x)) ** (1 / v)
+        sym.solve(sym.Eq(expr, y).subs(dict(x=0)), Q)
+
+        import pandas as pd
+        x = np.linspace(-3, 3, 30)
+        basis = {
+            # 'y_intercept': [0.1, 0.5, 0.8, -1],
+            # 'y_intercept': [0.1, 0.5, 0.8],
+            'v': [0.5, 1.0, 2.0],
+            'growth': [-1, 0, 2],
+        }
+        grid = list(ub.named_product(basis))
+        datas = []
+        for params in grid:
+            y = generalized_logistic(x, **params)
+            data = pd.DataFrame({'x': x, 'y': y})
+            key = ub.repr2(params, compact=1)
+            data['key'] = key
+            for k, v in params.items():
+                data[k] = v
+            datas.append(data)
+        all_data = pd.concat(datas)
+        import kwplot
+        plt = kwplot.autoplt()
+        sns = kwplot.autosns()
+        plt.gca().cla()
+        sns.lineplot(data=all_data, x='x', y='y', hue='growth', size='v')
+
+    """
+    A = floor
+    K = capacity
+    C = C
+    B = growth
+    if y_intercept is not None:
+        if Q is not None:
+            raise AssertionError('cannot specify Q and y_intercept')
+        Q = -C + ((A - K) / (A - y_intercept)) ** v
+    elif Q is None:
+        Q = 1
+    y = A + (K - A) / (C + Q * np.exp(-B * x)) ** (1 / v)
+    return y

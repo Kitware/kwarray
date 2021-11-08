@@ -571,18 +571,13 @@ class Distribution(Parameterized, _RBinOpMixin):
 
         Example:
             >>> from kwarray.distributions import *  # NOQA
-            >>> cls = Distribution
-            >>> components = []
-            >>> for _ in range(5):
-            >>>     self = cls.random()
-            >>>     components.append(self)
-            >>> mixed = Mixture(components)
-            >>> print('mixed = {!r}'.format(mixed))
+            >>> self = Distribution.random()
+            >>> print('self = {!r}'.format(self))
             >>> # xdoctest: +REQUIRES(--show)
             >>> import kwplot
             >>> kwplot.autompl()
             >>> kwplot.figure(fnum=1, doclf=True)
-            >>> mixed.plot('1s', bins=256)
+            >>> self.plot('0.001s', bins=256)
             >>> kwplot.show_if_requested()
         """
         rng = ensure_rng(rng)
@@ -595,8 +590,8 @@ class Distribution(Parameterized, _RBinOpMixin):
                 # DiscreteUniform,
                 Normal,
                 Exponential,
-                # TruncNormal,
-                # Uniform,
+                TruncNormal,
+                Uniform,
             ]
             chosen = rng.choice(_PRIMATIVES)
             self = chosen.random(rng=rng)
@@ -809,12 +804,12 @@ class Mixture(Distribution):
         """
         Example:
             >>> from kwarray.distributions import *  # NOQA
-            >>> self = Mixture.random(1)
+            >>> self = Mixture.random(3)
             >>> print('self = {!r}'.format(self))
             >>> import kwplot
             >>> kwplot.autompl()
             >>> kwplot.figure(fnum=1, doclf=True)
-            >>> self.plot('1s', bins=256)
+            >>> self.plot('0.1s', bins=256)
             >>> kwplot.show_if_requested()
         """
         rng = ensure_rng(rng)
@@ -1049,50 +1044,6 @@ class Normal(Distribution):
         return cls(mean=mean, std=std)
 
 
-class Bernoulli(Distribution):
-    """
-
-    self = Normal()
-    self.sample()
-    self.sample(1)
-
-    References:
-        https://en.wikipedia.org/wiki/Binomial_distribution
-    """
-    __params__ = dict(
-        p=Value(0.5, help='probability of success', min=0, max=1),
-    )
-
-    def sample(self, *shape):
-        return self.rng.rand(*shape) < self.p
-
-    @classmethod
-    def coerce(cls, arg):
-        try:
-            self = super(Bernoulli, cls).coerce(arg)
-        except CoerceError:
-            if isinstance(arg, (int, float)):
-                self = cls(p=arg)
-            else:
-                raise
-        return self
-
-
-class Binomial(Distribution):
-    """
-    The Binomial distribution represents the discrete probabilities of
-    obtaining some number of successes in n "binary-experiments" each with a
-    probability of success p and a probability of failure 1 - p.
-    """
-    __params__ = dict(
-        p=Value(0.5, min=0, max=1, help='probability of success'),
-        n=Value(1, min=0, help='probability of success'),
-    )
-
-    def sample(self, *shape):
-        return self.rng.rand(*shape) > self.p
-
-
 class TruncNormal(Distribution):
     """
     A truncated normal distribution.
@@ -1150,9 +1101,62 @@ class TruncNormal(Distribution):
         self.b = (self.high - self.mean) / self.std
         self.rv = truncnorm(a=self.a, b=self.b, loc=self.mean, scale=self.std)
 
+    @classmethod
+    def random(cls, rng=None):
+        rng = ensure_rng(rng)
+        mean = (rng.rand() * 1024) - 512
+        std = np.abs((rng.randn() * 32)) + 1
+        low = mean - (std * rng.rand() * 6)
+        high = mean + (std * rng.rand() * 6)
+        return cls(mean=mean, std=std, low=low, high=high)
+
     def sample(self, *shape):
         arr = self.rv.rvs(size=shape, random_state=self.rng)
         return arr
+
+
+class Bernoulli(Distribution):
+    """
+
+    self = Normal()
+    self.sample()
+    self.sample(1)
+
+    References:
+        https://en.wikipedia.org/wiki/Binomial_distribution
+    """
+    __params__ = dict(
+        p=Value(0.5, help='probability of success', min=0, max=1),
+    )
+
+    def sample(self, *shape):
+        return self.rng.rand(*shape) < self.p
+
+    @classmethod
+    def coerce(cls, arg):
+        try:
+            self = super(Bernoulli, cls).coerce(arg)
+        except CoerceError:
+            if isinstance(arg, (int, float)):
+                self = cls(p=arg)
+            else:
+                raise
+        return self
+
+
+class Binomial(Distribution):
+    """
+    The Binomial distribution represents the discrete probabilities of
+    obtaining some number of successes in n "binary-experiments" each with a
+    probability of success p and a probability of failure 1 - p.
+    """
+    __params__ = dict(
+        p=Value(0.5, min=0, max=1, help='probability of success'),
+        n=Value(1, min=0, help='probability of success'),
+    )
+
+    def sample(self, *shape):
+        return self.rng.rand(*shape) > self.p
 
 
 # class Multinomial(Distribution):
