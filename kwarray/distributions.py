@@ -1089,8 +1089,8 @@ class TruncNormal(Distribution):
         high=Value(inf),
     )
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._update_internals()
 
     def _update_internals(self):

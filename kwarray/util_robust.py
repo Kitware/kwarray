@@ -31,6 +31,13 @@ def find_robust_normalizers(data, params='auto'):
         >>> print('norm_params1 = {}'.format(ub.repr2(norm_params1, nl=1)))
         >>> print('norm_params2 = {}'.format(ub.repr2(norm_params2, nl=1)))
         >>> print('norm_params3 = {}'.format(ub.repr2(norm_params3, nl=1)))
+
+    Example:
+        >>> from kwarray.util_robust import *  # NOQA
+        >>> from kwarray.distributions import Mixture
+        >>> import ubelt as ub
+        >>> # A random mixture distribution for testing
+        >>> data = Mixture.random(6).sample(3000)
     """
     if data.size == 0:
         normalizer = {
@@ -56,6 +63,8 @@ def find_robust_normalizers(data, params='auto'):
                 params = {
                     'extrema': 'tukey',
                 }
+            elif params == 'std':
+                pass
             else:
                 raise KeyError(params)
 
@@ -103,6 +112,7 @@ def _tukey_quantile_extreme_estimator(data):
     # Tukey, who invented this test for outliers. He wondered the same thing.
     # When he asked Tukey, "Why 1.5?", Tukey answered, "Because 1 is too small
     # and 2 is too large."
+    # Cite: http://mathcenter.oxford.emory.edu/site/math117/shapeCenterAndSpread/
     fence_lower = q1 - 1.5 * iqr
     fence_upper = q1 + 1.5 * iqr
     return fence_lower, q2, fence_upper
@@ -129,7 +139,6 @@ def _custom_quantile_extreme_estimator(data, params):
     # inner_range = quant_high_val - quant_low_val
     # upper_inner_range = quant_high_val - quant_mid_val
     # upper_lower_range = quant_mid_val - quant_low_val
-    # http://mathcenter.oxford.emory.edu/site/math117/shapeCenterAndSpread/
 
     # Compute amount of weight in each quantile
     quant_center_amount = (quant_high_val - quant_low_val)
