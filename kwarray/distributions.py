@@ -35,7 +35,7 @@ inf = float('inf')
 
 
 if sys.version_info[0] > 2:
-    class UtfMath:
+    class MathSymbols:
         sym_elementof = 'ϵ'
         sym_rational = 'ℚ'
         sym_integral = 'ℤ'
@@ -44,7 +44,7 @@ if sys.version_info[0] > 2:
         sym_complex = 'ℂ'
         sym_list = '[]'
 else:
-    class UtfMath:
+    class MathSymbols:
         sym_elementof = 'in'
         sym_rational = 'Q'
         sym_integral = 'Z'
@@ -115,7 +115,7 @@ class Value(ub.NiceRepr):
         if self.numeric:
             parts.append('{sym_elementof}')
 
-            symbol = UtfMath.__dict__.get('sym_' + self.category, '?')
+            symbol = MathSymbols.__dict__.get('sym_' + self.category, '?')
 
             symbol_parts = []
             symbol_parts.append(symbol)
@@ -140,7 +140,7 @@ class Value(ub.NiceRepr):
             parts.append(''.join(minmax_constraint_parts))
 
         kw = {}
-        kw.update(UtfMath.__dict__)
+        kw.update(MathSymbols.__dict__)
         kw.update(self.__dict__)
         template = ' '.join(parts)
         text = template.format(**kw)
@@ -536,7 +536,7 @@ class Distribution(Parameterized, _RBinOpMixin):
     __params__ = NotImplemented  # overwrite!
 
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super(Distribution, self).__init__()
         rng = kwargs.pop('rng', None)
         self.rng = ensure_rng(rng)
         constraints = []
@@ -793,7 +793,7 @@ class Mixture(Distribution):
         >>> kwplot.show_if_requested()
     """
     def __init__(self, pdfs, weights=None, rng=None):
-        super().__init__(rng=rng)
+        super(Mixture, self).__init__(rng=rng)
         self.pdfs = pdfs
         self._setparam('pdfs', pdfs)
         self._setparam('weights', weights)
@@ -1110,7 +1110,7 @@ class TruncNormal(Distribution):
     )
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(TruncNormal, self).__init__(*args, **kwargs)
         self._update_internals()
 
     def _update_internals(self):
