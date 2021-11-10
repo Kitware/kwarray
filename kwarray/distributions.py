@@ -620,7 +620,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         elif isinstance(arg, (list, tuple)):
             self = cls(*arg, rng=rng)
         elif isinstance(arg, dict):
-            self = cls(**arg, rng=rng)
+            self = cls(rng=rng, **arg)
         else:
             raise CoerceError('cannot coerce {} as {}'.format(arg, cls))
         return self
