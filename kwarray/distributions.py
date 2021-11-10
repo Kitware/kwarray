@@ -660,7 +660,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         """
         import seaborn as sns
         if isinstance(n, str):
-            data = generate_on_a_time_budget(func=lambda: self.sample(100), maxiters=1000, budget=n)
+            data = _generate_on_a_time_budget(func=lambda: self.sample(100), maxiters=1000, budget=n)
             print(len(data))
         else:
             data = self.sample(n)
@@ -678,26 +678,34 @@ class Distribution(Parameterized, _RBinOpMixin):
         ax.hist(data, bins=bins, color=color, label=label)
 
 
-def coerce_timedelta(data):
-    import pytimeparse
+def _coerce_timedelta(data):
     import datetime
     if isinstance(data, datetime.timedelta):
         delta = data
         num_seconds = delta.total_seconds()
     elif isinstance(data, numbers.Number):
         num_seconds = data
-    else:
-        num_seconds = pytimeparse.parse(data)
+    elif isinstance(data, str):
+        if data.endswith('s'):
+            try:
+                num_seconds = float(data[:-1])
+            except Exception:
+                num_seconds = None
         if num_seconds is None:
-            raise ValueError(f'{data} is not a parsable delta')
+            import pytimeparse
+            num_seconds = pytimeparse.parse(data)
+            if num_seconds is None:
+                raise ValueError('{} is not a parsable delta'.format(data))
+    else:
+        raise TypeError(data)
     return num_seconds
 
 
-def generate_on_a_time_budget(func, maxiters, budget):
+def _generate_on_a_time_budget(func, maxiters, budget):
     """
     budget = 60
     """
-    seconds = coerce_timedelta(budget)
+    seconds = _coerce_timedelta(budget)
     timer = ub.Timer().tic()
     accum = []
     accum.append(func())
