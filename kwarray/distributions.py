@@ -806,6 +806,7 @@ class Mixture(Distribution):
             >>> from kwarray.distributions import *  # NOQA
             >>> self = Mixture.random(3)
             >>> print('self = {!r}'.format(self))
+            >>> # xdoctest: +REQUIRES(--show)
             >>> import kwplot
             >>> kwplot.autompl()
             >>> kwplot.figure(fnum=1, doclf=True)
