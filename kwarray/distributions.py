@@ -27,20 +27,31 @@ import builtins
 import numbers
 import fractions  # NOQA
 from kwarray.util_random import ensure_rng
+import sys
 
 
 inf = float('inf')
 # __all__ =  [
 
 
-class UtfMath:
-    utf_elementof = 'ϵ'
-    utf_rational = 'ℚ'
-    utf_integral = 'ℤ'
-    utf_real = 'ℝ'
-    utf_floating = '𝔽'
-    utf_complex = 'ℂ'
-    utf_list = '[]'
+if sys.version_info[0] > 2:
+    class UtfMath:
+        sym_elementof = 'ϵ'
+        sym_rational = 'ℚ'
+        sym_integral = 'ℤ'
+        sym_real = 'ℝ'
+        sym_floating = '𝔽'
+        sym_complex = 'ℂ'
+        sym_list = '[]'
+else:
+    class UtfMath:
+        sym_elementof = 'in'
+        sym_rational = 'Q'
+        sym_integral = 'Z'
+        sym_real = 'R'
+        sym_floating = 'F'
+        sym_complex = 'C'
+        sym_list = '[]'
 
 
 class Value(ub.NiceRepr):
@@ -102,9 +113,9 @@ class Value(ub.NiceRepr):
         parts.append('{name}={default}')
 
         if self.numeric:
-            parts.append('{utf_elementof}')
+            parts.append('{sym_elementof}')
 
-            symbol = UtfMath.__dict__.get('utf_' + self.category, '?')
+            symbol = UtfMath.__dict__.get('sym_' + self.category, '?')
 
             symbol_parts = []
             symbol_parts.append(symbol)
