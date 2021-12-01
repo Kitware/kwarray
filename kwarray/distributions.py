@@ -766,7 +766,7 @@ class Mixture(Distribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, pnum=(2, 2, 1))
         >>> ax = kwplot.figure(pnum=(2, 1, 1), title='n1 & n2').gca()
-        >>> n = 10_000
+        >>> n = 10000
         >>> plotkw = dict(stat='density', kde=1, bins=1000)
         >>> plotkw = dict(stat='count', kde=1, bins=1000)
         >>> #plotkw = dict(stat='frequency', kde=1, bins='auto')
