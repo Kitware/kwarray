@@ -29,29 +29,15 @@ import fractions  # NOQA
 from kwarray.util_random import ensure_rng
 import sys
 
+try:
+    if sys.version_info[0] == 2:
+        raise Exception
+    from kwarray.math_symbols_unicode import MathSymbolsUnicode as MathSymbols
+except Exception:
+    from kwarray.math_symbols_ascii import MathSymbolsAscii as MathSymbols
 
 inf = float('inf')
 # __all__ =  [
-
-
-if sys.version_info[0] > 2:
-    class MathSymbols:
-        sym_elementof = 'ϵ'
-        sym_rational = 'ℚ'
-        sym_integral = 'ℤ'
-        sym_real = 'ℝ'
-        sym_floating = '𝔽'
-        sym_complex = 'ℂ'
-        sym_list = '[]'
-else:
-    class MathSymbols:
-        sym_elementof = 'in'
-        sym_rational = 'Q'
-        sym_integral = 'Z'
-        sym_real = 'R'
-        sym_floating = 'F'
-        sym_complex = 'C'
-        sym_list = '[]'
 
 
 class Value(ub.NiceRepr):

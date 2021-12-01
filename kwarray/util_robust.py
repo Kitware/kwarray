@@ -1,6 +1,12 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import ubelt as ub
-import math
+import math  # NOQA
+
+try:
+    from math import isclose
+except Exception:
+    from numpy import isclose
 
 
 def find_robust_normalizers(data, params='auto'):
@@ -145,7 +151,7 @@ def _custom_quantile_extreme_estimator(data, params):
     quant_low_amount = (quant_mid_val - quant_low_val)
     quant_high_amount = (quant_high_val - quant_mid_val)
 
-    if math.isclose(quant_center_amount, 0):
+    if isclose(quant_center_amount, 0):
         high_weight = 0.5
         low_weight = 0.5
     else:
