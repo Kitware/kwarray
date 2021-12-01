@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.5.22 - Unreleased
 
+### Added
+* `math_symbols` submodule for unicode math expressions. This may move to a standalone module in the future.
+* `util_robust` for robust normalization.
+
 
 ## Version 0.5.21 - Released 2021-11-05
 

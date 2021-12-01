@@ -27,14 +27,7 @@ import builtins
 import numbers
 import fractions  # NOQA
 from kwarray.util_random import ensure_rng
-import sys
-
-try:
-    if sys.version_info[0] == 2:
-        raise Exception
-    from kwarray.math_symbols_unicode import MathSymbolsUnicode as MathSymbols
-except Exception:
-    from kwarray.math_symbols_ascii import MathSymbolsAscii as MathSymbols
+from kwarray.math_symbols import MathSymbols
 
 inf = float('inf')
 # __all__ =  [
@@ -42,9 +35,12 @@ inf = float('inf')
 
 class Value(ub.NiceRepr):
     """
-    For class param Values
+    Container for class `__params__` values.
 
-    Examle:
+    Used to store metadata about distribution arguments, including default
+    values, numeric constraints, typing, and help text.
+
+    Example:
         >>> from kwarray.distributions import *  # NOQA
         >>> self = Value(43.5)
         >>> print(Value(name='lucy'))
@@ -69,10 +65,10 @@ class Value(ub.NiceRepr):
         self.type = type
         self.constraints = None
 
-        if self.min is None:
-            self.min = -1024
-        if self.max is None:
-            self.max = 1024
+        # if self.min is None:
+        #     self.min = -1024
+        # if self.max is None:
+        #     self.max = 1024
 
         if self.type is None:
             self.category = None
@@ -94,7 +90,6 @@ class Value(ub.NiceRepr):
                 self.category = 'unknown'
 
     def __nice__(self):
-        # epsilon = 'ϵ'
         parts = []
         parts.append('{name}={default}')
 
@@ -133,12 +128,18 @@ class Value(ub.NiceRepr):
         return text
 
     def sample(self, rng):
+        """
+        Get a random value for this parameter.
+        """
+        # TODO: special min and max values for classmethod random values
+        _min = -1024 if self.min is None else self.min
+        _max =  1024 if self.max is None else self.max
         if self.category == 'integral':
-            assert self.min <= self.max
-            sample = rng.randint(self.min, self.max)
+            assert _min <= _max
+            sample = rng.randint(_min, _max)
         elif self.category == 'floating':
-            assert self.min <= self.max
-            sample = rng.rand() * (self.max - self.min) + self.min
+            assert _min <= _max
+            sample = rng.rand() * (_max - _min) + _min
         else:
             raise NotImplementedError
         return sample
@@ -159,6 +160,8 @@ def _issubclass2(child, parent):
 
 def _isinstance2(obj, cls):
     """
+    Internal hacked version is isinstance for debugging
+
     obj = self
     cls = distributions.Distribution
 
@@ -365,6 +368,10 @@ class ParameterizedList(Parameterized):
 
 
 class _BinOpMixin(object):
+    """
+    Allows binary operations to be performed on distributions to create
+    composed distributions.
+    """
     def __add__(self, other):
         return Composed(np.add, [self, other])
 
@@ -517,7 +524,18 @@ class _RBinOpMixin(_BinOpMixin):
 
 class Distribution(Parameterized, _RBinOpMixin):
     """
-    Base class for all distributions
+    Base class for all distributions.
+
+    Note:
+        When inheriting from this class, you typically do not  need to define
+        an `__init__` method.  Instead, overwrite the `__params__` class
+        attribute with an `OrderedDict[str, Value]` to indicate what the
+        signature of the `__init__` method should be. This allows for (1)
+        concise expression of new distributions and (2) for new distributions
+        to inherit a `random` classmethod that works according to constraints
+        specified in each parameter Value.
+
+        If you do overwrite `__init__`, be sure to call `super()`.
     """
     __params__ = NotImplemented  # overwrite!
 
@@ -539,9 +557,9 @@ class Distribution(Parameterized, _RBinOpMixin):
                 else:
                     val = kwargs.get(key, info.default)
                 self._setparam(key, val)
-                if info.min:
+                if info.min is not None:
                     constraints.append(lambda: val >= info.min)
-                if info.max:
+                if info.max is not None:
                     constraints.append(lambda: val <= info.max)
                 if info.constraints:
                     constraints.extend(info.constraints)
@@ -594,6 +612,9 @@ class Distribution(Parameterized, _RBinOpMixin):
             self = chosen.random(rng=rng)
         else:
             try:
+                # TODO:
+                # - [ ] Suport for notations like a "min" param must be smaller
+                # than a "max" param.
                 kw = {}
                 for k, v in cls.__params__.items():
                     type = v.type
@@ -604,7 +625,6 @@ class Distribution(Parameterized, _RBinOpMixin):
             except Exception:
                 print('Error constructing random cls = {!r}'.format(cls))
                 raise
-                pass
         return self
 
     @classmethod
@@ -625,7 +645,8 @@ class Distribution(Parameterized, _RBinOpMixin):
     @classmethod
     def cast(cls, arg):
         import warnings
-        warnings.warn('Distributions.cast is deprecated. Use coerce')
+        warnings.warn('Distributions.cast is deprecated. Use coerce',
+                      DeprecationWarning)
         return cls.coerce(arg)
 
     @classmethod
@@ -740,10 +761,11 @@ class Mixture(Distribution):
         .. [GrosseMixture] https://www.cs.toronto.edu/~rgrosse/csc321/mixture_models.pdf
 
     CommandLine:
-        xdoctest -m kwarray.distributions Mixture:1 --show
+        xdoctest -m kwarray.distributions Mixture:0 --show
 
     Example:
         >>> # In this examle we create a bimodal mixture of normals
+        >>> from kwarray.distributions import *  # NOQA
         >>> pdfs = [Normal(mean=10, std=2), Normal(18, 2)]
         >>> self = Mixture(pdfs)
         >>> # xdoctest: +REQUIRES(--show)
@@ -751,6 +773,7 @@ class Mixture(Distribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
+        >>> kwplot.show_if_requested()
 
     Example:
         >>> # Compare Composed versus Mixture Distributions
@@ -809,6 +832,8 @@ class Mixture(Distribution):
         """
         Example:
             >>> from kwarray.distributions import *  # NOQA
+            >>> print('Mixture = {!r}'.format(Mixture))
+            >>> print('Mixture = {!r}'.format(dir(Mixture)))
             >>> self = Mixture.random(3)
             >>> print('self = {!r}'.format(self))
             >>> # xdoctest: +REQUIRES(--show)
@@ -825,7 +850,7 @@ class Mixture(Distribution):
             components.append(item)
         weights = rng.rand(n)
         weights = weights / weights.sum()
-        self = Mixture(components, weights)
+        self = cls(components, weights)
         return self
 
 
@@ -853,6 +878,7 @@ class Composed(Distribution):
     Example:
         >>> # In this examle you can see that the sum of two Normal random
         >>> # variables is also normal
+        >>> from kwarray.distributions import *  # NOQA
         >>> operands = [Normal(mean=10, std=2), Normal(15, 2)]
         >>> operation = np.add
         >>> self = Composed(operation, operands)
@@ -867,6 +893,7 @@ class Composed(Distribution):
     Example:
         >>> # Binary operations result in composed distributions
         >>> # We can make a (bounded) exponential distribution using a uniform
+        >>> from kwarray.distributions import *  # NOQA
         >>> X = Uniform(.001, 7)
         >>> lam = .7
         >>> e = np.exp(1)
@@ -880,7 +907,7 @@ class Composed(Distribution):
         >>> self.plot(5000, bins=100)
 
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         operation=Value(),
         operands=Value(),
     )
@@ -951,6 +978,12 @@ class Uniform(Distribution):
 
 class Exponential(Distribution):
     """
+    The exponential distribution is the probability distribution of the time
+    between events in a Poisson point process, i.e., a process in which events
+    occur continuously and independently at a constant average rate [1]_.
+
+    Referencs:
+        .. [1] https://en.wikipedia.org/wiki/Exponential_distribution
 
     Example:
         >>> self = Exponential(rng=0)
@@ -960,7 +993,7 @@ class Exponential(Distribution):
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         scale=Value(1, min=0),
     )
     def sample(self, *shape):
@@ -976,7 +1009,7 @@ class Constant(Distribution):
         >>> self.sample(3)
         array([42, 42, 42])
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         value=Value(1, help='constant value'),
     )
     def sample(self, *shape):
@@ -998,7 +1031,7 @@ class DiscreteUniform(Distribution):
         >>> self = DiscreteUniform.coerce(4)
         >>> self.sample(100)
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         min=Value(0),
         max=Value(1),
     )
@@ -1023,6 +1056,12 @@ class DiscreteUniform(Distribution):
 
 class Normal(Distribution):
     """
+    A normal distribution
+
+    References:
+        .. [1] https://en.wikipedia.org/wiki/Normal_distribution
+        .. [2] https://en.wikipedia.org/wiki/Central_limit_theorem
+
     Example:
         >>> from kwarray.distributions import *  # NOQA
         >>> self = Normal(mean=100, rng=0)
@@ -1034,7 +1073,7 @@ class Normal(Distribution):
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         mean=Value(0.0),
         std=Value(1.0, min=1e-3),
     )
@@ -1073,10 +1112,7 @@ class TruncNormal(Distribution):
         ...0.1226...
 
     Example:
-        import sys, ubelt
-        sys.path.append(ubelt.expandpath('~/code/kwarray'))
-        from kwarray.distributions import *  # NOQA
-        from kwarray.distributions import _issubclass2, _isinstance2, _trysample, _test_distributions, print_function, division, absolute_import, unicode_literals, np, ub, functools, builtins, numbers, fractions, ensure_rng
+        >>> from kwarray.distributions import *  # NOQA
         >>> low = -np.pi / 16
         >>> high = np.pi / 16
         >>> std = np.pi / 8
@@ -1088,7 +1124,7 @@ class TruncNormal(Distribution):
                   [ 0.01692, -0.0288 ,  0.05517],
                   [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         mean=Value(0.0),
         std=Value(1.0),
         low=Value(-inf),
@@ -1123,15 +1159,14 @@ class TruncNormal(Distribution):
 
 class Bernoulli(Distribution):
     """
-
-    self = Normal()
-    self.sample()
-    self.sample(1)
+    The Bernoulli distribution is the discrete probability distribution of a
+    random variable which takes the value 1 with probability `p` and the value
+    0 with probability `q = 1 - p`.
 
     References:
-        https://en.wikipedia.org/wiki/Binomial_distribution
+        https://en.wikipedia.org/wiki/Bernoulli_distribution
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         p=Value(0.5, help='probability of success', min=0, max=1),
     )
 
@@ -1155,8 +1190,11 @@ class Binomial(Distribution):
     The Binomial distribution represents the discrete probabilities of
     obtaining some number of successes in n "binary-experiments" each with a
     probability of success p and a probability of failure 1 - p.
+
+    References:
+        https://en.wikipedia.org/wiki/Binomial_distribution
     """
-    __params__ = dict(
+    __params__ = ub.odict(
         p=Value(0.5, min=0, max=1, help='probability of success'),
         n=Value(1, min=0, help='probability of success'),
     )

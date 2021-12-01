@@ -3,6 +3,8 @@
 
 class MathSymbolsAscii:
     """
+    Ascii approximations or placeholders for common math symbols
+
     https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode
     """
     sym_elementof = 'in'

@@ -18,7 +18,6 @@ class MathSymbolsUnicode:
     #     >>>
     """
     sym_elementof   = 'ϵ'
-
     sym_finitefield = '𝔽'
 
     sym_natural     = 'ℕ'
@@ -35,7 +34,7 @@ class MathSymbolsUnicode:
     sym_floating    = '𝕃'
     sym_list        = '[]'
 
-    greek_alphabet = ub.codeblock(
+    _greek_alphabet = ub.codeblock(
         """
         Α    α      Alpha     a
         Β    β      Beta      b
@@ -66,7 +65,7 @@ class MathSymbolsUnicode:
         Subscripts: ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎ ₐ ₑ ₕ ᵢ ⱼ ₖ ₗ ₘ ₙ ₒ ₚ ᵣ ₛ ₜ ᵤ ᵥ ₓ
         """)
 
-    notes = ub.codeblock(
+    _notes = ub.codeblock(
         """
         # Variables
         alpha = α
