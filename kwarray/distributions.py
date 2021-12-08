@@ -27,7 +27,6 @@ import builtins
 import numbers
 import fractions  # NOQA
 from kwarray.util_random import ensure_rng
-from kwarray.math_symbols import MathSymbols
 
 inf = float('inf')
 # __all__ =  [
@@ -92,36 +91,28 @@ class Value(ub.NiceRepr):
     def __nice__(self):
         parts = []
         parts.append('{name}={default}')
-
-        if self.numeric:
-            parts.append('{sym_elementof}')
-
-            symbol = MathSymbols.__dict__.get('sym_' + self.category, '?')
-
-            symbol_parts = []
-            symbol_parts.append(symbol)
-
-            if self.min == 0 or self.max == 0:
-                symbol_parts.append('0')
-
-            minmax_constraint_parts = []
-            if self.min is not None:
-                if self.min > 0:
-                    symbol_parts.append('+')
-                if self.min != 0:
-                    minmax_constraint_parts.append('{min}<=')
-
-            if self.max is not None:
-                if self.max < 0:
-                    symbol_parts.append('-')
-                if self.max != 0:
-                    minmax_constraint_parts.append('<={max}')
-
-            parts.append(''.join(symbol_parts))
-            parts.append(''.join(minmax_constraint_parts))
-
+        # if self.numeric:
+        #     parts.append('{sym_elementof}')
+        #     # symbol = MathSymbols.__dict__.get('sym_' + self.category, '?')
+        #     symbol_parts = []
+        #     symbol_parts.append(symbol)
+        #     if self.min == 0 or self.max == 0:
+        #         symbol_parts.append('0')
+        #     minmax_constraint_parts = []
+        #     if self.min is not None:
+        #         if self.min > 0:
+        #             symbol_parts.append('+')
+        #         if self.min != 0:
+        #             minmax_constraint_parts.append('{min}<=')
+        #     if self.max is not None:
+        #         if self.max < 0:
+        #             symbol_parts.append('-')
+        #         if self.max != 0:
+        #             minmax_constraint_parts.append('<={max}')
+        #     parts.append(''.join(symbol_parts))
+        #     parts.append(''.join(minmax_constraint_parts))
         kw = {}
-        kw.update(MathSymbols.__dict__)
+        # kw.update(MathSymbols.__dict__)
         kw.update(self.__dict__)
         template = ' '.join(parts)
         text = template.format(**kw)

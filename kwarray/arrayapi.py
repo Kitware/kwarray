@@ -92,9 +92,10 @@ class _ImplRegistry(object):
         func_name = _get_funcname(func)
 
         assert func_type in {
-            'data_func',           # methods where the first argument is an array
+            'data_func',       # methods where the first argument is an array
             'array_sequence',  # methods that take a sequence of arrays
             'shape_creation',  # methods that allocate new data via shape
+            'misc',
         }
         self.registered[impl][func_name] = {
             'func': func,
@@ -165,6 +166,7 @@ class _ImplRegistry(object):
         missing_api = universe - api_names - shape_creation_methods
 
         if missing_numpy or missing_torch:
+            print('self.registered = {}'.format(ub.repr2(self.registered, nl=2)))
             message = ub.codeblock(
                 '''
                 missing_torch = {}
@@ -220,6 +222,25 @@ class TorchImpls(object):
 
     is_tensor = True
     is_numpy = False
+
+    @_torchmethod(func_type='misc')
+    def result_type(*arrays_and_dtypes):
+        """
+        Return type from promotion rules
+        """
+        # Have to work to get numpy-like behavior
+        if len(arrays_and_dtypes) == 1:
+            return arrays_and_dtypes[0]
+        else:
+            a, b = arrays_and_dtypes[0:2]
+            a_ = torch.empty(0, dtype=a)
+            b_ = torch.empty(0, dtype=b)
+            result = torch.result_type(a_, b_)
+            for c in arrays_and_dtypes[2:]:
+                c_ = torch.empty(0, dtype=c)
+                r_ = torch.empty(0, dtype=result)
+                result = torch.result_type(r_, c_)
+            return result
 
     @_torchmethod(func_type='array_sequence')
     def cat(datas, axis=-1):
@@ -761,6 +782,15 @@ class NumpyImpls(object):
     hstack = _numpymethod(func_type='array_sequence')(np.hstack)
     vstack = _numpymethod(func_type='array_sequence')(np.vstack)
 
+    @_numpymethod(func_type='misc')
+    def result_type(*arrays_and_dtypes):
+        """
+        Return type from promotion rules
+        """
+        # _dtype_lut = _torch_dtype_lut()
+        # dtypes = (_dtype_lut.get(t, t) for t in arrays_and_dtypes)
+        return np.result_type(*arrays_and_dtypes)
+
     @_numpymethod(func_type='array_sequence')
     def cat(datas, axis=-1):
         return np.concatenate(datas, axis=axis)
@@ -1060,6 +1090,27 @@ class ArrayAPI(object):
                 raise KeyError(data)
         else:
             return ArrayAPI.impl(data)
+
+    @_apimethod(func_type='misc')
+    def result_type(*arrays_and_dtypes):
+        """
+        Return type from promotion rules
+
+        Example:
+            >>> import kwarray
+            >>> kwarray.ArrayAPI.result_type(float, np.uint8, np.float32, np.float16)
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import torch
+            >>> kwarray.ArrayAPI.result_type(torch.int32, torch.int64)
+        """
+        # is there a good way to check if a type belongs to torch?
+        _dtype_lut = ub.invert_dict(_torch_dtype_lut())
+        dtypes = [_dtype_lut.get(t, t) for t in arrays_and_dtypes]
+        result = np.result_type(*dtypes)
+        return result
+        # impl = ArrayAPI.numpy()
+        # # impl = ArrayAPI.impl(arrays_and_dtypes[0])
+        # return impl.result_type(*arrays_and_dtypes)
 
     @_apimethod(func_type='array_sequence')
     def cat(datas, *args, **kwargs):
