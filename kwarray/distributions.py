@@ -947,10 +947,10 @@ class Uniform(Distribution):
         >>>     with timer:
         >>>         self(100)
     """
-    __params__ = {
-        'high': Value(default=1),
-        'low': Value(default=0),
-    }
+    __params__ = ub.odict(
+        ('high', Value(default=1)),
+        ('low', Value(default=0)),
+    )
 
     def sample(self, *shape):
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
