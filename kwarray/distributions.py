@@ -977,7 +977,10 @@ class Exponential(Distribution):
         .. [1] https://en.wikipedia.org/wiki/Exponential_distribution
 
     Example:
+        >>> from kwarray.distributions import *  # NOQA
         >>> self = Exponential(rng=0)
+        >>> self.sample()
+        >>> self.sample(2, 3)
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
@@ -988,7 +991,7 @@ class Exponential(Distribution):
         scale=Value(1, min=0),
     )
     def sample(self, *shape):
-        return self.rng.exponential(self.scale, *shape)
+        return self.rng.exponential(self.scale, size=shape)
 
 
 class Constant(Distribution):
