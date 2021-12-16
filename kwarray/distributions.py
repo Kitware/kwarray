@@ -898,10 +898,10 @@ class Composed(Distribution):
         >>> self.plot(5000, bins=100)
 
     """
-    __params__ = ub.odict(
-        operation=Value(),
-        operands=Value(),
-    )
+    __params__ = ub.odict([
+        ('operation', Value()),
+        ('operands', Value()),
+    ])
 
     def sample(self, *shape):
         # resolved_args = [arg.sample(*shape) for arg in self.operands]
@@ -947,10 +947,10 @@ class Uniform(Distribution):
         >>>     with timer:
         >>>         self(100)
     """
-    __params__ = ub.odict(
+    __params__ = ub.odict([
         ('high', Value(default=1)),
         ('low', Value(default=0)),
-    )
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
@@ -987,9 +987,9 @@ class Exponential(Distribution):
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
     """
-    __params__ = ub.odict(
-        scale=Value(1, min=0),
-    )
+    __params__ = ub.odict([
+        ('scale', Value(1, min=0)),
+    ])
     def sample(self, *shape):
         return self.rng.exponential(self.scale, size=shape)
 
@@ -1003,9 +1003,9 @@ class Constant(Distribution):
         >>> self.sample(3)
         array([42, 42, 42])
     """
-    __params__ = ub.odict(
-        value=Value(1, help='constant value'),
-    )
+    __params__ = ub.odict([
+        ('value', Value(1, help='constant value')),
+    ])
     def sample(self, *shape):
         if shape:
             return np.full(shape, fill_value=self.value)
@@ -1025,10 +1025,10 @@ class DiscreteUniform(Distribution):
         >>> self = DiscreteUniform.coerce(4)
         >>> self.sample(100)
     """
-    __params__ = ub.odict(
-        min=Value(0),
-        max=Value(1),
-    )
+    __params__ = ub.odict([
+        ('min', Value(0)),
+        ('max', Value(1)),
+    ])
 
     def sample(self, *shape):
         if len(shape) == 0:
@@ -1067,10 +1067,10 @@ class Normal(Distribution):
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
     """
-    __params__ = ub.odict(
-        mean=Value(0.0),
-        std=Value(1.0, min=1e-3),
-    )
+    __params__ = ub.odict([
+        ('mean', Value(0.0)),
+        ('std', Value(1.0, min=1e-3)),
+    ])
 
     def sample(self, *shape):
         return self.rng.randn(*shape) * self.std + self.mean
@@ -1118,12 +1118,12 @@ class TruncNormal(Distribution):
                   [ 0.01692, -0.0288 ,  0.05517],
                   [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
     """
-    __params__ = ub.odict(
-        mean=Value(0.0),
-        std=Value(1.0),
-        low=Value(-inf),
-        high=Value(inf),
-    )
+    __params__ = ub.odict([
+        ('mean', Value(0.0)),
+        ('std', Value(1.0)),
+        ('low', Value(-inf)),
+        ('high', Value(inf)),
+    ])
 
     def __init__(self, *args, **kwargs):
         super(TruncNormal, self).__init__(*args, **kwargs)
@@ -1160,9 +1160,9 @@ class Bernoulli(Distribution):
     References:
         https://en.wikipedia.org/wiki/Bernoulli_distribution
     """
-    __params__ = ub.odict(
-        p=Value(0.5, help='probability of success', min=0, max=1),
-    )
+    __params__ = ub.odict([
+        ('p', Value(0.5, help='probability of success', min=0, max=1)),
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) < self.p
@@ -1188,10 +1188,10 @@ class Binomial(Distribution):
     References:
         https://en.wikipedia.org/wiki/Binomial_distribution
     """
-    __params__ = ub.odict(
-        p=Value(0.5, min=0, max=1, help='probability of success'),
-        n=Value(1, min=0, help='probability of success'),
-    )
+    __params__ = ub.odict([
+        ('p', Value(0.5, min=0, max=1, help='probability of success')),
+        ('n', Value(1, min=0, help='probability of success')),
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) > self.p

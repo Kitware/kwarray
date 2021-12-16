@@ -1209,8 +1209,15 @@ def _torch_dtype_lut():
     lut = {}
 
     # Handle nonstandard alias dtype names
-    lut['double'] = torch.double
-    lut['long'] = torch.long
+    if hasattr(torch, 'double'):
+        lut['double'] = torch.double
+    else:
+        lut['double'] = torch.float64
+
+    if hasattr(torch, 'long'):
+        lut['long'] = torch.long
+    else:
+        lut['long'] = torch.int64
 
     # Handle floats
     for k in [np.float16, 'float16']:
