@@ -1207,6 +1207,8 @@ if __debug__ and torch is not None:
 @ub.memoize
 def _torch_dtype_lut():
     lut = {}
+    if torch is None:
+        return lut
 
     # Handle nonstandard alias dtype names
     if hasattr(torch, 'double'):
