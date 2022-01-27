@@ -502,7 +502,7 @@ def argminima(arr, num, axis=None, ordered=True):
 #     #     .reshape(-1, arr.shape[1])
 #     # )
 
-def unique_rows(arr, ordered=False):
+def unique_rows(arr, ordered=False, return_index=False):
     """
     Like unique, but works on rows
 
@@ -517,22 +517,41 @@ def unique_rows(arr, ordered=False):
         >>> import kwarray
         >>> from kwarray.util_numpy import *  # NOQA
         >>> rng = kwarray.ensure_rng(0)
-        >>> arr = rng.randint(0, 2, size=(12, 3))
+        >>> arr = rng.randint(0, 2, size=(22, 3))
         >>> arr_unique = unique_rows(arr)
         >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> arr_unique, idxs = unique_rows(arr, return_index=True, ordered=True)
+        >>> assert np.all(arr[idxs] == arr_unique)
+        >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> print('idxs = {!r}'.format(idxs))
+        >>> arr_unique, idxs = unique_rows(arr, return_index=True, ordered=False)
+        >>> assert np.all(arr[idxs] == arr_unique)
+        >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> print('idxs = {!r}'.format(idxs))
     """
     dtype_view = np.dtype((np.void, arr.dtype.itemsize * arr.shape[1]))
     arr_view = arr.view(dtype_view)
     if ordered:
         arr_view_unique, idxs = np.unique(arr_view, return_index=True)
-        arr_flat_unique = arr_view_unique.view(arr.dtype)
+        idxs.sort()
+        arr_flat_unique = arr_view[idxs].view(arr.dtype)
+        # arr_flat_unique = arr_view_unique.view(arr.dtype)
         arr_unique = arr_flat_unique.reshape(-1, arr.shape[1])
-        arr_unique = arr_unique[np.argsort(idxs)]
+        # arr_unique = arr_unique[np.argsort(idxs)]
+        # arr_unique = arr_unique[np.argsort(idxs)]
     else:
-        arr_view_unique = np.unique(arr_view)
+        if return_index:
+            arr_view_unique, idxs = np.unique(arr_view, return_index=True)
+        else:
+            arr_view_unique = np.unique(arr_view)
+
         arr_flat_unique = arr_view_unique.view(arr.dtype)
         arr_unique = arr_flat_unique.reshape(-1, arr.shape[1])
-    return arr_unique
+
+    if return_index:
+        return arr_unique, idxs
+    else:
+        return arr_unique
 
 
 def arglexmax(keys, multi=False):
