@@ -751,13 +751,13 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         old_min = min_val
         float_out[float_out < min_val] = min_val
     else:
-        old_min = float_out.min()
+        old_min = np.nanmin(float_out)
 
     if max_val is not None:
         old_max = max_val
         float_out[float_out > max_val] = max_val
     else:
-        old_max = float_out.max()
+        old_max = np.nanmax(float_out)
 
     old_span = old_max - old_min
     new_span = new_max - new_min
@@ -791,7 +791,9 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         energy -= beta
         energy /= alpha
         # Ideally the data of interest is roughly in the range (-6, +6)
+        # print(f'before sigmoid {np.isnan(float_out).sum()=}')
         float_out = sigmoid(energy, out=float_out)
+        # print(f'after sigmoid {np.isnan(float_out).sum()=}')
         factor = new_span
     else:
         raise KeyError(mode)
@@ -805,6 +807,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
     if float_out is not out:
         out[:] = float_out.astype(out.dtype)
+    print(f'{np.isnan(out).sum()=}')
 
     return out
 
