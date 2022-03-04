@@ -14,25 +14,126 @@ TODO:
     - [ ] Some Distributions will output vectors. Maybe we could just postpend the dimensions?
     - [ ] Expose as kwstats?
 
+References:
+    https://stackoverflow.com/questions/21100716/fast-arbitrary-distribution-random-sampling
+    https://stackoverflow.com/questions/4265988/generate-random-numbers-with-a-given-numerical-distribution
+    https://codereview.stackexchange.com/questions/196286/inverse-transform-sampling
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 import numpy as np
 import ubelt as ub
 import functools
+import builtins
+import numbers
+import fractions  # NOQA
 from kwarray.util_random import ensure_rng
 
-__all__ =  [
-    # __primary__ = [
-    'Bernoulli',
-    'Binomial',
-    'Categorical',
-    'Exponential',
-    'Constant',
-    'DiscreteUniform',
-    'Normal',
-    'TruncNormal',
-    'Uniform',
-]
+inf = float('inf')
+# __all__ =  [
+
+
+class Value(ub.NiceRepr):
+    """
+    Container for class `__params__` values.
+
+    Used to store metadata about distribution arguments, including default
+    values, numeric constraints, typing, and help text.
+
+    Example:
+        >>> from kwarray.distributions import *  # NOQA
+        >>> self = Value(43.5)
+        >>> print(Value(name='lucy'))
+        >>> print(Value(name='jeff', default=1))
+        >>> self = Value(name='fred', default=1.0)
+        >>> print('self = {}'.format(ub.repr2(self, nl=1)))
+        >>> print(Value(name='bob', default=1.0, min=-5, max=5))
+        >>> print(Value(name='alice', default=1.0, min=-5))
+    """
+    def __init__(self, default=None, min=None, max=None, help=None,
+                 constraints=None, type=None, name=None):
+        if type is None and default is not None:
+            type = builtins.type(default)
+        if help is None:
+            help = 'no help given'
+
+        self.default = default
+        self.name = name
+        self.min = min
+        self.max = max
+        self.help = help
+        self.type = type
+        self.constraints = None
+
+        # if self.min is None:
+        #     self.min = -1024
+        # if self.max is None:
+        #     self.max = 1024
+
+        if self.type is None:
+            self.category = None
+            self.numeric = None
+        else:
+            self.numeric = issubclass(self.type, numbers.Number)
+            if self.numeric:
+                self.category = (
+                    (issubclass(self.type, numbers.Integral) and 'integral') or
+                    (issubclass(self.type, numbers.Rational) and 'rational') or
+                    (issubclass(self.type, float) and 'floating') or
+                    (issubclass(self.type, numbers.Rational) and 'rational') or
+                    # (issubclass(self.type, numbers.Real) and 'real') or # is it though?
+                    ('numeric')
+                )
+                # TODO: add sequence, etc.
+                #  (issubclass(self.type, numbers.Complex) and 'complex') # maybe someday
+            else:
+                self.category = 'unknown'
+
+    def __nice__(self):
+        parts = []
+        parts.append('{name}={default}')
+        # if self.numeric:
+        #     parts.append('{sym_elementof}')
+        #     # symbol = MathSymbols.__dict__.get('sym_' + self.category, '?')
+        #     symbol_parts = []
+        #     symbol_parts.append(symbol)
+        #     if self.min == 0 or self.max == 0:
+        #         symbol_parts.append('0')
+        #     minmax_constraint_parts = []
+        #     if self.min is not None:
+        #         if self.min > 0:
+        #             symbol_parts.append('+')
+        #         if self.min != 0:
+        #             minmax_constraint_parts.append('{min}<=')
+        #     if self.max is not None:
+        #         if self.max < 0:
+        #             symbol_parts.append('-')
+        #         if self.max != 0:
+        #             minmax_constraint_parts.append('<={max}')
+        #     parts.append(''.join(symbol_parts))
+        #     parts.append(''.join(minmax_constraint_parts))
+        kw = {}
+        # kw.update(MathSymbols.__dict__)
+        kw.update(self.__dict__)
+        template = ' '.join(parts)
+        text = template.format(**kw)
+        return text
+
+    def sample(self, rng):
+        """
+        Get a random value for this parameter.
+        """
+        # TODO: special min and max values for classmethod random values
+        _min = -1024 if self.min is None else self.min
+        _max =  1024 if self.max is None else self.max
+        if self.category == 'integral':
+            assert _min <= _max
+            sample = rng.randint(_min, _max)
+        elif self.category == 'floating':
+            assert _min <= _max
+            sample = rng.rand() * (_max - _min) + _min
+        else:
+            raise NotImplementedError
+        return sample
 
 
 def _issubclass2(child, parent):
@@ -50,6 +151,8 @@ def _issubclass2(child, parent):
 
 def _isinstance2(obj, cls):
     """
+    Internal hacked version is isinstance for debugging
+
     obj = self
     cls = distributions.Distribution
 
@@ -256,6 +359,10 @@ class ParameterizedList(Parameterized):
 
 
 class _BinOpMixin(object):
+    """
+    Allows binary operations to be performed on distributions to create
+    composed distributions.
+    """
     def __add__(self, other):
         return Composed(np.add, [self, other])
 
@@ -408,11 +515,47 @@ class _RBinOpMixin(_BinOpMixin):
 
 class Distribution(Parameterized, _RBinOpMixin):
     """
-    Base class for all distributions
+    Base class for all distributions.
+
+    Note:
+        When inheriting from this class, you typically do not  need to define
+        an `__init__` method.  Instead, overwrite the `__params__` class
+        attribute with an `OrderedDict[str, Value]` to indicate what the
+        signature of the `__init__` method should be. This allows for (1)
+        concise expression of new distributions and (2) for new distributions
+        to inherit a `random` classmethod that works according to constraints
+        specified in each parameter Value.
+
+        If you do overwrite `__init__`, be sure to call `super()`.
     """
-    def __init__(self, rng=None):
+    __params__ = NotImplemented  # overwrite!
+
+    def __init__(self, *args, **kwargs):
         super(Distribution, self).__init__()
+        rng = kwargs.pop('rng', None)
         self.rng = ensure_rng(rng)
+        constraints = []
+        __params__ = self.__params__
+        if __params__ is NotImplemented:
+            print('Warning, no params: self={!r}'.format(self))
+        elif isinstance(__params__, dict):
+            for paramx, (key, info) in enumerate(__params__.items()):
+                info.name = key
+                if paramx < len(args):
+                    val = args[paramx]
+                    if key in kwargs:
+                        raise ValueError('arg pased as both positional and keyword')
+                else:
+                    val = kwargs.get(key, info.default)
+                self._setparam(key, val)
+                if info.min is not None:
+                    constraints.append(lambda: val >= info.min)
+                if info.max is not None:
+                    constraints.append(lambda: val <= info.max)
+                if info.constraints:
+                    constraints.extend(info.constraints)
+        else:
+            raise TypeError(__params__)
 
     def __call__(self, *shape):
         return self.sample(*shape)
@@ -425,6 +568,57 @@ class Distribution(Parameterized, _RBinOpMixin):
         raise NotImplementedError('overwrite me')
 
     @classmethod
+    def random(cls, rng=None):
+        """
+        Returns a random distribution
+
+        CommandLine:
+            xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
+
+        Example:
+            >>> from kwarray.distributions import *  # NOQA
+            >>> self = Distribution.random()
+            >>> print('self = {!r}'.format(self))
+            >>> # xdoctest: +REQUIRES(--show)
+            >>> import kwplot
+            >>> kwplot.autompl()
+            >>> kwplot.figure(fnum=1, doclf=True)
+            >>> self.plot('0.001s', bins=256)
+            >>> kwplot.show_if_requested()
+        """
+        rng = ensure_rng(rng)
+        if cls is Distribution:
+            _PRIMATIVES = [
+                # Bernoulli,
+                # Binomial,
+                # Categorical,
+                # Constant,
+                # DiscreteUniform,
+                Normal,
+                Exponential,
+                TruncNormal,
+                Uniform,
+            ]
+            chosen = rng.choice(_PRIMATIVES)
+            self = chosen.random(rng=rng)
+        else:
+            try:
+                # TODO:
+                # - [ ] Suport for notations like a "min" param must be smaller
+                # than a "max" param.
+                kw = {}
+                for k, v in cls.__params__.items():
+                    type = v.type
+                    if type is not None:
+                        sample = v.sample(rng=rng)
+                    kw[k] = sample
+                self = cls(rng=rng, **kw)
+            except Exception:
+                print('Error constructing random cls = {!r}'.format(cls))
+                raise
+        return self
+
+    @classmethod
     def coerce(cls, arg, rng=None):
         if isinstance(arg, cls):
             self = arg
@@ -434,7 +628,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         elif isinstance(arg, (list, tuple)):
             self = cls(*arg, rng=rng)
         elif isinstance(arg, dict):
-            self = cls(**arg, rng=rng)
+            self = cls(rng=rng, **arg)
         else:
             raise CoerceError('cannot coerce {} as {}'.format(arg, cls))
         return self
@@ -442,42 +636,161 @@ class Distribution(Parameterized, _RBinOpMixin):
     @classmethod
     def cast(cls, arg):
         import warnings
-        warnings.warn('Distributions.cast is deprecated. Use coerce')
+        warnings.warn('Distributions.cast is deprecated. Use coerce',
+                      DeprecationWarning)
         return cls.coerce(arg)
 
     @classmethod
     def seeded(cls, rng=0):
         return Seeded(rng, cls)
 
+    def plot(self, n='0.01s', bins='auto', stat='count', color=None, kde=True,
+             ax=None, **kwargs):
+        """
+        Plots ``n`` samples from the distribution.
+
+        Args:
+            bins (int | List[Number] | str):
+                number of bins, bin edges, or special numpy method for finding
+                the number of bins.
+
+            stat (str):
+                density, count, probability, frequency
+
+            **kwargs: other args passed to :func:`seaborn.histplot`
+
+        Example:
+            >>> from kwarray.distributions import Normal  # NOQA
+            >>> self = Normal()
+            >>> # xdoctest: +REQUIRES(--show)
+            >>> import kwplot
+            >>> kwplot.autompl()
+            >>> self.plot(n=1000)
+        """
+        import seaborn as sns
+        if isinstance(n, str):
+            data = _generate_on_a_time_budget(func=lambda: self.sample(100), maxiters=1000, budget=n)
+            print(len(data))
+        else:
+            data = self.sample(n)
+        return sns.histplot(data, ax=ax, bins=bins, color=color, stat=stat,
+                            kde=kde, **kwargs)
+
     def _show(self, n, bins=None, ax=None, color=None, label=None):
         """ plot samples monte-carlo style """
+        import warnings
+        warnings.warn('plot is deprecated, use plot instead')
         if ax is None:
-            import kwplot
-            kwplot.autompl()
             from matplotlib import pyplot as plt
             ax = plt.gca()
         data = self.sample(n)
         ax.hist(data, bins=bins, color=color, label=label)
 
 
+def _coerce_timedelta(data):
+    import datetime
+    if isinstance(data, datetime.timedelta):
+        delta = data
+        num_seconds = delta.total_seconds()
+    elif isinstance(data, numbers.Number):
+        num_seconds = data
+    elif isinstance(data, str):
+        if data.endswith('s'):
+            try:
+                num_seconds = float(data[:-1])
+            except Exception:
+                num_seconds = None
+        if num_seconds is None:
+            import pytimeparse
+            num_seconds = pytimeparse.parse(data)
+            if num_seconds is None:
+                raise ValueError('{} is not a parsable delta'.format(data))
+    else:
+        raise TypeError(data)
+    return num_seconds
+
+
+def _generate_on_a_time_budget(func, maxiters, budget):
+    """
+    budget = 60
+    """
+    seconds = _coerce_timedelta(budget)
+    timer = ub.Timer().tic()
+    accum = []
+    accum.append(func())
+    if timer.toc() < seconds / 2.0:
+        for i in range(1, maxiters):
+            if timer.toc() >= seconds:
+                break
+            accum.append(func())
+    data = np.hstack(accum)
+    return data
+
+
 class Mixture(Distribution):
     """
     Creates a mixture model of multiple distributions
 
+    Contains a set of distributions with associated weights. Sampling is done
+    by first choosing a distribution with probability proportional to its
+    weighthing, and then sampling from the chosen distribution.
+
+    In general, a mixture model generates data by first first we sample from z,
+    and then we sample the observables x from a distribution which depends on
+    z.  , i.e. p(z, x) = p(z) p(x | z) [GrosseMixture]_.
+
     Args:
-        pdfs (list): list of distributions
-        weights (list): corresponding weights of each distribution
+        pdfs (List[Distribution]):
+            list of distributions
+
+        weights (List[float]): corresponding weights of each distribution
+
         rng (np.random.RandomState): seed random number generator
+
+    References:
+        https://stephens999.github.io/fiveMinuteStats/intro_to_mixture_models.html
+        .. [GrosseMixture] https://www.cs.toronto.edu/~rgrosse/csc321/mixture_models.pdf
+
+    CommandLine:
+        xdoctest -m kwarray.distributions Mixture:0 --show
 
     Example:
         >>> # In this examle we create a bimodal mixture of normals
+        >>> from kwarray.distributions import *  # NOQA
         >>> pdfs = [Normal(mean=10, std=2), Normal(18, 2)]
         >>> self = Mixture(pdfs)
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
-        >>> self._show(500, bins=25)
+        >>> self.plot(500, bins=25)
+        >>> kwplot.show_if_requested()
+
+    Example:
+        >>> # Compare Composed versus Mixture Distributions
+        >>> # Given two normal distributions,
+        >>> from kwarray.distributions import Normal  # NOQA
+        >>> from kwarray.distributions import *  # NOQA
+        >>> n1 = Normal(mean=11, std=3)
+        >>> n2 = Normal(mean=53, std=5)
+        >>> composed = (n1 * 0.3) + (n2 * 0.7)
+        >>> mixture = Mixture([n1, n2], [0.3, 0.7])
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, pnum=(2, 2, 1))
+        >>> ax = kwplot.figure(pnum=(2, 1, 1), title='n1 & n2').gca()
+        >>> n = 10000
+        >>> plotkw = dict(stat='density', kde=1, bins=1000)
+        >>> plotkw = dict(stat='count', kde=1, bins=1000)
+        >>> #plotkw = dict(stat='frequency', kde=1, bins='auto')
+        >>> n1.plot(n, ax=ax, **plotkw)
+        >>> n2.plot(n, ax=ax, **plotkw)
+        >>> ax=kwplot.figure(pnum=(2, 2, 3), title='composed').gca()
+        >>> composed.plot(n, ax=ax, **plotkw)
+        >>> ax=kwplot.figure(pnum=(2, 2, 4), title='mixture').gca()
+        >>> mixture.plot(n, ax=ax, **plotkw)
+        >>> kwplot.show_if_requested()
     """
     def __init__(self, pdfs, weights=None, rng=None):
         super(Mixture, self).__init__(rng=rng)
@@ -492,6 +805,7 @@ class Mixture(Distribution):
         Sampling from a mixture of k distributions with weights w_k is
         equivalent to picking a distribution with probability w_k, and then
         sampling from the picked distribution.
+        `SOuser6655984 <https://stackoverflow.com/a/47762586/887074>`
         """
         # Choose which distributions are picked for each sample
         idxs = self._idx_choice.sample(*shape)
@@ -504,21 +818,58 @@ class Mixture(Distribution):
             out[mask] = subsample
         return out
 
+    @classmethod
+    def random(cls, n=3, rng=None):
+        """
+        Example:
+            >>> from kwarray.distributions import *  # NOQA
+            >>> print('Mixture = {!r}'.format(Mixture))
+            >>> print('Mixture = {!r}'.format(dir(Mixture)))
+            >>> self = Mixture.random(3)
+            >>> print('self = {!r}'.format(self))
+            >>> # xdoctest: +REQUIRES(--show)
+            >>> import kwplot
+            >>> kwplot.autompl()
+            >>> kwplot.figure(fnum=1, doclf=True)
+            >>> self.plot('0.1s', bins=256)
+            >>> kwplot.show_if_requested()
+        """
+        rng = ensure_rng(rng)
+        components = []
+        for _ in range(n):
+            item = Distribution.random(rng=rng)
+            components.append(item)
+        weights = rng.rand(n)
+        weights = weights / weights.sum()
+        self = cls(components, weights)
+        return self
+
 
 class Composed(Distribution):
     """
-    A distribution generated by composing different base distributions.
+    A distribution generated by composing different base distributions or
+    numbers (which are considered as constant distributions).
 
-    Note this is not the same as mixing distributions!
+    Given the operation and its arguments, the sampling process of a "Composed"
+    distribution will sample from each of the operands, and then apply the
+    operation to the sampled points. For instance if we add two Normal
+    distributions, this will first sample from each distribution and then add
+    the results.
+
+    Note:
+        This is not the same as mixing distributions!
 
     Attributes:
-        self.operation (Function) : operation (add / sub / mult / div) to
-            perform on operands
-        self.operands (Sequence) : arguments passed to operation
+        self.operation (Function) :
+            operation (add / sub / mult / div) to perform on operands
+
+        self.operands (Sequence[Distribution | Number]) :
+            arguments passed to operation
 
     Example:
         >>> # In this examle you can see that the sum of two Normal random
         >>> # variables is also normal
+        >>> from kwarray.distributions import *  # NOQA
         >>> operands = [Normal(mean=10, std=2), Normal(15, 2)]
         >>> operation = np.add
         >>> self = Composed(operation, operands)
@@ -528,11 +879,12 @@ class Composed(Distribution):
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
-        >>> self._show(1000, bins=100)
+        >>> self.plot(1000, bins=100)
 
     Example:
         >>> # Binary operations result in composed distributions
         >>> # We can make a (bounded) exponential distribution using a uniform
+        >>> from kwarray.distributions import *  # NOQA
         >>> X = Uniform(.001, 7)
         >>> lam = .7
         >>> e = np.exp(1)
@@ -543,14 +895,13 @@ class Composed(Distribution):
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
-        >>> self._show(5000, bins=100)
+        >>> self.plot(5000, bins=100)
+
     """
-    def __init__(self, operation, operands):
-        super(Composed, self).__init__()
-        self._setparam('operation', operation)
-        self._setparam('operands', operands)
-        # self.operation = operation
-        # self.operands = operands
+    __params__ = ub.odict([
+        ('operation', Value()),
+        ('operands', Value()),
+    ])
 
     def sample(self, *shape):
         # resolved_args = [arg.sample(*shape) for arg in self.operands]
@@ -579,6 +930,7 @@ class Uniform(Distribution):
     Defaults to a uniform distribution over floats between 0 and 1
 
     Example:
+        >>> from kwarray.distributions import *  # NOQA
         >>> self = Uniform(rng=0)
         >>> self.sample()
         0.548813...
@@ -595,10 +947,10 @@ class Uniform(Distribution):
         >>>     with timer:
         >>>         self(100)
     """
-    def __init__(self, low=0, high=1, rng=None):
-        super(Uniform, self).__init__(rng=rng)
-        self._setparam('low', low)
-        self._setparam('high', high)
+    __params__ = ub.odict([
+        ('high', Value(default=1)),
+        ('low', Value(default=0)),
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
@@ -617,21 +969,29 @@ class Uniform(Distribution):
 
 class Exponential(Distribution):
     """
+    The exponential distribution is the probability distribution of the time
+    between events in a Poisson point process, i.e., a process in which events
+    occur continuously and independently at a constant average rate [1]_.
+
+    Referencs:
+        .. [1] https://en.wikipedia.org/wiki/Exponential_distribution
 
     Example:
+        >>> from kwarray.distributions import *  # NOQA
         >>> self = Exponential(rng=0)
+        >>> self.sample()
+        >>> self.sample(2, 3)
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
-        >>> self._show(500, bins=25)
+        >>> self.plot(500, bins=25)
     """
-    def __init__(self, scale=1, rng=None):
-        super(Exponential, self).__init__(rng=rng)
-        self._setparam('scale', scale)
-
+    __params__ = ub.odict([
+        ('scale', Value(1, min=0)),
+    ])
     def sample(self, *shape):
-        return self.rng.exponential(self.scale, *shape)
+        return self.rng.exponential(self.scale, size=shape)
 
 
 class Constant(Distribution):
@@ -643,10 +1003,9 @@ class Constant(Distribution):
         >>> self.sample(3)
         array([42, 42, 42])
     """
-    def __init__(self, value=0, rng=None):
-        super(Constant, self).__init__(rng=rng)
-        self._setparam('value', value)
-
+    __params__ = ub.odict([
+        ('value', Value(1, help='constant value')),
+    ])
     def sample(self, *shape):
         if shape:
             return np.full(shape, fill_value=self.value)
@@ -666,10 +1025,10 @@ class DiscreteUniform(Distribution):
         >>> self = DiscreteUniform.coerce(4)
         >>> self.sample(100)
     """
-    def __init__(self, min=0, max=1, rng=None):
-        super(DiscreteUniform, self).__init__(rng=rng)
-        self._setparam('min', min)
-        self._setparam('max', max)
+    __params__ = ub.odict([
+        ('min', Value(0)),
+        ('max', Value(1)),
+    ])
 
     def sample(self, *shape):
         if len(shape) == 0:
@@ -691,30 +1050,119 @@ class DiscreteUniform(Distribution):
 
 class Normal(Distribution):
     """
+    A normal distribution
+
+    References:
+        .. [1] https://en.wikipedia.org/wiki/Normal_distribution
+        .. [2] https://en.wikipedia.org/wiki/Central_limit_theorem
+
+    Example:
+        >>> from kwarray.distributions import *  # NOQA
         >>> self = Normal(mean=100, rng=0)
         >>> self.sample()
         >>> self.sample(100)
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
+        >>> self.plot(500, bins=25)
     """
-    def __init__(self, mean=0, std=1, rng=None):
-        super(Normal, self).__init__(rng=rng)
-        self._setparam('mean', mean)
-        self._setparam('std', std)
+    __params__ = ub.odict([
+        ('mean', Value(0.0)),
+        ('std', Value(1.0, min=1e-3)),
+    ])
 
     def sample(self, *shape):
         return self.rng.randn(*shape) * self.std + self.mean
 
+    @classmethod
+    def random(cls, rng=None):
+        rng = ensure_rng(rng)
+        mean = (rng.rand() * 1024) - 512
+        std = np.abs((rng.randn() * 32)) + 1
+        return cls(mean=mean, std=std)
+
+
+class TruncNormal(Distribution):
+    """
+    A truncated normal distribution.
+
+    A normal distribution, but bounded by low and high values. Note this is
+    much different from just using a clipped normal.
+
+    Args:
+        mean (float): mean of the distribution
+        std (float): standard deviation of the distribution
+        low (float): lower bound
+        high (float): upper bound
+        rng (np.random.RandomState):
+
+    CommandLine:
+        xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
+
+    Example:
+        >>> self = TruncNormal(rng=0)
+        >>> self()  # output of this changes before/after scipy version 1.5
+        ...0.1226...
+
+    Example:
+        >>> from kwarray.distributions import *  # NOQA
+        >>> low = -np.pi / 16
+        >>> high = np.pi / 16
+        >>> std = np.pi / 8
+        >>> self = TruncNormal(low=low, high=high, std=std, rng=0)
+        >>> shape = (3, 3)
+        >>> data = self(*shape)
+        >>> print(ub.repr2(data, precision=5))
+        np.array([[ 0.01841,  0.0817 ,  0.0388 ],
+                  [ 0.01692, -0.0288 ,  0.05517],
+                  [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
+    """
+    __params__ = ub.odict([
+        ('mean', Value(0.0)),
+        ('std', Value(1.0)),
+        ('low', Value(-inf)),
+        ('high', Value(inf)),
+    ])
+
+    def __init__(self, *args, **kwargs):
+        super(TruncNormal, self).__init__(*args, **kwargs)
+        self._update_internals()
+
+    def _update_internals(self):
+        from scipy.stats import truncnorm
+        # Convert high and low values to be wrt the standard normal range
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+        self.a = (self.low - self.mean) / self.std
+        self.b = (self.high - self.mean) / self.std
+        self.rv = truncnorm(a=self.a, b=self.b, loc=self.mean, scale=self.std)
+
+    @classmethod
+    def random(cls, rng=None):
+        rng = ensure_rng(rng)
+        mean = (rng.rand() * 1024) - 512
+        std = np.abs((rng.randn() * 32)) + 1
+        low = mean - (std * rng.rand() * 6)
+        high = mean + (std * rng.rand() * 6)
+        return cls(mean=mean, std=std, low=low, high=high)
+
+    def sample(self, *shape):
+        arr = self.rv.rvs(size=shape, random_state=self.rng)
+        return arr
+
 
 class Bernoulli(Distribution):
     """
-    self = Normal()
-    self.sample()
-    self.sample(1)
+    The Bernoulli distribution is the discrete probability distribution of a
+    random variable which takes the value 1 with probability `p` and the value
+    0 with probability `q = 1 - p`.
+
+    References:
+        https://en.wikipedia.org/wiki/Bernoulli_distribution
     """
-    def __init__(self, p=.5, rng=None):
-        super(Bernoulli, self).__init__(rng=rng)
-        assert p >= 0
-        assert p <= 1
-        self._setparam('p', p)
+    __params__ = ub.odict([
+        ('p', Value(0.5, help='probability of success', min=0, max=1)),
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) < self.p
@@ -733,17 +1181,35 @@ class Bernoulli(Distribution):
 
 class Binomial(Distribution):
     """
-    self = Normal()
-    self.sample()
-    self.sample(1)
+    The Binomial distribution represents the discrete probabilities of
+    obtaining some number of successes in n "binary-experiments" each with a
+    probability of success p and a probability of failure 1 - p.
+
+    References:
+        https://en.wikipedia.org/wiki/Binomial_distribution
     """
-    def __init__(self, n=1, p=.5, rng=None):
-        super(Binomial, self).__init__(rng=rng)
-        self._setparam('p', p)
-        self._setparam('n', n)
+    __params__ = ub.odict([
+        ('p', Value(0.5, min=0, max=1, help='probability of success')),
+        ('n', Value(1, min=0, help='probability of success')),
+    ])
 
     def sample(self, *shape):
         return self.rng.rand(*shape) > self.p
+
+
+# class Multinomial(Distribution):
+#     """
+#     Generalization of binomial such that instead of a binary experiment,
+#     the experiment could have k outcomes. Ie the experiment is rolling dice.
+#     """
+#     __params__ = {
+#         'p': {'default': 0.5, 'max': 1, 'min': 0, 'help': 'probability of each side'},
+#         'n': {'default': 1, 'min': 0, 'help': 'number of trials'},
+#         'k': {'default': 2, 'min': 2, 'help': 'sides on the dice'},
+
+#     }
+#     def __init__(self, n=1, p=.5, rng=None):
+#         super().__init__(**locals())
 
 
 class Categorical(Distribution):
@@ -796,14 +1262,14 @@ class NonlinearUniform(Distribution):
 
     Ignore:
         bins = np.linspace(0, 100, 100)
-        NonlinearUniform(0, 100, None, rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 'sqrt', rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 'squared', rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 'log', rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 'exp', rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 0.25, rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 4.0, rng=0)._show(10000, bins=bins)
-        NonlinearUniform(0, 100, 2.0, rng=0)._show(10000, bins=bins)
+        NonlinearUniform(0, 100, None, rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 'sqrt', rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 'squared', rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 'log', rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 'exp', rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 0.25, rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 4.0, rng=0).plot(10000, bins=bins)
+        NonlinearUniform(0, 100, 2.0, rng=0).plot(10000, bins=bins)
     """
     def __init__(self, min, max, nonlinearity=None, reverse=False, rng=None):
         super(NonlinearUniform, self).__init__(rng=rng)
@@ -856,58 +1322,6 @@ class CategoryUniform(Distribution):
         return self.categories[idx]
 
 
-class TruncNormal(Distribution):
-    """
-    A truncated normal distribution.
-
-    A normal distribution, but bounded by low and high values. Note this is
-    much different from just using a clipped normal.
-
-    Args:
-        mean (float): mean of the distribution
-        std (float): standard deviation of the distribution
-        low (float): lower bound
-        high (float): upper bound
-        rng (np.random.RandomState):
-
-    Example:
-        >>> self = TruncNormal(rng=0)
-        >>> self()  # output of this changes before/after scipy version 1.5
-        ...0.1226...
-
-    Example:
-        >>> low = -np.pi / 16
-        >>> high = np.pi / 16
-        >>> std = np.pi / 8
-        >>> self = TruncNormal(low=low, high=high, std=std, rng=0)
-        >>> shape = (3, 3)
-        >>> data = self(*shape)
-        >>> print(ub.repr2(data, precision=5))
-        np.array([[ 0.01841,  0.0817 ,  0.0388 ],
-                  [ 0.01692, -0.0288 ,  0.05517],
-                  [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
-    """
-    def __init__(self, mean=0, std=1, low=-np.inf, high=np.inf, rng=None):
-        super(TruncNormal, self).__init__(rng=rng)
-        self._setparam('mean', mean)
-        self._setparam('std', std)
-        self._setparam('low', low)
-        self._setparam('high', high)
-        self._update_internals()
-
-    def _update_internals(self):
-        from scipy.stats import truncnorm
-        # Convert high and low values to be wrt the standard normal range
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
-        self.a = (self.low - self.mean) / self.std
-        self.b = (self.high - self.mean) / self.std
-        self.rv = truncnorm(a=self.a, b=self.b, loc=self.mean, scale=self.std)
-
-    def sample(self, *shape):
-        arr = self.rv.rvs(size=shape, random_state=self.rng)
-        return arr
-
-
 class PDF(Distribution):
     """
     BROKEN?
@@ -925,6 +1339,7 @@ class PDF(Distribution):
         p (list): probability sample for each domain sample
 
     Example:
+        >>> from kwarray.distributions import PDF # NOQA
         >>> x = np.linspace(800, 4500)
         >>> p = np.log10(x)
         >>> p = x ** 2
@@ -933,7 +1348,7 @@ class PDF(Distribution):
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
-        >>> self._show(5000, bins=50)
+        >>> self.plot(5000, bins=50)
     """
     def __init__(self, x, p, rng=None):
         import scipy.interpolate as interpolate
@@ -997,10 +1412,3 @@ def _test_distributions():
         assert not ub.iterable(scalar_sample)
         assert ub.iterable(vector_sample)
         assert vector_sample.shape == (1,)
-
-
-"""
-General Dev References:
-    https://stackoverflow.com/questions/21100716/fast-arbitrary-distribution-random-sampling
-    https://codereview.stackexchange.com/questions/196286/inverse-transform-sampling
-"""

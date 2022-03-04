@@ -502,7 +502,7 @@ def argminima(arr, num, axis=None, ordered=True):
 #     #     .reshape(-1, arr.shape[1])
 #     # )
 
-def unique_rows(arr, ordered=False):
+def unique_rows(arr, ordered=False, return_index=False):
     """
     Like unique, but works on rows
 
@@ -517,22 +517,41 @@ def unique_rows(arr, ordered=False):
         >>> import kwarray
         >>> from kwarray.util_numpy import *  # NOQA
         >>> rng = kwarray.ensure_rng(0)
-        >>> arr = rng.randint(0, 2, size=(12, 3))
+        >>> arr = rng.randint(0, 2, size=(22, 3))
         >>> arr_unique = unique_rows(arr)
         >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> arr_unique, idxs = unique_rows(arr, return_index=True, ordered=True)
+        >>> assert np.all(arr[idxs] == arr_unique)
+        >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> print('idxs = {!r}'.format(idxs))
+        >>> arr_unique, idxs = unique_rows(arr, return_index=True, ordered=False)
+        >>> assert np.all(arr[idxs] == arr_unique)
+        >>> print('arr_unique = {!r}'.format(arr_unique))
+        >>> print('idxs = {!r}'.format(idxs))
     """
     dtype_view = np.dtype((np.void, arr.dtype.itemsize * arr.shape[1]))
     arr_view = arr.view(dtype_view)
     if ordered:
         arr_view_unique, idxs = np.unique(arr_view, return_index=True)
-        arr_flat_unique = arr_view_unique.view(arr.dtype)
+        idxs.sort()
+        arr_flat_unique = arr_view[idxs].view(arr.dtype)
+        # arr_flat_unique = arr_view_unique.view(arr.dtype)
         arr_unique = arr_flat_unique.reshape(-1, arr.shape[1])
-        arr_unique = arr_unique[np.argsort(idxs)]
+        # arr_unique = arr_unique[np.argsort(idxs)]
+        # arr_unique = arr_unique[np.argsort(idxs)]
     else:
-        arr_view_unique = np.unique(arr_view)
+        if return_index:
+            arr_view_unique, idxs = np.unique(arr_view, return_index=True)
+        else:
+            arr_view_unique = np.unique(arr_view)
+
         arr_flat_unique = arr_view_unique.view(arr.dtype)
         arr_unique = arr_flat_unique.reshape(-1, arr.shape[1])
-    return arr_unique
+
+    if return_index:
+        return arr_unique, idxs
+    else:
+        return arr_unique
 
 
 def arglexmax(keys, multi=False):
@@ -588,7 +607,8 @@ def arglexmax(keys, multi=False):
     return _cand_idxs if multi else _cand_idxs[0]
 
 
-def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
+def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
+              min_val=None, max_val=None):
     """
     Rebalance signal values via contrast stretching.
 
@@ -613,6 +633,10 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             them to the center (0) of the distribution.
             Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
             to if the input is a float or uint8 image.
+
+        min_val: override minimum value
+
+        max_val: override maximum value
 
     References:
         https://en.wikipedia.org/wiki/Normalization_(image_processing)
@@ -720,11 +744,20 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
     # TODO:
     # - [ ] Parametarize old_min / old_max strategies
-    #     - [ ] explicitly given min and max
+    #     - [X] explicitly given min and max
     #     - [ ] raw-naive min and max inference
     #     - [ ] outlier-aware min and max inference
-    old_min = float_out.min()
-    old_max = float_out.max()
+    if min_val is not None:
+        old_min = min_val
+        float_out[float_out < min_val] = min_val
+    else:
+        old_min = np.nanmin(float_out)
+
+    if max_val is not None:
+        old_max = max_val
+        float_out[float_out > max_val] = max_val
+    else:
+        old_max = np.nanmax(float_out)
 
     old_span = old_max - old_min
     new_span = new_max - new_min
@@ -772,7 +805,6 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
     if float_out is not out:
         out[:] = float_out.astype(out.dtype)
-
     return out
 
 
@@ -803,3 +835,61 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
 #     top_inds = sortx[flags]
 #     return top_inds
+
+def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, growth=1, v=1):
+    """
+    Richards curve
+
+    References:
+        https://en.wikipedia.org/wiki/Generalised_logistic_function
+
+    Example:
+        from kwarray.util_numpy import *  # NOQA
+        import kwplot
+        plt = kwplot.autoplt()
+        ax = plt.gca()
+        ax.plot(x, y)
+
+        import sympy as sym
+        A, K, C, B, Q, v, x, y = sym.symbols('A, K, C, B, Q, v, x, y')
+        expr = A + (K - A) / (C + Q * sym.exp(-B * x)) ** (1 / v)
+        sym.solve(sym.Eq(expr, y).subs(dict(x=0)), Q)
+
+        import pandas as pd
+        x = np.linspace(-3, 3, 30)
+        basis = {
+            # 'y_intercept': [0.1, 0.5, 0.8, -1],
+            # 'y_intercept': [0.1, 0.5, 0.8],
+            'v': [0.5, 1.0, 2.0],
+            'growth': [-1, 0, 2],
+        }
+        grid = list(ub.named_product(basis))
+        datas = []
+        for params in grid:
+            y = generalized_logistic(x, **params)
+            data = pd.DataFrame({'x': x, 'y': y})
+            key = ub.repr2(params, compact=1)
+            data['key'] = key
+            for k, v in params.items():
+                data[k] = v
+            datas.append(data)
+        all_data = pd.concat(datas)
+        import kwplot
+        plt = kwplot.autoplt()
+        sns = kwplot.autosns()
+        plt.gca().cla()
+        sns.lineplot(data=all_data, x='x', y='y', hue='growth', size='v')
+
+    """
+    A = floor
+    K = capacity
+    C = C
+    B = growth
+    if y_intercept is not None:
+        if Q is not None:
+            raise AssertionError('cannot specify Q and y_intercept')
+        Q = -C + ((A - K) / (A - y_intercept)) ** v
+    elif Q is None:
+        Q = 1
+    y = A + (K - A) / (C + Q * np.exp(-B * x)) ** (1 / v)
+    return y

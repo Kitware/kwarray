@@ -277,6 +277,9 @@ def _coerce_rng_type(rng):
         rng = rng._inst
     elif rng is np.random:
         rng = np.random.mtrand._rand
+    # elif isinstance(rng, str):
+    #     # todo convert string to rng
+    #     pass
     elif isinstance(rng, (float, np.floating)):
         rng = float(rng)
         # Coerce the float into an integer

@@ -177,6 +177,7 @@ if __name__ == '__main__':
         },
         license='Apache 2',
         packages=find_packages(include='kwarray.*'),
+        python_requires='>=3.6',
         classifiers=[
             # List of classifiers available at:
             # https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -190,8 +191,8 @@ if __name__ == '__main__':
             # This should be interpreted as Apache License v2.0
             'License :: OSI Approved :: Apache Software License',
             # Supported Python versions
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.5',
+            # 'Programming Language :: Python :: 2.7',
+            # 'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',

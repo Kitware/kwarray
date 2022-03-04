@@ -186,8 +186,8 @@ stages:
         - $GPG_EXECUTABLE --list-keys
         - $GPG_EXECUTABLE --list-keys
         # Decrypt and import GPG Keys / trust
-        - source dev/secrets_configuration.sh
         # note the variable pointed to by VARNAME_CI_SECRET is a protected variables only available on master and release branch
+        - source dev/secrets_configuration.sh
         - CI_SECRET=${!VARNAME_CI_SECRET}
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc | $GPG_EXECUTABLE --import-ownertrust
@@ -229,10 +229,10 @@ stages:
         - openssl version
         - $GPG_EXECUTABLE --list-keys
         - $GPG_EXECUTABLE --list-keys
-        # Decrypt and import GPG Keys / trust
-        - source dev/secrets_configuration.sh
         # note the variable pointed to by VARNAME_CI_SECRET is a protected variables only available on master and release branch
+        - source dev/secrets_configuration.sh
         - CI_SECRET=${!VARNAME_CI_SECRET}
+        - PUSH_TOKEN=${!VARNAME_PUSH_TOKEN}
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_public_gpg_key.pgp.enc | $GPG_EXECUTABLE --import
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/gpg_owner_trust.enc | $GPG_EXECUTABLE --import-ownertrust
         - GLKWS=$CI_SECRET openssl enc -aes-256-cbc -pbkdf2 -md SHA512 -pass env:GLKWS -d -a -in dev/ci_secret_gpg_subkeys.pgp.enc | $GPG_EXECUTABLE --import
@@ -256,6 +256,7 @@ stages:
                 git config user.name "Gitlab-CI"
             fi
             TAG_NAME="v${VERSION}"
+            echo "TAG_NAME = $TAG_NAME"
             if [ $(git tag -l "$TAG_NAME") ]; then
                 echo "Tag already exists"
             else
@@ -263,8 +264,7 @@ stages:
                 # git push origin :refs/tags/$TAG_NAME
                 # and then tag with -f
                 git tag $TAG_NAME -m "tarball tag $VERSION"
-                git tag $VERSION -m "tarball tag $VERSION"
-                git push --tags "https://${PUSH_TOKEN}@${URL_HOST}"
+                git push --tags "https://git-push-token:${PUSH_TOKEN}@${URL_HOST}"
             fi
 
 
@@ -283,10 +283,10 @@ stages:
     gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.7
 .image_python36: &image_python36
     gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.6
-.image_python35: &image_python35
-    gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.5
-.image_python27: &image_python27
-    gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:2.7
+#.image_python35: &image_python35
+#    gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:3.5
+#.image_python27: &image_python27
+#    gitlab.kitware.com:4567/computer-vision/ci-docker/gl-python:2.7
     
 
 
@@ -524,43 +524,43 @@ test_minimal_strict/cp36-cp36m-linux:
 # Python 3.5 Jobs
 
 
-build/cp35-cp35m-linux:
-    <<: 
-        - *build_template
-    image:
-        *image_python35
+#build/cp35-cp35m-linux:
+#    <<: 
+#        - *build_template
+#    image:
+#        *image_python35
 
-test_full_loose/cp35-cp35m-linux:
-    <<: 
-        - *test_full_loose_template
-    image:
-        *image_python35
-    needs: 
-        -  build/cp35-cp35m-linux
+#test_full_loose/cp35-cp35m-linux:
+#    <<: 
+#        - *test_full_loose_template
+#    image:
+#        *image_python35
+#    needs: 
+#        -  build/cp35-cp35m-linux
 
-test_minimal_loose/cp35-cp35m-linux:
-    <<: 
-        - *test_minimal_loose_template
-    image:
-        *image_python35
-    needs: 
-        -  build/cp35-cp35m-linux
+#test_minimal_loose/cp35-cp35m-linux:
+#    <<: 
+#        - *test_minimal_loose_template
+#    image:
+#        *image_python35
+#    needs: 
+#        -  build/cp35-cp35m-linux
 
-test_full_strict/cp35-cp35m-linux:
-    <<: 
-        - *test_full_strict_template
-    image:
-        *image_python35
-    needs: 
-        -  build/cp35-cp35m-linux
+#test_full_strict/cp35-cp35m-linux:
+#    <<: 
+#        - *test_full_strict_template
+#    image:
+#        *image_python35
+#    needs: 
+#        -  build/cp35-cp35m-linux
 
-test_minimal_strict/cp35-cp35m-linux:
-    <<: 
-        - *test_minimal_strict_template
-    image:
-        *image_python35
-    needs: 
-        -  build/cp35-cp35m-linux
+#test_minimal_strict/cp35-cp35m-linux:
+#    <<: 
+#        - *test_minimal_strict_template
+#    image:
+#        *image_python35
+#    needs: 
+#        -  build/cp35-cp35m-linux
 
 
 
@@ -568,43 +568,43 @@ test_minimal_strict/cp35-cp35m-linux:
 # Python 2.7 Jobs
 
 
-build/cp27-cp27m-linux:
-    <<: 
-        - *build_template
-    image:
-        *image_python27
+#build/cp27-cp27m-linux:
+#    <<: 
+#        - *build_template
+#    image:
+#        *image_python27
 
-test_full_loose/cp27-cp27m-linux:
-    <<: 
-        - *test_full_loose_template
-    image:
-        *image_python27
-    needs: 
-        -  build/cp27-cp27m-linux
+#test_full_loose/cp27-cp27m-linux:
+#    <<: 
+#        - *test_full_loose_template
+#    image:
+#        *image_python27
+#    needs: 
+#        -  build/cp27-cp27m-linux
 
-test_minimal_loose/cp27-cp27m-linux:
-    <<: 
-        - *test_minimal_loose_template
-    image:
-        *image_python27
-    needs: 
-        -  build/cp27-cp27m-linux
+#test_minimal_loose/cp27-cp27m-linux:
+#    <<: 
+#        - *test_minimal_loose_template
+#    image:
+#        *image_python27
+#    needs: 
+#        -  build/cp27-cp27m-linux
 
-test_full_strict/cp27-cp27m-linux:
-    <<: 
-        - *test_full_strict_template
-    image:
-        *image_python27
-    needs: 
-        -  build/cp27-cp27m-linux
+#test_full_strict/cp27-cp27m-linux:
+#    <<: 
+#        - *test_full_strict_template
+#    image:
+#        *image_python27
+#    needs: 
+#        -  build/cp27-cp27m-linux
 
-test_minimal_strict/cp27-cp27m-linux:
-    <<: 
-        - *test_minimal_strict_template
-    image:
-        *image_python27
-    needs: 
-        -  build/cp27-cp27m-linux
+#test_minimal_strict/cp27-cp27m-linux:
+#    <<: 
+#        - *test_minimal_strict_template
+#    image:
+#        *image_python27
+#    needs: 
+#        -  build/cp27-cp27m-linux
 
 
 
