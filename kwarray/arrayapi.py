@@ -555,6 +555,10 @@ class TorchImpls(object):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from packaging.version import Version
+            >>> import pytest
+            >>> if Version(torch.__version__) < Version('1.7'):
+            >>>     pytest.skip('torch max has a bug, which was fixed in 1.7')
             >>> data1 = torch.rand(5, 5, 5, 5, 5, 5)
             >>> data2 = data1.numpy()
             >>> res1 = ArrayAPI.max(data1)

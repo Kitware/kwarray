@@ -4,7 +4,7 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.5.22 - Unreleased
+## Version 0.6.0 - Unreleased
 
 ### Added
 * `util_robust` for robust normalization.
@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changes
 * Fixes to normalize
+* Remove support for Python < 3.6
 
 
 ## Version 0.5.21 - Released 2021-11-05
