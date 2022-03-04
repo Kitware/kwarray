@@ -786,6 +786,9 @@ class NumpyImpls(object):
     def result_type(*arrays_and_dtypes):
         """
         Return type from promotion rules
+
+        SeeAlso:
+            np.find_common_type
         """
         # _dtype_lut = _torch_dtype_lut()
         # dtypes = (_dtype_lut.get(t, t) for t in arrays_and_dtypes)

@@ -10,6 +10,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * `util_robust` for robust normalization.
 * Add `return_index` to `unique_rows`
 
+### Changes
+* Fixes to normalize
+
 
 ## Version 0.5.21 - Released 2021-11-05
 

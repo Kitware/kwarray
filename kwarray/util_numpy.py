@@ -607,7 +607,8 @@ def arglexmax(keys, multi=False):
     return _cand_idxs if multi else _cand_idxs[0]
 
 
-def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
+def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
+              min_val=None, max_val=None):
     """
     Rebalance signal values via contrast stretching.
 
@@ -632,6 +633,10 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             them to the center (0) of the distribution.
             Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
             to if the input is a float or uint8 image.
+
+        min_val: override minimum value
+
+        max_val: override maximum value
 
     References:
         https://en.wikipedia.org/wiki/Normalization_(image_processing)
@@ -739,11 +744,20 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
 
     # TODO:
     # - [ ] Parametarize old_min / old_max strategies
-    #     - [ ] explicitly given min and max
+    #     - [X] explicitly given min and max
     #     - [ ] raw-naive min and max inference
     #     - [ ] outlier-aware min and max inference
-    old_min = float_out.min()
-    old_max = float_out.max()
+    if min_val is not None:
+        old_min = min_val
+        float_out[float_out < min_val] = min_val
+    else:
+        old_min = float_out.min()
+
+    if max_val is not None:
+        old_max = max_val
+        float_out[float_out > max_val] = max_val
+    else:
+        old_max = float_out.max()
 
     old_span = old_max - old_min
     new_span = new_max - new_min
@@ -756,11 +770,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None):
             float_out -= old_min
     elif mode == 'sigmoid':
         # nonlinear case
-        # Notes:
-        #  * could generalize to a general logicstic function
-        #    https://en.wikipedia.org/wiki/Generalised_logistic_function
         # out = new_span * sigmoid((arr - beta) / alpha) + new_min
-        # from scipy.stats import genlogistic as genlogistic
         from scipy.special import expit as sigmoid
         if beta is None:
             # should center the desired distribution to visualize on zero

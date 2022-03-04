@@ -28,6 +28,11 @@ def find_robust_normalizers(data, params='auto'):
         - [ ] https://www.tandfonline.com/doi/full/10.1080/02664763.2019.1671961
         - [ ] https://www.rips-irsp.com/articles/10.5334/irsp.289/
 
+        - [ ] This function is not possible to get write in every case
+              (probably can prove this with a NFL theroem), might be useful
+              to allow the user to specify a "model" which is specific to some
+              domain.
+
     Example:
         >>> from kwarray.util_robust import *  # NOQA
         >>> data = np.random.rand(100)
