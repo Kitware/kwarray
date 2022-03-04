@@ -791,9 +791,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         energy -= beta
         energy /= alpha
         # Ideally the data of interest is roughly in the range (-6, +6)
-        # print(f'before sigmoid {np.isnan(float_out).sum()=}')
         float_out = sigmoid(energy, out=float_out)
-        # print(f'after sigmoid {np.isnan(float_out).sum()=}')
         factor = new_span
     else:
         raise KeyError(mode)
@@ -807,8 +805,6 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
     if float_out is not out:
         out[:] = float_out.astype(out.dtype)
-    print(f'{np.isnan(out).sum()=}')
-
     return out
 
 
