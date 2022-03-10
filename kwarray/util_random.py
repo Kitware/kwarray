@@ -3,6 +3,92 @@
 Handle and interchange between different random number generators (numpy,
 python, torch, ...). Also defines useful random iterator functions and
 :func:`ensure_rng`.
+
+
+Random Number Generator Patterns
+================================
+
+If you need a seeded random number generator kwarray.ensure_rng is helpful with
+that:
+https://kwarray.readthedocs.io/en/latest/autoapi/kwarray/util_random/#kwarray.util_random.ensure_rng
+
+If the input is a number it returns a seeded random number generator. If it is
+None is returns whatever the system level RNG is. If the input is an existing
+RNG it returns it without changing it. It also has the ability to switch
+between Python's random module RNG and numpys np.random RNG (it can translate
+the internal state between the two).
+
+
+When I write randomized functions / class, a coding pattern I like is to
+have a default keyword argument `rng=None`. Then kwarray.ensure_rng coerces
+whatever the input is into a `random.Random` or `numpy.random.RandomState`
+object.
+
+.. code:: python
+
+    def some_random_function(*args, rng=None):
+        rng = kwarray.ensure_rng(rng)
+
+Then if this random function calls any other random function, it passes the
+coerced rng to all other subfunctions. This ensures that seeing the RNG at
+the top level produces a completely determenistic process.
+
+For a more involved example
+
+.. code:: python
+
+    import pandas as pd
+    import numpy
+    import kwarray
+
+    def random_subfunc1(rng=None):
+        rng = kwarray.ensure_rng(rng, api='python')
+        value: float = rng.betavariate(3, 2.3)
+        return value
+
+
+    def random_subfunc2(rng=None):
+        rng = kwarray.ensure_rng(rng, api='numpy')
+        arr: np.ndarray = rng.choice([1, 2, 3, 4], size=3, replace=0)
+        return arr
+
+
+    def random_method(rng=None):
+        value = random_subfunc1(rng=rng)
+        arr = random_subfunc2(rng=rng)
+        final = (arr * value).sum()
+        return final
+
+    def demo():
+        results = []
+        num = 10
+        for _ in range(num):
+            rng = np.random.RandomState(3)
+            row = {}
+            row['system'] = random_method(None)
+            row['seeded'] = random_method(0)
+            row['exiting'] = random_method(rng)
+            results.append(row)
+
+        df = pd.DataFrame(results)
+        print(df)
+
+
+This results in:
+
+.. code::
+
+         system    seeded   exiting
+    0  3.642700  6.902354  4.869275
+    1  3.127890  6.902354  4.869275
+    2  4.317397  6.902354  4.869275
+    3  3.382259  6.902354  4.869275
+    4  1.999498  6.902354  4.869275
+    5  5.293688  6.902354  4.869275
+    6  2.984741  6.902354  4.869275
+    7  6.455160  6.902354  4.869275
+    8  5.161900  6.902354  4.869275
+    9  2.810358  6.902354  4.869275
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
