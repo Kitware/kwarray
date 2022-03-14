@@ -1318,10 +1318,12 @@ def dtype_info(dtype):
     if torch is not None and isinstance(dtype, torch.dtype):
         # Using getattr on is_complex for torch 1.4
         _probably_float = dtype.is_floating_point
-        _probably_float |= getattr(dtype, 'is_complex', False)  # for torch 1.4.0
-        _probably_float |= dtype is torch.complex128  # for torch 1.0.0
-        _probably_float |= dtype is torch.complex64  # for torch 1.0.0
-        _probably_float |= dtype is torch.complex32  # for torch 1.0.0
+        if hasattr(dtype, 'is_complex'):
+            _probably_float |= dtype.is_complex  # for torch 1.4.0
+        else:
+            _probably_float |= dtype is torch.complex128  # for torch 1.0.0
+            _probably_float |= dtype is torch.complex64  # for torch 1.0.0
+            _probably_float |= dtype is torch.complex32  # for torch 1.0.0
         if _probably_float:
             try:
                 info = torch.finfo(dtype)
