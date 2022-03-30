@@ -80,11 +80,17 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> rng = kwarray.ensure_rng(0)
         >>> orig_inputs = rng.rand(1, 1, 2, 3)
         >>> param_grid = ub.named_product({
-        >>>     'axis': (None, 0, (0, 1), -1),
+        >>>     #'axis': (None, 0, (0, 1), -1),
+        >>>     'axis': [(0, 1, 3)],
         >>>     'percent_nan': [0, 0.5, 1.0],
         >>>     'nan': [True, False],
+        >>>     'sum': [1],
         >>>     'extreme': [True],
-        >>>     'quantile': [0, 'auto'],
+        >>>     'n_extreme': [True],
+        >>>     'median': [1],
+        >>>     'size': [1],
+        >>>     'shape': [1],
+        >>>     'quantile': ['auto'],
         >>> })
         >>> for params in param_grid:
         >>>     kwargs = params.copy()
@@ -98,7 +104,6 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>>     print('---')
         >>>     print('params = {}'.format(ub.repr2(params, nl=1)))
         >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
-
     """
     stats = collections.OrderedDict([])
 
