@@ -81,7 +81,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> orig_inputs = rng.rand(1, 1, 2, 3)
         >>> param_grid = ub.named_product({
         >>>     #'axis': (None, 0, (0, 1), -1),
-        >>>     'axis': [(0, 1, 3)],
+        >>>     'axis': [None],
         >>>     'percent_nan': [0, 0.5, 1.0],
         >>>     'nan': [True, False],
         >>>     'sum': [1],
