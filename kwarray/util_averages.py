@@ -16,8 +16,10 @@ except Exception:
     torch = None
 
 
+# Maybe name or alias or use in kwarray.describe?
 def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
-               n_extreme=False, median=False, shape=True, size=False):
+               n_extreme=False, median=False, shape=True, size=False,
+               quantile='auto'):
     """
     Describe statistics about an input array
 
@@ -38,6 +40,8 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
 
     SeeAlso:
         scipy.stats.describe
+
+        pandas.DataFrame.describe
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
@@ -60,15 +64,41 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> from kwarray.util_averages import *  # NOQA
         >>> axis = 0
         >>> rng = np.random.RandomState(0)
         >>> inputs = rng.randint(0, 42, size=100).astype(np.float32)
         >>> inputs[4] = np.nan
-        >>> stats = stats_dict(inputs, axis=axis, nan=True)
+        >>> stats = stats_dict(inputs, axis=axis, nan=True, quantile='auto')
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=0, precision=1, strkeys=True))
         >>> print(result)
-        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, num_nan: 1, shape: (100,)}
+
+    Example:
+        >>> import kwarray
+        >>> import ubelt as ub
+        >>> rng = kwarray.ensure_rng(0)
+        >>> orig_inputs = rng.rand(1, 1, 2, 3)
+        >>> param_grid = ub.named_product({
+        >>>     'axis': (None, 0, (0, 1), -1),
+        >>>     'percent_nan': [0, 0.5, 1.0],
+        >>>     'nan': [True, False],
+        >>>     'extreme': [True],
+        >>>     'quantile': [0, 'auto'],
+        >>> })
+        >>> for params in param_grid:
+        >>>     kwargs = params.copy()
+        >>>     percent_nan = kwargs.pop('percent_nan', 0)
+        >>>     if percent_nan:
+        >>>         inputs = orig_inputs.copy()
+        >>>         inputs[rng.rand(*inputs.shape) < percent_nan] = np.nan
+        >>>     else:
+        >>>         inputs = orig_inputs
+        >>>     stats = kwarray.stats_dict(inputs, **kwargs)
+        >>>     print('---')
+        >>>     print('params = {}'.format(ub.repr2(params, nl=1)))
+        >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
+
     """
     stats = collections.OrderedDict([])
 
@@ -88,6 +118,10 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             stats['size'] = 0
     else:
         if nan:
+            # invalid_mask = np.isnan(nparr)
+            # valid_mask = ~invalid_mask
+            # valid_values = nparr[~valid_mask]
+
             min_val = np.nanmin(nparr, axis=axis)
             max_val = np.nanmax(nparr, axis=axis)
             mean_ = np.nanmean(nparr, axis=axis)
@@ -110,12 +144,27 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         # the third standardized moment is the skweness
         # the fourth standardized moment is the kurtosis
 
+        if quantile:
+            # if not ub.iterable(quantile):
+            if quantile is True:
+                quantile == 'auto'
+
+            if quantile == 'auto':
+                quantile = [0.25, 0.50, 0.75]
+
         if True:
             stats['mean'] = np.float32(mean_)
             stats['std'] = np.float32(std_)
         if extreme:
             stats['min'] = np.float32(min_val)
             stats['max'] = np.float32(max_val)
+        if quantile:
+            if quantile == 'auto':
+                quantile = [0.25, 0.50, 0.75]
+            quant_values = np.quantile(nparr, quantile, axis=axis)
+            quant_keys = ['q_{:0.2f}'.format(q) for q in quantile]
+            for k, v in zip(quant_keys, quant_values):
+                stats[k] = v
         if n_extreme:
             stats['nMin'] = np.int32(nMin)
             stats['nMax'] = np.int32(nMax)

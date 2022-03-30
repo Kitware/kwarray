@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.1 - Unreleased
 
+### Added
+ * Add quantile to `kwarray.stats_dict`
+
 
 ## Version 0.6.0 - Released 2022-03-04
 
