@@ -54,10 +54,13 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> result = str(ub.repr2(stats, nl=1, precision=4, with_dtype=True))
         >>> print(result)
         {
-            'mean': np.array([ 0.5206,  0.6425], dtype=np.float32),
-            'std': np.array([ 0.2854,  0.2517], dtype=np.float32),
-            'min': np.array([ 0.0202,  0.0871], dtype=np.float32),
-            'max': np.array([ 0.9637,  0.9256], dtype=np.float32),
+            'mean': np.array([[0.5206, 0.6425]], dtype=np.float32),
+            'std': np.array([[0.2854, 0.2517]], dtype=np.float32),
+            'min': np.array([[0.0202, 0.0871]], dtype=np.float32),
+            'max': np.array([[0.9637, 0.9256]], dtype=np.float32),
+            'q_0.25': np.array([0.4271, 0.5329], dtype=np.float64),
+            'q_0.50': np.array([0.5584, 0.6805], dtype=np.float64),
+            'q_0.75': np.array([0.7343, 0.8607], dtype=np.float64),
             'med': np.array([0.5584, 0.6805], dtype=np.float32),
             'shape': (10, 2),
         }
@@ -104,6 +107,12 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>>     print('---')
         >>>     print('params = {}'.format(ub.repr2(params, nl=1)))
         >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
+
+    Ignore:
+
+        import kwarray
+        inputs = np.random.rand(3, 2, 1)
+        stats = kwarray.stats_dict(inputs, axis=2, nan=True, quantile='auto')
     """
     stats = collections.OrderedDict([])
 
@@ -122,23 +131,20 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if size:
             stats['size'] = 0
     else:
+        keepdims = (axis is not None)
         if nan:
             # invalid_mask = np.isnan(nparr)
             # valid_mask = ~invalid_mask
             # valid_values = nparr[~valid_mask]
-
-            min_val = np.nanmin(nparr, axis=axis)
-            max_val = np.nanmax(nparr, axis=axis)
-            mean_ = np.nanmean(nparr, axis=axis)
-            std_  = np.nanstd(nparr, axis=axis)
+            min_val = np.nanmin(nparr, axis=axis, keepdims=keepdims)
+            max_val = np.nanmax(nparr, axis=axis, keepdims=keepdims)
+            mean_ = np.nanmean(nparr, axis=axis, keepdims=keepdims)
+            std_  = np.nanstd(nparr, axis=axis, keepdims=keepdims)
         else:
-            min_val = nparr.min(axis=axis)
-            max_val = nparr.max(axis=axis)
-            mean_ = nparr.mean(axis=axis)
-            std_  = nparr.std(axis=axis)
-        # number of entries with min/max val
-        nMin = np.sum(nparr == min_val, axis=axis)
-        nMax = np.sum(nparr == max_val, axis=axis)
+            min_val = nparr.min(axis=axis, keepdims=keepdims)
+            max_val = nparr.max(axis=axis, keepdims=keepdims)
+            mean_ = nparr.mean(axis=axis, keepdims=keepdims)
+            std_  = nparr.std(axis=axis, keepdims=keepdims)
 
         # Notes:
         # the first central moment is 0
@@ -171,8 +177,17 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             for k, v in zip(quant_keys, quant_values):
                 stats[k] = v
         if n_extreme:
-            stats['nMin'] = np.int32(nMin)
-            stats['nMax'] = np.int32(nMax)
+            # number of entries with min/max val
+            nMin = np.sum(nparr == min_val, axis=axis, keepdims=keepdims)
+            nMax = np.sum(nparr == max_val, axis=axis, keepdims=keepdims)
+            nMin = nMin.astype(int)
+            nMax = nMax.astype(int)
+            if nMax.size == 1:
+                nMax = nMax.ravel()[0]
+            if nMin.size == 1:
+                nMin = nMin.ravel()[0]
+            stats['nMin'] = nMin
+            stats['nMax'] = nMax
         if median:
             stats['med'] = np.nanmedian(nparr, axis=axis)
         if nan:
