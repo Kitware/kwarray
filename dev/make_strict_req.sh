@@ -18,6 +18,6 @@ REQUIREMENT_FNAMES=(
     graphics.txt
 )
 for FNAME in "${REQUIREMENT_FNAMES[@]}"; do
-    [[ -f "requirements/$FNAME" ]] || sed 's/>=/==/' "requirements/$FNAME" > "requirements-strict/$FNAME"
+    [[ -f "requirements/$FNAME" ]] && sed 's/>=/==/' "requirements/$FNAME" > "requirements-strict/$FNAME"
 done
 sed 's/requirements/requirements-strict/' requirements.txt > requirements-strict.txt
