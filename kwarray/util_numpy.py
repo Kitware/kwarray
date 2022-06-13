@@ -37,10 +37,11 @@ def boolmask(indices, shape=None):
         >>> assert np.all(mask == [True, True, False, False, True])
 
     Example:
+        >>> import kwarray
+        >>> import ubelt as ub  # NOQA
         >>> indices = np.array([(0, 0), (1, 1), (2, 1)])
         >>> shape = (3, 3)
-        >>> mask = boolmask(indices, shape)
-        >>> import ubelt as ub  # NOQA
+        >>> mask = kwarray.boolmask(indices, shape)
         >>> result = ub.repr2(mask)
         >>> print(result)
         np.array([[ True, False, False],
@@ -52,7 +53,7 @@ def boolmask(indices, shape=None):
         indices = indices.astype(int)
     if shape is None:
         shape = indices.max() + 1
-    mask = np.zeros(shape, dtype=np.bool)
+    mask = np.zeros(shape, dtype=bool)
     if mask.ndim > 1:
         mask[tuple(indices.T)] = True
     else:
@@ -150,7 +151,7 @@ def isect_flags(arr, other):
     """
     flags = iter_reduce_ufunc(np.logical_or, (arr == item for item in other))
     if flags is None:
-        flags = np.zeros(arr.size, dtype=np.bool)
+        flags = np.zeros(arr.size, dtype=bool)
     return flags
 
 

@@ -1323,7 +1323,8 @@ def dtype_info(dtype):
         else:
             _probably_float |= dtype is torch.complex128  # for torch 1.0.0
             _probably_float |= dtype is torch.complex64  # for torch 1.0.0
-            _probably_float |= dtype is torch.complex32  # for torch 1.0.0
+            if hasattr(torch, 'complex32'):
+                _probably_float |= dtype is torch.complex32  # for torch 1.0.0
         if _probably_float:
             try:
                 info = torch.finfo(dtype)
@@ -1351,7 +1352,7 @@ def dtype_info(dtype):
                                min=-3.4028234663852886e+38,
                                resolution=1e-06,
                                tiny=1.1754943508222875e-38)
-                if dtype == torch.complex32:
+                if hasattr(torch, 'complex32') and dtype == torch.complex32:
                     info = finfo_ducktype(bits=16, dtype='float16',
                                           eps=0.0009765625, max=65504.0,
                                           min=-65504.0, resolution=0.001,
