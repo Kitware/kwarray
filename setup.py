@@ -43,24 +43,19 @@ def parse_description():
     return ''
 
 
-def parse_requirements(fname='requirements.txt', with_version=False):
+def parse_requirements(fname='requirements.txt', versions=False):
     """
     Parse the package dependencies listed in a requirements file but strips
     specific versioning information.
 
     Args:
         fname (str): path to requirements file
-        with_version (bool | str, default=False):
+        versions (bool | str, default=False):
             If true include version specs.
             If strict, then pin to the minimum version.
 
     Returns:
         List[str]: list of requirements items
-
-    Ignore:
-        parse_requirements(with_version='loose')
-        parse_requirements(with_version='strict')
-        parse_requirements()
     """
     from os.path import exists, dirname, join
     import re
@@ -125,11 +120,9 @@ def parse_requirements(fname='requirements.txt', with_version=False):
         if exists(require_fpath):
             for info in parse_require_file(require_fpath):
                 parts = [info['package']]
-                if with_version and 'version' in info:
-                    if with_version == 'strict':
-                        print(f'with_version={with_version}')
+                if versions and 'version' in info:
+                    if versions == 'strict':
                         # In strict mode, we pin to the minimum version
-                        print(info['version'])
                         if info['version']:
                             # Only replace the first >= instance
                             verstr = ''.join(info['version']).replace('>=', '==', 1)
@@ -209,6 +202,11 @@ if __name__ == '__main__':
             'all': parse_requirements('requirements.txt'),
             'tests': parse_requirements('requirements/tests.txt'),
             'optional': parse_requirements('requirements/optional.txt'),
+            # Strict versions
+            'all-strict': parse_requirements('requirements.txt', versions='strict'),
+            'runtime-strict': parse_requirements('requirements/runtime.txt', versions='strict'),
+            'tests-strict': parse_requirements('requirements/tests.txt', versions='strict'),
+            'optional-strict': parse_requirements('requirements/optional.txt', versions='strict'),
         },
         license='Apache 2',
         packages=find_packages(include='kwarray.*'),
