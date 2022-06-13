@@ -206,7 +206,7 @@ MODE=${MODE:=$DEFAULT_MODE}
 if [[ "$MODE" == "all" ]]; then
     MODE_LIST=("${DEFAULT_MODE_LIST[@]}")
 elif [[ "$MODE" == "pure" ]]; then
-    MODE_LIST=("sdist" "naitive")
+    MODE_LIST=("sdist" "native")
 elif [[ "$MODE" == "binary" ]]; then
     MODE_LIST=("sdist" "bdist")
 else
