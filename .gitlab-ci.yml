@@ -112,15 +112,6 @@ stages:
     pip install pip setuptools -U
     python -V  # Print out python version for debugging
 
-._install_strict_minimal_requirements: &_install_strict_minimal_requirements |-
-    ./dev/make_strict_req.sh
-    pip install -r requirements-strict/runtime.txt -r requirements-strict/tests.txt
-
-
-._install_strict_full_requirements: &_install_strict_full_requirements |-
-    ./dev/make_strict_req.sh
-    pip install -r requirements-strict/optional.txt -r requirements-strict/runtime.txt -r requirements-strict/tests.txt
-
 
 .test_minimal_strict_template: &test_minimal_strict_template
     # Tags define which runners will accept which jobs
@@ -129,9 +120,8 @@ stages:
 
     before_script:
         - *_setup_virtualenv_template
-        - *_install_strict_minimal_requirements
-        - pip install .[tests]  
-        #- pip install opencv-python-headless==4.5.3.56
+        - pip install .[tests-strict]
+        #- pip install .[tests-strict,headless-strict]
 
 
 .test_full_strict_template: &test_full_strict_template
@@ -141,9 +131,8 @@ stages:
 
     before_script:
         - *_setup_virtualenv_template
-        - *_install_strict_full_requirements
-        - pip install .[all]  
-        #- pip install opencv-python-headless==4.5.3.56
+        - pip install .[all-strict]
+        #- pip install .[all-strict,headless-strict]
 
 .test_minimal_loose_template: &test_minimal_loose_template
     # Tags define which runners will accept which jobs
@@ -651,9 +640,7 @@ test_minimal_strict/cp36-cp36m-linux:
             #pip install pip setuptools -U
 
             # STRICT VARIANT
-            ./dev/make_strict_req.sh
-            pip install -r requirements-strict.txt -r requirements-strict/headless.txt
-            pip install -e .
+            pip install -e .[runtime-strict,headless-strict]
             ./run_tests.py
 
             # LOOSE VARIANT
