@@ -159,6 +159,8 @@ class SlidingWindow(ub.NiceRepr):
         if isinstance(stride, np.ndarray):
             stride = tuple(stride)
 
+        # TODO: some auto overlap?
+
         if isinstance(overlap, np.ndarray):
             overlap = tuple(overlap)
 

@@ -4,13 +4,26 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.0 - Unreleased
+## Version 0.6.1 - Unreleased
+
+### Added
+* Add quantile to `kwarray.stats_dict`
+
+
+### Fixed
+* Corner cases in `kwarray.stats_dict`
+* Issue in `group_indices` when given a special view array
+* Fixed numpy warnings
+* Fixed usage of `torch.complex32`
+
+
+## Version 0.6.0 - Released 2022-03-04
 
 ### Added
 * `util_robust` for robust normalization.
 * Add `return_index` to `unique_rows`
 
-### Changes
+### Fixed
 * Fixes to normalize
 * Remove support for Python < 3.6
 

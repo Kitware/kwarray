@@ -16,8 +16,10 @@ except Exception:
     torch = None
 
 
+# Maybe name or alias or use in kwarray.describe?
 def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
-               n_extreme=False, median=False, shape=True, size=False):
+               n_extreme=False, median=False, shape=True, size=False,
+               quantile='auto'):
     """
     Describe statistics about an input array
 
@@ -39,6 +41,8 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
     SeeAlso:
         scipy.stats.describe
 
+        pandas.DataFrame.describe
+
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
         >>> from kwarray.util_averages import *  # NOQA
@@ -50,25 +54,65 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> result = str(ub.repr2(stats, nl=1, precision=4, with_dtype=True))
         >>> print(result)
         {
-            'mean': np.array([ 0.5206,  0.6425], dtype=np.float32),
-            'std': np.array([ 0.2854,  0.2517], dtype=np.float32),
-            'min': np.array([ 0.0202,  0.0871], dtype=np.float32),
-            'max': np.array([ 0.9637,  0.9256], dtype=np.float32),
+            'mean': np.array([[0.5206, 0.6425]], dtype=np.float32),
+            'std': np.array([[0.2854, 0.2517]], dtype=np.float32),
+            'min': np.array([[0.0202, 0.0871]], dtype=np.float32),
+            'max': np.array([[0.9637, 0.9256]], dtype=np.float32),
+            'q_0.25': np.array([0.4271, 0.5329], dtype=np.float64),
+            'q_0.50': np.array([0.5584, 0.6805], dtype=np.float64),
+            'q_0.75': np.array([0.7343, 0.8607], dtype=np.float64),
             'med': np.array([0.5584, 0.6805], dtype=np.float32),
             'shape': (10, 2),
         }
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> from kwarray.util_averages import *  # NOQA
         >>> axis = 0
         >>> rng = np.random.RandomState(0)
         >>> inputs = rng.randint(0, 42, size=100).astype(np.float32)
         >>> inputs[4] = np.nan
-        >>> stats = stats_dict(inputs, axis=axis, nan=True)
+        >>> stats = stats_dict(inputs, axis=axis, nan=True, quantile='auto')
         >>> import ubelt as ub  # NOQA
         >>> result = str(ub.repr2(stats, nl=0, precision=1, strkeys=True))
         >>> print(result)
-        {mean: 20.0, std: 13.2, min: 0.0, max: 41.0, num_nan: 1, shape: (100,)}
+
+    Example:
+        >>> import kwarray
+        >>> import ubelt as ub
+        >>> rng = kwarray.ensure_rng(0)
+        >>> orig_inputs = rng.rand(1, 1, 2, 3)
+        >>> param_grid = ub.named_product({
+        >>>     #'axis': (None, 0, (0, 1), -1),
+        >>>     'axis': [None],
+        >>>     'percent_nan': [0, 0.5, 1.0],
+        >>>     'nan': [True, False],
+        >>>     'sum': [1],
+        >>>     'extreme': [True],
+        >>>     'n_extreme': [True],
+        >>>     'median': [1],
+        >>>     'size': [1],
+        >>>     'shape': [1],
+        >>>     'quantile': ['auto'],
+        >>> })
+        >>> for params in param_grid:
+        >>>     kwargs = params.copy()
+        >>>     percent_nan = kwargs.pop('percent_nan', 0)
+        >>>     if percent_nan:
+        >>>         inputs = orig_inputs.copy()
+        >>>         inputs[rng.rand(*inputs.shape) < percent_nan] = np.nan
+        >>>     else:
+        >>>         inputs = orig_inputs
+        >>>     stats = kwarray.stats_dict(inputs, **kwargs)
+        >>>     print('---')
+        >>>     print('params = {}'.format(ub.repr2(params, nl=1)))
+        >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
+
+    Ignore:
+
+        import kwarray
+        inputs = np.random.rand(3, 2, 1)
+        stats = kwarray.stats_dict(inputs, axis=2, nan=True, quantile='auto')
     """
     stats = collections.OrderedDict([])
 
@@ -87,19 +131,20 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if size:
             stats['size'] = 0
     else:
+        keepdims = (axis is not None)
         if nan:
-            min_val = np.nanmin(nparr, axis=axis)
-            max_val = np.nanmax(nparr, axis=axis)
-            mean_ = np.nanmean(nparr, axis=axis)
-            std_  = np.nanstd(nparr, axis=axis)
+            # invalid_mask = np.isnan(nparr)
+            # valid_mask = ~invalid_mask
+            # valid_values = nparr[~valid_mask]
+            min_val = np.nanmin(nparr, axis=axis, keepdims=keepdims)
+            max_val = np.nanmax(nparr, axis=axis, keepdims=keepdims)
+            mean_ = np.nanmean(nparr, axis=axis, keepdims=keepdims)
+            std_  = np.nanstd(nparr, axis=axis, keepdims=keepdims)
         else:
-            min_val = nparr.min(axis=axis)
-            max_val = nparr.max(axis=axis)
-            mean_ = nparr.mean(axis=axis)
-            std_  = nparr.std(axis=axis)
-        # number of entries with min/max val
-        nMin = np.sum(nparr == min_val, axis=axis)
-        nMax = np.sum(nparr == max_val, axis=axis)
+            min_val = nparr.min(axis=axis, keepdims=keepdims)
+            max_val = nparr.max(axis=axis, keepdims=keepdims)
+            mean_ = nparr.mean(axis=axis, keepdims=keepdims)
+            std_  = nparr.std(axis=axis, keepdims=keepdims)
 
         # Notes:
         # the first central moment is 0
@@ -110,15 +155,39 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         # the third standardized moment is the skweness
         # the fourth standardized moment is the kurtosis
 
+        if quantile:
+            # if not ub.iterable(quantile):
+            if quantile is True:
+                quantile == 'auto'
+
+            if quantile == 'auto':
+                quantile = [0.25, 0.50, 0.75]
+
         if True:
             stats['mean'] = np.float32(mean_)
             stats['std'] = np.float32(std_)
         if extreme:
             stats['min'] = np.float32(min_val)
             stats['max'] = np.float32(max_val)
+        if quantile:
+            if quantile == 'auto':
+                quantile = [0.25, 0.50, 0.75]
+            quant_values = np.quantile(nparr, quantile, axis=axis)
+            quant_keys = ['q_{:0.2f}'.format(q) for q in quantile]
+            for k, v in zip(quant_keys, quant_values):
+                stats[k] = v
         if n_extreme:
-            stats['nMin'] = np.int32(nMin)
-            stats['nMax'] = np.int32(nMax)
+            # number of entries with min/max val
+            nMin = np.sum(nparr == min_val, axis=axis, keepdims=keepdims)
+            nMax = np.sum(nparr == max_val, axis=axis, keepdims=keepdims)
+            nMin = nMin.astype(int)
+            nMax = nMax.astype(int)
+            if nMax.size == 1:
+                nMax = nMax.ravel()[0]
+            if nMin.size == 1:
+                nMin = nMin.ravel()[0]
+            stats['nMin'] = nMin
+            stats['nMax'] = nMax
         if median:
             stats['med'] = np.nanmedian(nparr, axis=axis)
         if nan:

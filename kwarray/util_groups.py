@@ -163,7 +163,7 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     _n_item = idx_to_groupid.size
     _dtype = idx_to_groupid.dtype
     _kind = _dtype.kind
-    if _kind == 'U' or _kind == 'O':
+    if _kind == 'U' or _kind == 'O' or _kind == 'V':
         # fallback to slower algorithm for non-numeric data
         group = ub.group_items(range(_n_item), _idx_to_groupid_orig)
         try:
