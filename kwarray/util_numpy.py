@@ -893,6 +893,7 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
         >>> from kwarray.util_numpy import *  # NOQA
         >>> # xdoctest: +REQUIRES(module:pandas)
         >>> import pandas as pd
+        >>> import ubelt as ub
         >>> x = np.linspace(-3, 3, 30)
         >>> basis = {
         >>>     # 'y_intercept': [0.1, 0.5, 0.8, -1],
