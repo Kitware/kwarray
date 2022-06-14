@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+Algorithms to find a solution to the setcover problem
+"""
 import ubelt as ub
 import itertools as it
 from collections import OrderedDict
@@ -13,23 +15,24 @@ def setcover(candidate_sets_dict, items=None, set_weights=None,
     algorithm selected.
 
     Args:
-        candidate_sets_dict (Dict[Hashable, List[Hashable]]):
+        candidate_sets_dict (Dict[KT, List[VT]]):
             a dictionary where keys are the candidate set ids and each value is
             a candidate cover set.
 
-        items (Hashable, optional): the set of all items to be covered,
+        items (Optional[VT]): the set of all items to be covered,
             if not specified, it is infered from the candidate cover sets
 
-        set_weights (Dict, optional): maps candidate set ids to a cost
-            for using this candidate cover in the solution. If not specified
-            the weight of each candiate cover defaults to 1.
+        set_weights (Optional[Dict[KT, float]]):
+            maps candidate set ids to a cost for using this candidate cover in
+            the solution. If not specified the weight of each candiate cover
+            defaults to 1.
 
-        item_values (Dict, optional): maps each item to a value we get for
-            returning this item in the solution. If not specified the value
-            of each item defaults to 1.
+        item_values (Optional[Dict[VT, float]]):
+            maps each item to a value we get for returning this item in the
+            solution. If not specified the value of each item defaults to 1.
 
-        max_weight (float): if specified, the total cost of the returned cover
-            is constrained to be less than this number.
+        max_weight (Optional[float]): if specified, the total cost of the
+            returned cover is constrained to be less than this number.
 
         algo (str): specifies which algorithm to use. Can either be
             'approx' for the greedy solution or 'exact' for the globally
@@ -141,7 +144,7 @@ def _setcover_greedy_old(candidate_sets_dict, items=None, set_weights=None,
 def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
                          item_values=None, max_weight=None):
     """
-    Implements Johnson's / Chvatal's greedy set-cover approximation algorithms.
+    Implements Johnson's / Chvatal's greedy set-cover approximation algorithm.
 
     The approximation gaurentees depend on specifications of set weights and
     item values
@@ -155,12 +158,12 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
 
     Set Cover: log(len(items) + 1) approximation algorithm
     Weighted Maximum Cover: 1 - 1/e == .632 approximation algorithm
-    Generalized maximum coverage is not implemented
+    Generalized maximum coverage is not implemented [WikiMaxCov]_.
 
     References:
-        https://en.wikipedia.org/wiki/Maximum_coverage_problem
+        .. [WikiMaxCov] https://en.wikipedia.org/wiki/Maximum_coverage_problem
 
-    Notes:
+    Ignore:
         # pip install git+git://github.com/tangentlabs/django-oscar.git#egg=django-oscar.
         # TODO: wrap https://github.com/martin-steinegger/setcover/blob/master/SetCover.cpp
         # pip install SetCoverPy
@@ -305,8 +308,6 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
 
     TODO:
         - [ ] Use CPLEX solver if available
-
-    https://en.wikipedia.org/wiki/Maximum_coverage_problem
 
     Example:
         >>> # xdoc: +REQUIRES(module:pulp)

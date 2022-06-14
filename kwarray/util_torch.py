@@ -128,7 +128,7 @@ def one_hot_lookup(data, indices):
     Returns:
         ArrayLike: the selected probability for each row
 
-    Notes:
+    Note:
         This is functionally equivalent to
         ``[row[c] for row, c in zip(data, indices)]`` except that it is
         works with pure matrix operations.

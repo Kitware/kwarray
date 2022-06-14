@@ -1,3 +1,6 @@
+"""
+Misc tools that should find a better home
+"""
 import numpy as np
 import ubelt as ub
 import numbers

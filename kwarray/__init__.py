@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 The ``kwarray`` module implements a small set of pure-python extensions to
-numpy and torch.
+numpy and torch along with a few select algorithms. Each module contains
+module level docstring that gives a rough idea of the utilities in each module,
+and each function or class itself contains a docstring with more details and
+examples.
 """
 # flake8: noqa
 from __future__ import absolute_import, division, print_function, unicode_literals
-"""
+
+__mkinit__ = """
 AutogenInit:
     mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods
     mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods -w

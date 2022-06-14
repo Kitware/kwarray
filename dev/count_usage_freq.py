@@ -94,7 +94,7 @@ if __name__ == '__main__':
     """
     CommandLine:
         python ~/code/kwarray/dev/count_usage_freq.py --help
-        python ~/code/kwarray/dev/count_usage_freq.py --extra_modnames=bioharn,
+        python ~/code/kwarray/dev/count_usage_freq.py --extra_modnames=bioharn,watch --print_packages=True
 
     """
     count_usage()

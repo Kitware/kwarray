@@ -33,12 +33,12 @@ class DataFrameLight(ub.NiceRepr):
 
     The API is restricted to facilitate speed tradeoffs
 
-    Notes:
+    Note:
         Assumes underlying data is Dict[list|ndarray]. If the data is known
         to be a Dict[ndarray] use DataFrameArray instead, which has faster
         implementations for some operations.
 
-    Notes:
+    Note:
         pandas.DataFrame is slow. DataFrameLight is faster.
         It is a tad more restrictive though.
 
@@ -393,7 +393,7 @@ class DataFrameLight(ub.NiceRepr):
         Args:
             inplace (bool): NOT PART OF PANDAS API
 
-        Notes:
+        Note:
             assumes axis=0
 
         Example:

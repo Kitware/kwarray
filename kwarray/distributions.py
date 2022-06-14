@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Defines data structures for efficient repeated sampling of specific
 distributions (e.g. Normal, Uniform, Binomial) with specific parameters.
@@ -523,7 +522,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         DiscreteDistribution
         MixedDistribution
 
-    Notes:
+    Note:
         In [DiscVsCont]_ notes that there are only 3 types of random variables:
         discrete, continuous, or mixed. And these types are mutually exclusive.
 
@@ -764,7 +763,7 @@ class Mixture(MixedDistribution):
 
     In general, a mixture model generates data by first first we sample from z,
     and then we sample the observables x from a distribution which depends on
-    z.  , i.e. p(z, x) = p(z) p(x | z) [GrosseMixture]_.
+    z.  , i.e. p(z, x) = p(z) p(x | z) [GrosseMixture]_ [StephensMixture]_.
 
     Args:
         pdfs (List[Distribution]):
@@ -775,7 +774,7 @@ class Mixture(MixedDistribution):
         rng (np.random.RandomState): seed random number generator
 
     References:
-        https://stephens999.github.io/fiveMinuteStats/intro_to_mixture_models.html
+        .. [StephensMixture] https://stephens999.github.io/fiveMinuteStats/intro_to_mixture_models.html
         .. [GrosseMixture] https://www.cs.toronto.edu/~rgrosse/csc321/mixture_models.pdf
 
     CommandLine:
@@ -1077,11 +1076,11 @@ class DiscreteUniform(DiscreteDistribution):
 
 class Normal(ContinuousDistribution):
     """
-    A normal distribution
+    A normal distribution. See [WikiNormal]_ [WikiCLT]_.
 
     References:
-        .. [1] https://en.wikipedia.org/wiki/Normal_distribution
-        .. [2] https://en.wikipedia.org/wiki/Central_limit_theorem
+        .. [WikiNormal] https://en.wikipedia.org/wiki/Normal_distribution
+        .. [WikiCLT] https://en.wikipedia.org/wiki/Central_limit_theorem
 
     Example:
         >>> from kwarray.distributions import *  # NOQA

@@ -30,7 +30,7 @@ def mindist_assignment(vecs1, vecs2, p=2):
         Tuple[list, float]: tuple containing assignments of rows in vecs1 to
             rows in vecs2, and the total distance between assigned pairs.
 
-    Notes:
+    Note:
         Thin wrapper around mincost_assignment
 
     CommandLine:

@@ -1,4 +1,11 @@
-# -*- coding: utf-8 -*-
+"""
+Defines the :class:`SlidingWindow` and :class:`Sticher` classes.
+
+The :class:`SlidingWindow` generates a grid of slices over an
+:func:`numpy.ndarray`, which can then be used to compute on subsets of the
+data. The :class:`Stitcher` can then take these results and recombine them into
+a final result that matches the larger array.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 import ubelt as ub
 import numpy as np
@@ -53,7 +60,7 @@ class SlidingWindow(ub.NiceRepr):
         Tuple[slice, ...]: slices used for numpy indexing, the number of slices
             in the tuple
 
-    Notes:
+    Note:
         For each dimension, we generate a basis (which defines a grid), and we
         slide over that basis.
 

@@ -65,7 +65,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
     """
     constant memory iteration and reduction
 
-    applys ufunc from left to right over the input arrays
+    Applys ufunc from left to right over the input arrays
 
     Args:
         ufunc (Callable): called on each pair of consecutive ndarrays
@@ -77,7 +77,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
             if len(arrs) == 0, returns ``default``
             if len(arrs) == 1, returns arrs[0],
             if len(arrs) >= 2, returns
-                ufunc(...ufunc(ufunc(arrs[0], arrs[1]), arrs[2]),...arrs[n-1])
+            ufunc(...ufunc(ufunc(arrs[0], arrs[1]), arrs[2]),...arrs[n-1])
 
     Example:
         >>> arr_list = [
@@ -209,7 +209,7 @@ def atleast_nd(arr, n, front=False):
         [[[[0]]]]
         [[[[[1]]]]]
 
-    Notes:
+    Note:
         Extensive benchmarks are in
         kwarray/dev/bench_atleast_nd.py
 
@@ -237,9 +237,13 @@ def argmaxima(arr, num, axis=None, ordered=True):
 
     Args:
         arr (ndarray): input array
+
         num (int): number of maximum indices to return
-        axis (int|None): axis to find maxima over. If None this is equivalent
+
+        axis (int | None):
+            axis to find maxima over. If None this is equivalent
             to using arr.ravel().
+
         ordered (bool): if False, returns the maximum elements in an arbitrary
             order, otherwise they are in decending order. (Setting this to
             false is a bit faster).
@@ -671,7 +675,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> for key, img in norms.items():
         >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
 
-    Benchmark:
+    Ignore:
         # Our method is faster than standard in-line implementations.
 
         import timerit
@@ -844,7 +848,7 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
     References:
         https://en.wikipedia.org/wiki/Generalised_logistic_function
 
-    Example:
+    Ignore:
         from kwarray.util_numpy import *  # NOQA
         import kwplot
         plt = kwplot.autoplt()
@@ -880,7 +884,6 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
         sns = kwplot.autosns()
         plt.gca().cla()
         sns.lineplot(data=all_data, x='x', y='y', hue='growth', size='v')
-
     """
     A = floor
     K = capacity

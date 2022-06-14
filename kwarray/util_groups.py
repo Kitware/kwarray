@@ -251,7 +251,7 @@ def group_consecutive(arr, offset=1):
     Returns:
         List[ndarray]: a list of arrays that are the groups from the input
 
-    Notes:
+    Note:
         This is equivalent (and faster) to using:
         apply_grouping(data, group_consecutive_indices(data))
 

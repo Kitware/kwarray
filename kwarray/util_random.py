@@ -6,11 +6,10 @@ python, torch, ...). Also defines useful random iterator functions and
 
 
 Random Number Generator Patterns
-================================
+--------------------------------
 
 If you need a seeded random number generator kwarray.ensure_rng is helpful with
-that:
-https://kwarray.readthedocs.io/en/latest/autoapi/kwarray/util_random/#kwarray.util_random.ensure_rng
+that: :func:`kwarray.util_random.ensure_rng`
 
 If the input is a number it returns a seeded random number generator. If it is
 None is returns whatever the system level RNG is. If the input is an existing
@@ -20,9 +19,9 @@ the internal state between the two).
 
 
 When I write randomized functions / class, a coding pattern I like is to
-have a default keyword argument `rng=None`. Then kwarray.ensure_rng coerces
-whatever the input is into a `random.Random` or `numpy.random.RandomState`
-object.
+have a default keyword argument ``rng=None``. Then kwarray.ensure_rng coerces
+whatever the input is into a :func:`random.Random` or
+:func:`numpy.random.RandomState` object.
 
 .. code:: python
 

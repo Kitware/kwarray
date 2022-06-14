@@ -1,9 +1,7 @@
-# -* -coding: utf-8 -*-
 """
 Fast 32-bit random functions for numpy as of 2018. (More recent versions of
 numpy may have these natively supported).
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 
 
@@ -15,23 +13,25 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
     ``[low, high)`` (includes low, but excludes high).
 
     Args:
-        low (float, default=0.0):
+        low (float):
             Lower boundary of the output interval.  All values generated will
-            be greater than or equal to low.
+            be greater than or equal to low. Defaults to 0.
 
-        high (float, default=1.0):
+        high (float):
             Upper boundary of the output interval.  All values generated will
-            be less than high.
+            be less than high. Default to 1.
 
-        size (int | Tuple[int], default=None):
+        size (int | Tuple[int] | None):
             Output shape.  If the given shape is, e.g., ``(m, n, k)``, then
             ``m * n * k`` samples are drawn.  If size is ``None`` (default),
             a single value is returned if ``low`` and ``high`` are both scalars.
             Otherwise, ``np.broadcast(low, high).size`` samples are drawn.
 
-        dtype (type): either np.float32 or np.float64
+        dtype (type):
+            either np.float32 or np.float64. Defaults to float32
 
-        rng (numpy.random.RandomState): underlying random state
+        rng (numpy.random.RandomState):
+            underlying random state
 
     Returns:
         ndarray[dtype]: normally distributed random numbers with chosen dtype
@@ -66,9 +66,9 @@ def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
 
     Args:
         size (int | Tuple[int, *int]) : shape of the returned ndarray
-        mean (float, default=0): mean of the normal distribution
-        std (float, default=1): standard deviation of the normal distribution
-        dtype (type): either np.float32 or np.float64
+        mean (float): mean of the normal distribution. defaults to 0
+        std (float): standard deviation of the normal distribution. defaults to 1.
+        dtype (type): either np.float32 (default) or np.float64
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
@@ -99,7 +99,9 @@ def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
 
 def standard_normal32(size, mean=0, std=1, rng=np.random):
     """
-    Fast normally distributed random variables using the Box–Muller transform
+    Fast normally distributed random variables.
+
+    Uses the Box–Muller transform [WikiBoxMuller]_.
 
     The difference between this function and
     :func:`numpy.random.standard_normal` is that we use float32 arrays in the
@@ -117,11 +119,11 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
         ndarray[float32]: normally distributed random numbers
 
     References:
-        https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+        .. [WikiBoxMuller] https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
 
     SeeAlso:
-        * standard_normal
-        * standard_normal64
+        * :func:`standard_normal`
+        * :func:`standard_normal64`
 
     Example:
         >>> import scipy
@@ -212,8 +214,8 @@ def standard_normal64(size, mean=0, std=1, rng=np.random):
 
     Args:
         size (int | Tuple[int, *int]) : shape of the returned ndarray
-        mean (float, default=0): mean of the normal distribution
-        std (float, default=1): standard deviation of the normal distribution
+        mean (float): mean of the normal distribution. defaults to 0
+        std (float): standard deviation of the normal distribution. defaults to 1.
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
@@ -254,7 +256,7 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
             Upper boundary of the output interval.  All values generated will
             be less than high.
 
-        size (int | Tuple[int], default=None):
+        size (int | Tuple[int] | None):
             Output shape.  If the given shape is, e.g., ``(m, n, k)``, then
             ``m * n * k`` samples are drawn.  If size is ``None`` (default),
             a single value is returned if ``low`` and ``high`` are both scalars.

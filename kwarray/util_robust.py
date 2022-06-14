@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+"""
+Functions relating to robust statistical methods for normalizing data
+"""
 import numpy as np
 import ubelt as ub
 import math  # NOQA

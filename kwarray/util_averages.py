@@ -35,13 +35,13 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         shape (bool): report array shape
 
     Returns:
-        collections.OrderedDict: stats: dictionary of common numpy statistics
+        collections.OrderedDict:
+            dictionary of common numpy statistics
             (min, max, mean, std, nMin, nMax, shape)
 
     SeeAlso:
-        scipy.stats.describe
-
-        pandas.DataFrame.describe
+        :func:`scipy.stats.describe`
+        :func:`pandas.DataFrame.describe`
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
@@ -109,7 +109,6 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
 
     Ignore:
-
         import kwarray
         inputs = np.random.rand(3, 2, 1)
         stats = kwarray.stats_dict(inputs, axis=2, nan=True, quantile='auto')
@@ -146,7 +145,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             mean_ = nparr.mean(axis=axis, keepdims=keepdims)
             std_  = nparr.std(axis=axis, keepdims=keepdims)
 
-        # Notes:
+        # Note:
         # the first central moment is 0
         # the first raw moment is the mean
         # the second central moment is the variance
@@ -332,7 +331,7 @@ class RunningStats(ub.NiceRepr):
                 axis or axes to summarize over,
                 if None, all axes are summarized.
                 if ub.NoParam, no axes are summarized the current result is
-                    returned.
+                returned.
 
             keepdims (bool, default=True):
                 if False removes the dimensions that are summarized over
@@ -385,14 +384,6 @@ class RunningStats(ub.NiceRepr):
         """
         Returns current staticis on a per-element basis
         (not summarized over any axis)
-
-        TODO:
-            - [X] I want this method and summarize to be unified somehow.
-                I don't know how to paramatarize it because axis=None usually
-                means summarize over everything, and I need to way to encode,
-                summarize over nothing but the "sequence" dimension (which was
-                given incrementally by the update function), which is what
-                this function does.
         """
         info = run.summarize(axis=ub.NoParam)
         return info
