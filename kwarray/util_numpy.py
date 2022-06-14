@@ -20,14 +20,15 @@ def boolmask(indices, shape=None):
     :func:`numpy.where`.
 
     Args:
-        indices (ndarray): list of integer indices
+        indices (NDArray): list of integer indices
 
         shape (int | tuple): length of the returned list. If not specified
             the minimal possible shape to incoporate all the indices is used.
             In general, it is best practice to always specify this argument.
 
     Returns:
-        ndarray[int]: mask: mask[idx] is True if idx in indices
+        NDArray[Any, Int]:
+            mask - mask[idx] is True if idx in indices
 
     Example:
         >>> indices = [0, 1, 4]
@@ -69,11 +70,11 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
 
     Args:
         ufunc (Callable): called on each pair of consecutive ndarrays
-        arrs (Iterator[ndarray]): iterator of ndarrays
+        arrs (Iterator[NDArray]): iterator of ndarrays
         default (object): return value when iterator is empty
 
     Returns:
-        ndarray:
+        NDArray:
             if len(arrs) == 0, returns ``default``
             if len(arrs) == 1, returns arrs[0],
             if len(arrs) >= 2, returns
@@ -129,11 +130,11 @@ def isect_flags(arr, other):
     Check which items in an array intersect with another set of items
 
     Args:
-        arr (ndarray): items to check
+        arr (NDArray): items to check
         other (Iterable): items to check if they exist in arr
 
     Returns:
-        ndarray: booleans corresponding to arr indicating if that item is
+        NDArray: booleans corresponding to arr indicating if that item is
             also contained in other.
 
     Example:
@@ -160,19 +161,19 @@ def atleast_nd(arr, n, front=False):
     View inputs as arrays with at least n dimensions.
 
     Args:
-        arr (array_like):
+        arr (ArrayLike):
             An array-like object.  Non-array inputs are converted to arrays.
             Arrays that already have n or more dimensions are preserved.
 
         n (int):
             number of dimensions to ensure
 
-        front (bool, default=False):
+        front (bool):
             if True new dimensions are added to the front of the array.
-            otherwise they are added to the back.
+            otherwise they are added to the back. Defaults to False.
 
     Returns:
-        ndarray :
+        NDArray :
             An array with ``a.ndim >= n``.  Copies are avoided where possible,
             and views with three or more dimensions are returned.  For example,
             a 1-D array of shape ``(N,)`` becomes a view of shape
@@ -236,7 +237,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
     This can be significantly faster than using argsort.
 
     Args:
-        arr (ndarray): input array
+        arr (NDArray): input array
 
         num (int): number of maximum indices to return
 
@@ -252,7 +253,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
         - [ ] if num is None, return arg for all values equal to the maximum
 
     Returns:
-        ndarray
+        NDArray
 
     Example:
         >>> # Test cases with axis=None
@@ -356,7 +357,7 @@ def argminima(arr, num, axis=None, ordered=True):
     This can be significantly faster than using argsort.
 
     Args:
-        arr (ndarray): input array
+        arr (NDArray): input array
         num (int): number of minimum indices to return
         axis (int|None): axis to find minima over.
             If None this is equivalent to using arr.ravel().
@@ -512,7 +513,7 @@ def unique_rows(arr, ordered=False, return_index=False):
     Like unique, but works on rows
 
     Args:
-        arr (ndarray): must be a contiguous C style array
+        arr (NDArray): must be a contiguous C style array
         ordered (bool): if true, keeps relative ordering
 
     References:
@@ -572,7 +573,8 @@ def arglexmax(keys, multi=False):
         multi (bool): if True, returns all indices that share the max value
 
     Returns:
-        int | ndarray[int] : either the index or list of indices
+        int | NDArray[Any, Int] :
+            either the index or list of indices
 
     Example:
         >>> k, N = 100, 100
@@ -620,9 +622,9 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
     By default linearly stretches array values to minimum and maximum values.
 
     Args:
-        arr (ndarray): array to normalize, usually an image
+        arr (NDArray): array to normalize, usually an image
 
-        out (ndarray | None): output array. Note, that we will create an
+        out (NDArray | None): output array. Note, that we will create an
             internal floating point copy for integer computations.
 
         mode (str): either linear or sigmoid.
@@ -843,47 +845,86 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
 def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, growth=1, v=1):
     """
-    Richards curve
+    A generalization of the logistic / sigmoid functions that allows for
+    flexible specification of S-shaped curve.
+
+    This is also known as a "Richards curve" [WikiRichardsCurve]_.
+
+    Args:
+        x (NDArray):
+            input x coordinates
+
+        floor (float):
+            the lower (left) asymptote. (Also called ``A`` in some texts).
+            Defaults to 0.
+
+        capacity (float):
+            the carrying capacity. When C=1, this is the upper (right)
+            asymptote. (Also called ``K`` in some texts).
+            Defaults to 1.
+
+        C (float):
+            Has influence on the upper asymptote.
+            Defaults to 1. This is typically not modified.
+
+        y_intercept (float | None):
+            specify where the the y intercept is at x=0. Mutually exclusive
+            with ``Q``.
+
+        Q (float | None):
+            related to the value of the function at x=0. Mutually exclusive
+            with ``y_intercept``. Defaults to 1.
+
+        growth (float):
+            the growth rate (also calle ``B`` in some texts).
+            Defaults to 1.
+
+        v (float):
+            Positive number that influences near which asymptote the growth
+            occurs. Defaults to 1.
+
+    Returns:
+        NDArray: the values for each input
 
     References:
-        https://en.wikipedia.org/wiki/Generalised_logistic_function
+        .. [WikiRichardsCurve] https://en.wikipedia.org/wiki/Generalised_logistic_function
+
+    Example:
+        >>> from kwarray.util_numpy import *  # NOQA
+        >>> # xdoctest: +REQUIRES(module:pandas)
+        >>> import pandas as pd
+        >>> x = np.linspace(-3, 3, 30)
+        >>> basis = {
+        >>>     # 'y_intercept': [0.1, 0.5, 0.8, -1],
+        >>>     # 'y_intercept': [0.1, 0.5, 0.8],
+        >>>     'v': [0.5, 1.0, 2.0],
+        >>>     'growth': [-1, 0, 2],
+        >>> }
+        >>> grid = list(ub.named_product(basis))
+        >>> datas = []
+        >>> for params in grid:
+        >>>     y = generalized_logistic(x, **params)
+        >>>     data = pd.DataFrame({'x': x, 'y': y})
+        >>>     key = ub.repr2(params, compact=1)
+        >>>     data['key'] = key
+        >>>     for k, v in params.items():
+        >>>         data[k] = v
+        >>>     datas.append(data)
+        >>> all_data = pd.concat(datas).reset_index()
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> # xdoctest: +REQUIRES(module:kwplot)
+        >>> import kwplot
+        >>> plt = kwplot.autoplt()
+        >>> sns = kwplot.autosns()
+        >>> plt.gca().cla()
+        >>> sns.lineplot(data=all_data, x='x', y='y', hue='growth', size='v')
 
     Ignore:
-        from kwarray.util_numpy import *  # NOQA
-        import kwplot
-        plt = kwplot.autoplt()
-        ax = plt.gca()
-        ax.plot(x, y)
-
+        # Helper to get correct conditional forms
         import sympy as sym
         A, K, C, B, Q, v, x, y = sym.symbols('A, K, C, B, Q, v, x, y')
         expr = A + (K - A) / (C + Q * sym.exp(-B * x)) ** (1 / v)
         sym.solve(sym.Eq(expr, y).subs(dict(x=0)), Q)
-
-        import pandas as pd
-        x = np.linspace(-3, 3, 30)
-        basis = {
-            # 'y_intercept': [0.1, 0.5, 0.8, -1],
-            # 'y_intercept': [0.1, 0.5, 0.8],
-            'v': [0.5, 1.0, 2.0],
-            'growth': [-1, 0, 2],
-        }
-        grid = list(ub.named_product(basis))
-        datas = []
-        for params in grid:
-            y = generalized_logistic(x, **params)
-            data = pd.DataFrame({'x': x, 'y': y})
-            key = ub.repr2(params, compact=1)
-            data['key'] = key
-            for k, v in params.items():
-                data[k] = v
-            datas.append(data)
-        all_data = pd.concat(datas)
-        import kwplot
-        plt = kwplot.autoplt()
-        sns = kwplot.autosns()
-        plt.gca().cla()
-        sns.lineplot(data=all_data, x='x', y='y', hue='growth', size='v')
     """
     A = floor
     K = capacity

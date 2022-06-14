@@ -97,14 +97,25 @@ import itertools as it
 _SEED_MAX = int(2 ** 32 - 1)
 
 
+__todo = """
+Make a Coercable[RandomState] type that is
+
+Coercable[numpy.random.RandomState] = Union[int, float, None, numpy.random.RandomState, random.Random]
+Coercable[random.Random] = Union[int, float, None, numpy.random.RandomState, random.Random]
+
+
+
+"""
+
+
 def seed_global(seed, offset=0):
     """
     Seeds the python, numpy, and torch global random states
 
     Args:
         seed (int): seed to use
-        offset (int, optional): if specified, uses a different seed for each
-            global random state separated by this offset.
+        offset (int): if specified, uses a different seed for each
+            global random state separated by this offset. Defaults to 0.
     """
     random.seed((seed) % _SEED_MAX)
     np.random.seed((seed + offset) % _SEED_MAX)
@@ -122,8 +133,9 @@ def shuffle(items, rng=None):
     Shuffles a list inplace and then returns it for convinience
 
     Args:
-        items (list or ndarray): list to shuffle
-        rng (RandomState or int): seed or random number gen
+        items (list | ndarray): data to shuffle
+        rng (int | float | None | numpy.random.RandomState | random.Random):
+            seed or random number gen
 
     Returns:
         list: this is the input, but returned for convinience
@@ -146,10 +158,18 @@ def random_combinations(items, size, num=None, rng=None):
     Yields ``num`` combinations of length ``size`` from items in random order
 
     Args:
-        items (List): pool of items to choose from
-        size (int): number of items in each combination
-        num (None, default=None): number of combinations to generate
-        rng (int | RandomState, default=None): seed or random number generator
+        items (List):
+            pool of items to choose from
+
+        size (int):
+            Number of items in each combination
+
+        num (int | None):
+            Number of combinations to generate. If None, generate them all.
+
+        rng (int | float | None | numpy.random.RandomState | random.Random):
+            seed or random number generator. Defaults to the global state
+            of the python random module.
 
     Yields:
         Tuple: a random combination of ``items`` of length ``size``.
@@ -220,11 +240,12 @@ def random_product(items, num=None, rng=None):
             items to get caresian product of packed in a list or tuple.
             (note this deviates from api of :func:`itertools.product`)
 
-        num (int, default=None):
-            maximum number of items to generate. If None, all
+        num (int | None):
+            maximum number of items to generate. If None generat them all
 
-        rng (random.Random | np.random.RandomState | int):
-            random number generator
+        rng (int | float | None | numpy.random.RandomState | random.Random):
+            Seed or random number generator. Defaults to the global state
+            of the python random module.
 
     Yields:
         Tuple: a random item in the cartesian product
@@ -400,19 +421,19 @@ def ensure_rng(rng, api='numpy'):
     random state with the requested api.
 
     Args:
-        rng (int | float | numpy.random.RandomState | random.Random | None):
+        rng (int | float | None | numpy.random.RandomState | random.Random):
             if None, then defaults to the global rng. Otherwise this can
             be an integer or a RandomState class
 
-        api (str, default='numpy'): specify the type of random number
+        api (str): specify the type of random number
             generator to use. This can either be 'numpy' for a
             :class:`numpy.random.RandomState` object or 'python' for a
-            :class:`random.Random` object.
+            :class:`random.Random` object. Defaults to numpy.
 
     Returns:
-        (numpy.random.RandomState | random.Random) : rng -
-            either a numpy or python random number generator, depending on the
-            setting of ``api``.
+        (numpy.random.RandomState | random.Random) :
+            rng - either a numpy or python random number generator, depending
+            on the setting of ``api``.
 
     Example:
         >>> rng = ensure_rng(None)

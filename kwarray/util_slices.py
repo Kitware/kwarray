@@ -19,7 +19,7 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
     will be sampled via padding.
 
     Args:
-        data (Sliceable[T]): data to slice into. Any channels must be the last dimension.
+        data (Sliceable): data to slice into. Any channels must be the last dimension.
         slices (slice | Tuple[slice, ...]): slice for each dimensions
         ndim (int): number of spatial dimensions
         pad (List[int|Tuple]): additional padding of the slice

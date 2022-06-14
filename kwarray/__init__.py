@@ -1,18 +1,19 @@
-# -*- coding: utf-8 -*-
 """
 The ``kwarray`` module implements a small set of pure-python extensions to
 numpy and torch along with a few select algorithms. Each module contains
 module level docstring that gives a rough idea of the utilities in each module,
 and each function or class itself contains a docstring with more details and
 examples.
-"""
-# flake8: noqa
-from __future__ import absolute_import, division, print_function, unicode_literals
 
+KWarray is part of Kitware's computer vision Python suite:
+
+    https://gitlab.kitware.com/computer-vision
+
+"""
 __mkinit__ = """
 AutogenInit:
-    mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods
-    mkinit ~/code/kwarray/kwarray/__init__.py --relative --nomods -w
+    mkinit -m kwarray --relative --nomods --diff
+    mkinit -m kwarray --relative --nomods -w
 """
 
 __private__ = [

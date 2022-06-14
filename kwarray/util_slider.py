@@ -365,10 +365,10 @@ class Stitcher(ub.NiceRepr):
         weighted sum.
 
         Args:
-            indices (slice or tuple): typically a Tuple[slice] of pixels or a
+            indices (slice | tuple): typically a Tuple[slice] of pixels or a
                 single pixel, but this can be any numpy fancy index.
             patch (ndarray): data to patch into the bigger image.
-            weight (float or ndarray): weight of this patch (default to 1.0)
+            weight (float | ndarray): weight of this patch (default to 1.0)
         """
         if weight is None:
             stitcher.sums[indices] += patch
@@ -382,7 +382,7 @@ class Stitcher(ub.NiceRepr):
         Averages out contributions from overlapping adds using weighted average
 
         Returns:
-            out: ndarray: the stitched image
+            ndarray: out - the stitched image
         """
         out = stitcher.sums / stitcher.weights
         return out
@@ -396,7 +396,7 @@ class Stitcher(ub.NiceRepr):
                 block, otherwise only finalize a subregion.
 
         Returns:
-            final: ndarray: the stitched image
+            ndarray: final - the stitched image
         """
         if indices is None:
             final = stitcher.sums / stitcher.weights

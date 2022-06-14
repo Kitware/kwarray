@@ -584,6 +584,10 @@ class Distribution(Parameterized, _RBinOpMixin):
         """
         Returns a random distribution
 
+        Args:
+            rng (int | float | None | numpy.random.RandomState | random.Random):
+                random coercable
+
         CommandLine:
             xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
 
@@ -845,8 +849,15 @@ class Mixture(MixedDistribution):
         return out
 
     @classmethod
-    def random(cls, n=3, rng=None):
+    def random(cls, rng=None, n=3):
         """
+        Args:
+            rng (int | float | None | numpy.random.RandomState | random.Random):
+                random coercable
+
+            n (int):
+                number of random distributions in the mixture
+
         Example:
             >>> from kwarray.distributions import *  # NOQA
             >>> print('Mixture = {!r}'.format(Mixture))

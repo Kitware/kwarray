@@ -21,7 +21,7 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
             Upper boundary of the output interval.  All values generated will
             be less than high. Default to 1.
 
-        size (int | Tuple[int] | None):
+        size (int | Tuple[int, ...] | None):
             Output shape.  If the given shape is, e.g., ``(m, n, k)``, then
             ``m * n * k`` samples are drawn.  If size is ``None`` (default),
             a single value is returned if ``low`` and ``high`` are both scalars.
@@ -34,7 +34,9 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
             underlying random state
 
     Returns:
-        ndarray[dtype]: normally distributed random numbers with chosen dtype
+        ndarray:
+            uniformly distributed random numbers with chosen size and dtype
+            Extended typing ``NDArray[Literal[size], Literal[dtype]]``
 
     Benchmark:
         >>> from timerit import Timerit
@@ -65,14 +67,16 @@ def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
     standard deviation.
 
     Args:
-        size (int | Tuple[int, *int]) : shape of the returned ndarray
+        size (int | Tuple[int, ...]) : shape of the returned ndarray
         mean (float): mean of the normal distribution. defaults to 0
         std (float): standard deviation of the normal distribution. defaults to 1.
         dtype (type): either np.float32 (default) or np.float64
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
-        ndarray[dtype]: normally distributed random numbers with chosen dtype
+        ndarray:
+            normally distributed random numbers with chosen size and dtype
+            Extended typing ``NDArray[Literal[size], Literal[dtype]]``
 
     Benchmark:
         >>> from timerit import Timerit
@@ -110,13 +114,14 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     precision is often good enough.
 
     Args:
-        size (int | Tuple[int, *int]) : shape of the returned ndarray
+        size (int | Tuple[int, ...]) : shape of the returned ndarray
         mean (float, default=0): mean of the normal distribution
         std (float, default=1): standard deviation of the normal distribution
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
-        ndarray[float32]: normally distributed random numbers
+        ndarray[Any, Float32]:
+            normally distributed random numbers with chosen size.
 
     References:
         .. [WikiBoxMuller] https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
@@ -213,13 +218,14 @@ def standard_normal64(size, mean=0, std=1, rng=np.random):
     :func:`standard_normal32`.
 
     Args:
-        size (int | Tuple[int, *int]) : shape of the returned ndarray
+        size (int | Tuple[int, ...]) : shape of the returned ndarray
         mean (float): mean of the normal distribution. defaults to 0
         std (float): standard deviation of the normal distribution. defaults to 1.
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
-        ndarray[float64]: normally distributed random numbers
+        ndarray[Any, Float64]:
+            normally distributed random numbers with chosen size.
 
     SeeAlso:
         * standard_normal
@@ -256,11 +262,15 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
             Upper boundary of the output interval.  All values generated will
             be less than high.
 
-        size (int | Tuple[int] | None):
+        size (int | Tuple[int, ...] | None):
             Output shape.  If the given shape is, e.g., ``(m, n, k)``, then
             ``m * n * k`` samples are drawn.  If size is ``None`` (default),
             a single value is returned if ``low`` and ``high`` are both scalars.
             Otherwise, ``np.broadcast(low, high).size`` samples are drawn.
+
+    Returns:
+        ndarray[Any, Float32]:
+            uniformly distributed random numbers with chosen size.
 
     Example:
         >>> rng = np.random.RandomState(0)

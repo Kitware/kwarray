@@ -7,6 +7,29 @@ import numpy as np
 import ubelt as ub
 
 
+__TODO__ = """
+
+TODO:
+
+For group items I would like to specify typings that work like this:
+
+    Args:
+        item_list (NDArray[None, T1]):
+
+        groupid_list (NDArray[None, T2]):
+
+    Returns:
+        Dict[T2, NDArray[None, T1]]
+
+To indicate that the dtypes of the item_list and the return type will be the
+same and the group types will be used as keys. Cant quite figure out how
+to make it work with np.typing atm, so punting for now.
+
+It would also be nice to indicate that the shape of item and groupid have to be
+the same.
+"""
+
+
 def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
     """
     Groups a list of items by group id.
@@ -20,24 +43,30 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
     instead.
 
     Args:
-        item_list (ndarray[T1]):
+        item_list (NDArray):
             The input array of items to group.
+            Extended typing ``NDArray[Any, VT]``
 
-        groupid_list (ndarray[T2]):
+        groupid_list (NDArray):
             Each item is an id corresponding to the item at the same position
             in ``item_list``.  For the fastest runtime, the input array must be
             numeric (ideally with integer types). This list must be
             1-dimensional.
+            Extended typing ``NDArray[Any, KT]``
 
-        assume_sorted (bool, default=False):
+        assume_sorted (bool):
             If the input array is sorted, then setting this to True will avoid
-            an unnecessary sorting operation and improve efficiency.
+            an unnecessary sorting operation and improve efficiency. Defaults
+            to False.
 
         axis (int | None):
-            group along a particular axis in ``items`` if it is n-dimensional
+            Group along a particular axis in ``items`` if it is n-dimensional.
 
     Returns:
-        Dict[T2, ndarray[T1]]: mapping from groupids to corresponding items
+        Dict[Any, NDArray]:
+            mapping from groupids to corresponding items.
+            Extended typing ``Dict[KT, NDArray[Any, VT]]``.
+
 
     References:
         .. [1] http://stackoverflow.com/questions/4651683/
@@ -78,21 +107,22 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     doesn't matter, then consider using func:`group_items` instead.
 
     Args:
-        idx_to_groupid (ndarray):
+        idx_to_groupid (NDArray):
             The input array, where each item is interpreted as a group id.
             For the fastest runtime, the input array must be numeric (ideally
             with integer types).  If the type is non-numeric then the less
             efficient :func:`ubelt.group_items` is used.
 
-        assume_sorted (bool, default=False):
+        assume_sorted (bool):
             If the input array is sorted, then setting this to True will avoid
             an unnecessary sorting operation and improve efficiency.
+            Defaults to False.
 
     Returns:
-        Tuple[ndarray, List[ndarrays]]: (keys, groupxs) -
-            keys (ndarray):
+        Tuple[NDArray, List[NDArray]]: (keys, groupxs) -
+            keys (NDArray):
                 The unique elements of the input array in order
-            groupxs (List[ndarray]):
+            groupxs (List[NDArray]):
                 Corresponding list of indexes.  The i-th item is an array
                 indicating the indices where the item ``key[i]`` appeared in
                 the input array.
@@ -209,14 +239,14 @@ def apply_grouping(items, groupxs, axis=0):
     Typically used in conjunction with :func:`group_indices`.
 
     Args:
-        items (ndarray): items to group
+        items (NDArray): items to group
 
-        groupxs (List[ndarrays[int]]): groups of indices
+        groupxs (List[NDArray[None, Int]]): groups of indices
 
         axis (None|int, default=0) axis along which to group
 
     Returns:
-        List[ndarray]: grouped items
+        List[NDArray]: grouped items
 
 
     Example:
@@ -239,7 +269,7 @@ def group_consecutive(arr, offset=1):
     Returns lists of consecutive values. Implementation inspired by [3]_.
 
     Args:
-        arr (ndarray):
+        arr (NDArray):
             array of ordered values
 
         offset (float, default=1):
@@ -249,7 +279,7 @@ def group_consecutive(arr, offset=1):
             same, e.g.: 4, 4, 4.
 
     Returns:
-        List[ndarray]: a list of arrays that are the groups from the input
+        List[NDArray]: a list of arrays that are the groups from the input
 
     Note:
         This is equivalent (and faster) to using:
@@ -281,14 +311,14 @@ def group_consecutive_indices(arr, offset=1):
     Returns lists of indices pointing to consecutive values
 
     Args:
-        arr (ndarray):
+        arr (NDArray):
             array of ordered values
 
         offset (float, default=1):
             any two values separated by this offset are grouped.
 
     Returns:
-        List[ndarray]: groupxs: a list of indices
+        List[NDArray]: groupxs: a list of indices
 
     SeeAlso:
 
