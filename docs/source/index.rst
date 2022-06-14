@@ -18,46 +18,18 @@ Welcome to kwarray's documentation!
 
 
 .. The __init__ files contains the top-level documentation overview
-.. autoapimodule:: kwarray
-    :show-inheritance:
-    :special-members: __init__
+.. automodule:: kwarray.__init__
+   :show-inheritance:
 
 
-Function Usefulness
-===================
-
-================================================================ ================
- Function name                                                   Usefulness
-================================================================ ================
-:func:`kwarray.ArrayAPI`                                                      219
-:func:`kwarray.ensure_rng`                                                    135
-:func:`kwarray.boolmask`                                                       23
-:func:`kwarray.stats_dict`                                                     21
-:func:`kwarray.DataFrameArray`                                                 21
-:func:`kwarray.group_indices`                                                  20
-:func:`kwarray.shuffle`                                                        20
-:func:`kwarray.argmaxima`                                                      16
-:func:`kwarray.seed_global`                                                     8
-:func:`kwarray.maxvalue_assignment`                                             7
-:func:`kwarray.one_hot_embedding`                                               7
-:func:`kwarray.atleast_nd`                                                      6
-:func:`kwarray.iter_reduce_ufunc`                                               5
-:func:`kwarray.isect_flags`                                                     5
-:func:`kwarray.group_items`                                                     4
-:func:`kwarray.mincost_assignment`                                              3
-:func:`kwarray.standard_normal`                                                 3
-:func:`kwarray.arglexmax`                                                       2
-:func:`kwarray.apply_grouping`                                                  1
-:func:`kwarray.DataFrameLight`                                                  1
-:func:`kwarray.uniform`                                                         1
-================================================================ ================
+.. # Computed function usefulness
+.. include:: function_usefulness.rst
 
 
 .. toctree::
+   :maxdepth: 3
 
    kwarray
-
-
 
 
 Indices and tables
@@ -65,4 +37,4 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
+
