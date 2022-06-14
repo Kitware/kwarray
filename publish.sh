@@ -166,6 +166,9 @@ DO_TAG=$(normalize_boolean "$DO_TAG")
 TWINE_USERNAME=${TWINE_USERNAME:=""}
 TWINE_PASSWORD=${TWINE_PASSWORD:=""}
 
+DEFAULT_TEST_TWINE_REPO_URL="https://test.pypi.org/legacy/"
+DEFAULT_LIVE_TWINE_REPO_URL="https://upload.pypi.org/legacy/"
+
 TWINE_REPOSITORY_URL=${TWINE_REPOSITORY_URL:="auto"}
 if [[ "${TWINE_REPOSITORY_URL}" == "auto" ]]; then
     #if [[ "$(cat .git/HEAD)" != "ref: refs/heads/release" ]]; then 
@@ -173,10 +176,16 @@ if [[ "${TWINE_REPOSITORY_URL}" == "auto" ]]; then
     #    TWINE_REPOSITORY_URL=${TWINE_REPOSITORY_URL:="https://test.pypi.org/legacy/"}
     #else
     if [[ "$DEBUG" != "" ]]; then
-        TWINE_REPOSITORY_URL="https://upload.pypi.org/legacy/"
+        TWINE_REPOSITORY_URL="live"
     else
-        TWINE_REPOSITORY_URL="https://test.pypi.org/legacy/"
+        TWINE_REPOSITORY_URL="test"
     fi
+fi
+
+if [[ "${TWINE_REPOSITORY_URL}" == "live" ]]; then
+    TWINE_REPOSITORY_URL=$DEFAULT_LIVE_TWINE_REPO_URL
+elif [[ "${TWINE_REPOSITORY_URL}" == "test" ]]; then
+    TWINE_REPOSITORY_URL=$DEFAULT_TEST_TWINE_REPO_URL
 fi
 
 GPG_EXECUTABLE=${GPG_EXECUTABLE:="auto"}
