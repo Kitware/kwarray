@@ -12,7 +12,8 @@ class FlatIndexer(ub.NiceRepr):
     Only supports one offset level.
 
     Args:
-        lens (list): a list of the lengths of the nested objects.
+        lens (List[int]):
+            a list of the lengths of the nested objects.
 
     Doctest:
         >>> self = FlatIndexer([1, 2, 3])
@@ -40,12 +41,16 @@ class FlatIndexer(ub.NiceRepr):
         return cls(lens)
 
     def __len__(self):
+        """
+        Returns:
+            int
+        """
         return self.cums[-1] if len(self.cums) else 0
 
     def unravel(self, index):
         """
         Args:
-            index : raveled index
+            index (int | List[int]) : raveled index
 
         Returns:
             Tuple[int, int]: outer and inner indices
@@ -85,7 +90,8 @@ class FlatIndexer(ub.NiceRepr):
             inner: index into the list referenced by outer
 
         Returns:
-            index: the raveled index
+            List[int]:
+                the raveled index
         """
         base = self.cums[outer] - self.lens[outer]
         return base + inner

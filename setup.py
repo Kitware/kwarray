@@ -210,6 +210,9 @@ if __name__ == '__main__':
         },
         license='Apache 2',
         packages=find_packages(include='kwarray.*'),
+        package_data={
+            'kwarray': ['py.typed', '*.pyi'],
+        },
         python_requires='>=3.6',
         classifiers=[
             # List of classifiers available at:

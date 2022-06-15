@@ -1290,7 +1290,8 @@ def dtype_info(dtype):
         dtype (type): a numpy, torch, or python numeric data type
 
     Returns:
-        struct: an iinfo of finfo structure depending on the input type.
+        numpy.iinfo | numpy.finfo | torch.iinfo | torch.finfo :
+            an iinfo of finfo structure depending on the input type.
 
     References:
         https://higra.readthedocs.io/en/stable/_modules/higra/hg_utils.html#dtype_info

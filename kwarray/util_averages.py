@@ -327,7 +327,7 @@ class RunningStats(ub.NiceRepr):
         Compute summary statistics across a one or more dimension
 
         Args:
-            axis (int | List[int] | None | ub.NoParam):
+            axis (int | List[int] | None | NoParamType):
                 axis or axes to summarize over,
                 if None, all axes are summarized.
                 if ub.NoParam, no axes are summarized the current result is
