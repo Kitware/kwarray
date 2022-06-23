@@ -38,6 +38,7 @@ stages:
         - docker
         - linux
         - build
+        - kitware-python-stack
 
     variables:
         # Change pip's cache directory to be inside the project directory since we can

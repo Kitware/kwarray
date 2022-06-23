@@ -58,7 +58,11 @@ import numpy as np
 import ubelt as ub
 import six
 from functools import partial
-from distutils.version import LooseVersion
+
+try:
+    from packaging.version import parse as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 
 
 try:
