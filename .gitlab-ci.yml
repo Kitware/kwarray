@@ -1,5 +1,5 @@
 # Abuse YAML notation to make a heredoc. This will be ignored by the CI.
-.__heredoc__: &__heredoc__
+.__doc__: &__doc__
     - | 
 
         NOTE: INSTRUCTION HAVE BEEN MOVED TO ./dev/setup_secrets.sh
