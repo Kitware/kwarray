@@ -41,8 +41,8 @@ from .util_groups import (apply_grouping, group_consecutive,
                           group_items,)
 from .util_misc import (FlatIndexer,)
 from .util_numpy import (arglexmax, argmaxima, argminima, atleast_nd, boolmask,
-                         isect_flags, iter_reduce_ufunc, normalize,
-                         unique_rows,)
+                         equal_with_nan, generalized_logistic, isect_flags,
+                         iter_reduce_ufunc, normalize, unique_rows,)
 from .util_random import (ensure_rng, random_combinations, random_product,
                           seed_global, shuffle,)
 from .util_robust import (find_robust_normalizers, robust_normalize,)
@@ -54,7 +54,8 @@ __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'FlatIndexer',
            'LocLight', 'RunningStats', 'SlidingWindow', 'Stitcher',
            'apply_embedded_slice', 'apply_grouping', 'arglexmax', 'argmaxima',
            'argminima', 'atleast_nd', 'boolmask', 'dtype_info', 'embed_slice',
-           'ensure_rng', 'find_robust_normalizers', 'group_consecutive',
+           'ensure_rng', 'equal_with_nan', 'find_robust_normalizers',
+           'generalized_logistic', 'group_consecutive',
            'group_consecutive_indices', 'group_indices', 'group_items',
            'isect_flags', 'iter_reduce_ufunc', 'maxvalue_assignment',
            'mincost_assignment', 'mindist_assignment', 'normalize',
