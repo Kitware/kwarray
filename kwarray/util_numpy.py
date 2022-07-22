@@ -950,7 +950,6 @@ def equal_with_nan(a1, a2):
         a2 (ArrayLike): input array
 
     Example:
-        >>> from kwarray.util_numpy import *  # NOQA
         >>> import kwarray
         >>> a1 = np.array([
         >>>     [np.nan, 0, np.nan],
@@ -959,9 +958,14 @@ def equal_with_nan(a1, a2):
         >>>     [np.nan, 1, np.nan],
         >>> ])
         >>> a2 = np.array([np.nan, 0, np.nan])
-        >>> flags = equal_with_nan(a1, a2)
+        >>> flags = kwarray.equal_with_nan(a1, a2)
+        >>> assert np.array_equal(flags, np.array([
+        >>>     [ True, False,  True],
+        >>>     [ True, False, False],
+        >>>     [ True,  True, False],
+        >>>     [ True,  True,  True]
+        >>> ]))
     """
-    # TODO: ported to kwarray, use that later
     a1, a2 = np.asarray(a1), np.asarray(a2)
     a1nan, a2nan = np.isnan(a1), np.isnan(a2)
     nan_sameness = a1nan == a2nan
