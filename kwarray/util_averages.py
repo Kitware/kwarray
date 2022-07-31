@@ -247,6 +247,8 @@ def _gmean(a, axis=0, dtype=None, clobber=False):
 
 class RunningStats(ub.NiceRepr):
     """
+    Track mean, std, min, and max values over time with constant memory.
+
     Dynamically records per-element array statistics and can summarized them
     per-element, across channels, or globally.
 
@@ -275,12 +277,35 @@ class RunningStats(ub.NiceRepr):
         >>> print('alldim-ave(k=0) = ' + ub.repr2(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
         """
 
-    def __init__(run):
+    def __init__(run, nan_behavior='ignore', check_weights=True):
+        """
+        Args:
+            nan_behavior (str): indicates how we will handle nan values
+               * if "ignore" - set weights of nan items to zero.
+               * if "propogate" - propogate nans (old behavior).
+
+           check_weights (bool):
+               if True, we check the weights for zeros (which can also
+               implicitly occur when data has nans). Disabling this check will
+               result in faster computation, but it is your responsibility to
+               ensure all data passed to update is valid.
+
+        """
         run.raw_max = -np.inf
         run.raw_min = np.inf
         run.raw_total = 0
         run.raw_squares = 0
         run.n = 0
+        run.nan_behavior = nan_behavior
+        run.check_weights = check_weights
+        if run.nan_behavior not in {'ignore', 'propogate'}:
+            if run.nan_behavior == 'ignore':
+                if run.check_weights:
+                    raise ValueError(
+                        'To prevent foot-shooting, check weights must be '
+                        'initialized to True when nan behavior is ignore'
+                    )
+            raise KeyError(run.nan_behavior)
 
     def __nice__(self):
         return '{}'.format(self.shape)
@@ -306,12 +331,56 @@ class RunningStats(ub.NiceRepr):
             >>> rng = np.random
             >>> weights[rng.rand(*weights.shape) > 0.5] = 0
             >>> run.update(data, weights=weights)
+
+        Example:
+            >>> import kwarray
+            >>> run = kwarray.RunningStats()
+            >>> data = np.array([[1, np.nan, np.nan], [0, np.nan, 1.]])
+            >>> run.update(data)
+            >>> print('current = {}'.format(ub.repr2(run.current(), nl=1)))
+            >>> print('summary(axis=None) = {}'.format(ub.repr2(run.summarize(), nl=1)))
+            >>> print('summary(axis=1) = {}'.format(ub.repr2(run.summarize(axis=1), nl=1)))
+            >>> print('summary(axis=0) = {}'.format(ub.repr2(run.summarize(axis=0), nl=1)))
+            >>> data = np.array([[2, 0, 1], [0, 1, np.nan]])
+            >>> run.update(data)
+            >>> data = np.array([[3, 1, 1], [0, 1, np.nan]])
+            >>> run.update(data)
+            >>> data = np.array([[4, 1, 1], [0, 1, 1.]])
+            >>> run.update(data)
+            >>> print('----')
+            >>> print('current = {}'.format(ub.repr2(run.current(), nl=1)))
+            >>> print('summary(axis=None) = {}'.format(ub.repr2(run.summarize(), nl=1)))
+            >>> print('summary(axis=1) = {}'.format(ub.repr2(run.summarize(axis=1), nl=1)))
+            >>> print('summary(axis=0) = {}'.format(ub.repr2(run.summarize(axis=0), nl=1)))
         """
+        if run.nan_behavior == 'ignore':
+            weights = weights * (~np.isnan(data)).astype(float)
+        elif run.nan_behavior == 'propogate':
+            ...
+        else:
+            raise AssertionError('should not be here')
+
+        has_ignore_items = False
+        if ub.iterable(weights):
+            ignore_flags = (weights == 0)
+            has_ignore_items = np.any(ignore_flags)
+
+        if has_ignore_items and run.check_weights:
+            data = data.copy()
+            # Replace the bad value with somehting sensible for each operation.
+            data[ignore_flags] = 0
+            run.raw_total += data
+            run.raw_squares += data ** 2
+            data[ignore_flags] = -np.inf
+            run.raw_max = np.maximum(run.raw_max, data)
+            data[ignore_flags] = +np.inf
+            run.raw_min = np.minimum(run.raw_min, data)
+        else:
+            run.raw_total += data
+            run.raw_squares += data ** 2
+            run.raw_max = np.maximum(run.raw_max, data)
+            run.raw_min = np.minimum(run.raw_min, data)
         run.n += weights
-        run.raw_max = np.maximum(run.raw_max, data)
-        run.raw_min = np.minimum(run.raw_min, data)
-        run.raw_total += data
-        run.raw_squares += data ** 2
 
     def _sumsq_std(run, total, squares, n):
         """
@@ -365,9 +434,11 @@ class RunningStats(ub.NiceRepr):
             if not hasattr(run.raw_total, 'shape'):
                 n = run.n
             elif axis is None:
-                n = run.n * np.prod(run.raw_total.shape)
+                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                # n = run.n * np.prod(run.raw_total.shape)
             else:
-                n = run.n * np.prod(np.take(run.raw_total.shape, axis))
+                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
 
             info = ub.odict([
                 ('n', n),

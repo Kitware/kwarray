@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Algorithms to find a solution to the setcover problem
+
+SeeAlso:
+    https://github.com/keon/algorithms
 """
 import ubelt as ub
 import itertools as it
