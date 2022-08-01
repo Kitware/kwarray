@@ -365,19 +365,24 @@ class RunningStats(ub.NiceRepr):
             ignore_flags = (weights == 0)
             has_ignore_items = np.any(ignore_flags)
 
-        if has_ignore_items and run.check_weights:
+        if has_ignore_items:
             data = data.copy()
             # Replace the bad value with somehting sensible for each operation.
             data[ignore_flags] = 0
-            run.raw_total += data
-            run.raw_squares += data ** 2
+
+            # Multiply data by weights
+            w_data = data * weights
+
+            run.raw_total += w_data
+            run.raw_squares += w_data ** 2
             data[ignore_flags] = -np.inf
             run.raw_max = np.maximum(run.raw_max, data)
             data[ignore_flags] = +np.inf
             run.raw_min = np.minimum(run.raw_min, data)
         else:
-            run.raw_total += data
-            run.raw_squares += data ** 2
+            w_data = data * weights
+            run.raw_total += w_data
+            run.raw_squares += w_data ** 2
             run.raw_max = np.maximum(run.raw_max, data)
             run.raw_min = np.minimum(run.raw_min, data)
         run.n += weights
@@ -387,6 +392,10 @@ class RunningStats(ub.NiceRepr):
         Sum of squares method to compute standard deviation
         """
         numer = (n * squares - total ** 2)
+        # FIXME: this isn't exactly correct when we have fractional weights.
+        # Integer weights should be ok. I suppose it really is
+        # what "type" of weights they are (see numpy weighted quantile
+        # discussion)
         denom = (n * (n - 1.0))
         std = np.sqrt(numer / denom)
         return std
@@ -407,6 +416,27 @@ class RunningStats(ub.NiceRepr):
 
         Returns:
             Dict: containing minimum, maximum, mean, std, etc..
+
+        Example:
+            >>> # Test to make sure summarize works across different shapes
+            >>> base = np.array([1, 1, 1, 1, 0, 0, 0, 1])
+            >>> run0 = RunningStats()
+            >>> for _ in range(3):
+            >>>     run0.update(base.reshape(8, 1))
+            >>> run1 = RunningStats()
+            >>> for _ in range(3):
+            >>>     run1.update(base.reshape(4, 2))
+            >>> run2 = RunningStats()
+            >>> for _ in range(3):
+            >>>     run2.update(base.reshape(2, 2, 2))
+            >>> #
+            >>> # Summarizing over everything should be exactly the same
+            >>> s0N = run0.summarize(axis=None, keepdims=0)
+            >>> s1N = run1.summarize(axis=None, keepdims=0)
+            >>> s2N = run2.summarize(axis=None, keepdims=0)
+            >>> assert ub.util_indexable.indexable_allclose(s0N, s1N, rel_tol=0.0, abs_tol=0.0)
+            >>> assert ub.util_indexable.indexable_allclose(s1N, s2N, rel_tol=0.0, abs_tol=0.0)
+            >>> assert s0N['mean'] == 0.625
         """
         if axis is ub.NoParam:
             total = run.raw_total
