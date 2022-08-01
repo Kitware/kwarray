@@ -90,6 +90,8 @@ def test_fuzzed_random_running():
 
     rng = kwarray.ensure_rng()
 
+    from packaging.version import parse as Version
+
     for params in grid:
         shape = params['shape']
         use_weights = params['use_weights']
@@ -124,14 +126,21 @@ def test_fuzzed_random_running():
         else:
             stack_w = None
 
+        ave_kw = dict()
+        if Version(np.__version__) >= Version('1.23.0'):
+            if keepdims:
+                continue
+        else:
+            ave_kw = dict(keepdims=keepdims)
+
         ourN = SN['mean']
-        aveN = np.average(stack_d, weights=stack_w, keepdims=keepdims)
+        aveN = np.average(stack_d, weights=stack_w, **ave_kw)
         print('ourN = {}'.format(ub.repr2(ourN, nl=1, precision=4)))
         print('aveN = {}'.format(ub.repr2(aveN, nl=1, precision=4)))
         assert np.allclose(ourN, aveN)
 
         our0 = S0['mean']
-        ave0 = np.average(stack_d, weights=stack_w, axis=(0, -1), keepdims=keepdims)
+        ave0 = np.average(stack_d, weights=stack_w, axis=(0, -1), **ave_kw)
         if keepdims:
             ave0 = ave0[..., 0]
         print('our0 = {}'.format(ub.repr2(our0, nl=1, precision=4)))
@@ -141,7 +150,7 @@ def test_fuzzed_random_running():
         if len(params['shape']) > 1:
             S1 = run.summarize(axis=1, keepdims=keepdims)
             our1 = S1['mean']
-            ave1 = np.average(stack_d, weights=stack_w, axis=(1, -1), keepdims=keepdims)
+            ave1 = np.average(stack_d, weights=stack_w, axis=(1, -1), **ave_kw)
             if keepdims:
                 ave1 = ave1[..., 0]
             print('our1 = {}'.format(ub.repr2(our1, nl=1, precision=4)))
