@@ -2,7 +2,10 @@
 Torch specific extensions
 """
 import numpy as np
-from distutils.version import LooseVersion
+try:
+    from packaging.version import parse as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 
 
 try:

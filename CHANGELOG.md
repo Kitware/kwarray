@@ -4,7 +4,16 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.2 - Unreleased
+## Version 0.6.3 - Unreleased
+
+### Added
+* `equal_with_nan` in `util_numpy`
+
+### Fixed:
+* Fixed issue in RunningStats where computation was incorrect when weights were given.
+* RunningStats now handles nans.
+
+## Version 0.6.2 - Released 2022-06-15
 
 ### Added
 * Type stubs

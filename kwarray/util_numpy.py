@@ -939,3 +939,37 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
         Q = 1
     y = A + (K - A) / (C + Q * np.exp(-B * x)) ** (1 / v)
     return y
+
+
+def equal_with_nan(a1, a2):
+    """
+    Numpy has array_equal with ``equal_nan=True``, but this is elementwise
+
+    Args:
+        a1 (ArrayLike): input array
+        a2 (ArrayLike): input array
+
+    Example:
+        >>> import kwarray
+        >>> a1 = np.array([
+        >>>     [np.nan, 0, np.nan],
+        >>>     [np.nan, 0, 0],
+        >>>     [np.nan, 1, 0],
+        >>>     [np.nan, 1, np.nan],
+        >>> ])
+        >>> a2 = np.array([np.nan, 0, np.nan])
+        >>> flags = kwarray.equal_with_nan(a1, a2)
+        >>> assert np.array_equal(flags, np.array([
+        >>>     [ True, False,  True],
+        >>>     [ True, False, False],
+        >>>     [ True,  True, False],
+        >>>     [ True,  True,  True]
+        >>> ]))
+    """
+    a1, a2 = np.asarray(a1), np.asarray(a2)
+    a1nan, a2nan = np.isnan(a1), np.isnan(a2)
+    nan_sameness = a1nan == a2nan
+    value_sameness = (a1 == a2)
+    # If they are actually the same, they should be value same xor nansame.
+    flags = value_sameness ^ nan_sameness
+    return flags

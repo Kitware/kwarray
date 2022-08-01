@@ -403,7 +403,7 @@ def _coerce_rng_type(rng):
     return rng
 
 
-def ensure_rng(rng, api='numpy'):
+def ensure_rng(rng=None, api='numpy'):
     """
     Coerces input into a random number generator.
 
@@ -423,7 +423,8 @@ def ensure_rng(rng, api='numpy'):
     Args:
         rng (int | float | None | numpy.random.RandomState | random.Random):
             if None, then defaults to the global rng. Otherwise this can
-            be an integer or a RandomState class
+            be an integer or a RandomState class. Defaults to the global
+            random.
 
         api (str): specify the type of random number
             generator to use. This can either be 'numpy' for a
