@@ -127,7 +127,7 @@ def test_fuzzed_random_running():
             stack_w = None
 
         ave_kw = dict()
-        if Version(np.__version__) >= Version('1.23.0'):
+        if Version(np.__version__) < Version('1.23.0'):
             if keepdims:
                 continue
         else:
