@@ -64,6 +64,10 @@ class SlidingWindow(ub.NiceRepr):
         For each dimension, we generate a basis (which defines a grid), and we
         slide over that basis.
 
+    TODO:
+        - [ ] have an option that is allowed to go outside of the window bounds
+              on the right and bottom when the slider overshoots.
+
     Example:
         >>> from kwarray.util_slider import *  # NOQA
         >>> shape = (10, 10)
