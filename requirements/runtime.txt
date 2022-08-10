@@ -1,4 +1,4 @@
-ubelt >= 0.10.0
+ubelt >= 1.2.1
 six >= 1.11.0
 
 # tensorflow requires 1.19.3
