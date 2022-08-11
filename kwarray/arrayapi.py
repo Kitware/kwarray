@@ -21,6 +21,13 @@ any type checking overhead.  e..g. ``impl.<op-you-want>(data)``
 But you can also do ``kwarray.ArrayAPI.<op-you-want>(data)`` on anything and it
 will do type checking and then do the operation you want.
 
+Idea:
+    Perhaps we could separate this into its own python package (maybe called
+    "onearray"), where the module itself behaves like the ArrayAPI. Design
+    goals are to provide easy to use (as drop-in as possible) replacements for
+    torch or numpy function calls. It has to have near-zero overhead, or at
+    least a way to make that happen.
+
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
     >>> import torch
@@ -231,6 +238,7 @@ class TorchImpls(object):
     def result_type(*arrays_and_dtypes):
         """
         Return type from promotion rules
+            dtype, promote_types, min_scalar_type, can_cast
         """
         # Have to work to get numpy-like behavior
         if len(arrays_and_dtypes) == 1:
@@ -796,7 +804,9 @@ class NumpyImpls(object):
         Return type from promotion rules
 
         SeeAlso:
-            np.find_common_type
+            :func:`numpy.find_common_type`
+            :func:`numpy.promote_types`
+            :func:`numpy.result_type`
         """
         # _dtype_lut = _torch_dtype_lut()
         # dtypes = (_dtype_lut.get(t, t) for t in arrays_and_dtypes)

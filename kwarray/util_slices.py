@@ -262,23 +262,11 @@ def embed_slice(slices, data_dims, pad=None):
     if len(low_dims) != ndims:
         raise ValueError('slices and data_dims must have the same length')
 
+    pad_slice = _coerce_pad(pad, ndims)
+
     # Determine the real part of the image that can be sliced out
     data_slice_st = []
     extra_padding = []
-    if pad is None:
-        pad = 0
-    if isinstance(pad, int):
-        pad = [pad] * ndims
-
-    if len(pad) != ndims:
-        raise ValueError('pad and data_dims must have the same length')
-    # We could fix it, but the user probably made a mistake
-    # n_trailing = ndims - len(pad)
-    # if n_trailing > 0:
-    #     pad = list(pad) + [(0, 0)] * n_trailing
-
-    # Normalize to left/right pad value for each dim
-    pad_slice = [p if ub.iterable(p) else [p, p] for p in pad]
 
     # Determine the real part of the image that can be sliced out
     for D_img, d_low, d_high, d_pad in zip(data_dims, low_dims, high_dims, pad_slice):
@@ -308,3 +296,21 @@ def embed_slice(slices, data_dims, pad=None):
 
     data_slice = tuple(slice(s, t) for s, t in data_slice_st)
     return data_slice, extra_padding
+
+
+def _coerce_pad(pad, ndims):
+    if pad is None:
+        pad_slice = [(0, 0)] * ndims
+    elif isinstance(pad, int):
+        pad_slice = [(pad, pad)] * ndims
+    else:
+        # Normalize to left/right pad value for each dim
+        pad_slice = [p if ub.iterable(p) else [p, p] for p in pad]
+
+    if len(pad_slice) != ndims:
+        # We could "fix" it, but the user probably made a mistake
+        # n_trailing = ndims - len(pad)
+        # if n_trailing > 0:
+        #     pad = list(pad) + [(0, 0)] * n_trailing
+        raise ValueError('pad and data_dims must have the same length')
+    return pad_slice
