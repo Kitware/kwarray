@@ -1015,6 +1015,41 @@ class NumpyImpls(object):
         from scipy import special
         return special.softmax(data, axis=axis)
 
+    def kron(a, b):
+        """
+        Outer product
+
+        Args:
+            a (ndarray): Array of shape (r0, r1, ... rN)
+            b (ndarray): Array of shape (s0, s1, ... sN)
+
+        Returns:
+            ndarray: with shape (r0*s0, r1*s1, ..., rN*SN).
+
+        Note:
+            # From numpy doc
+            kron(a,b)[k0,k1,...,kN] = a[i0,i1,...,iN] * b[j0,j1,...,jN]
+
+            kt = it * st + jt,  t = 0,...,N
+
+        Notes:
+            If
+            a.shape = (r0,r1,..,rN) and
+            b.shape = (s0,s1,...,sN),
+            the Kronecker product has shape
+            (r0*s0, r1*s1, ..., rN*SN).
+
+        Ignore:
+            a = np.empty((2, 3, 5))
+            b = np.empty((7, 11))
+            np.kron(a, b).shape
+            np.kron(b, a).shape
+            c = np.empty((13))
+            np.kron(a, c).shape
+            np.kron(b, c).shape
+        """
+        return np.kron(a, b)
+
 
 class ArrayAPI(object):
     """

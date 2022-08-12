@@ -1449,3 +1449,64 @@ def _test_distributions():
         assert not ub.iterable(scalar_sample)
         assert ub.iterable(vector_sample)
         assert vector_sample.shape == (1,)
+
+
+def _process_docstrings():
+    """
+    Iterate over the definitions with __params__ defined and dynamically add
+    relevant information to their docstrings. We should modify this so it can
+    rewrite the docstrings statically. I don't like dynamic docstrings at
+    runtime.
+
+    CommandLine:
+        xdoctest -m kwarray.distributions _process_docstrings
+
+    Example:
+        >>> # Show the results of the docstring formatting
+        >>> from kwarray import distributions
+        >>> candidates = []
+        >>> for val in distributions.__dict__.values():
+        >>>     if hasattr(val, '__params__') and val.__params__ is not NotImplemented:
+        >>>         candidates.append(val)
+        >>> for val in candidates:
+        >>>     print('======')
+        >>>     print(val)
+        >>>     print('-----')
+        >>>     print(val.__doc__)
+        >>>     print('======')
+    """
+    from kwarray import distributions
+    candidates = []
+    for val in distributions.__dict__.values():
+        if hasattr(val, '__params__') and val.__params__ is not NotImplemented:
+            candidates.append(val)
+
+    for val in candidates:
+        if val.__doc__ is None:
+            val.__doc__ = ''
+        if 'Args:' not in val.__doc__:
+            arglines = []
+            for key, info in val.__params__.items():
+                desc_parts = []
+                if info.help:
+                    desc_parts.append(info.help)
+                desc_parts.append('Defaults to {}'.format(info.default))
+                desc_parts = [p if p.endswith('.') else p + '.' for p in desc_parts]
+                desc = ' '.join(desc_parts)
+                if info.type is None:
+                    type = 'Any'
+                elif hasattr(info.type, '__name__'):
+                    type = info.type.__name__
+                else:
+                    type = str(info.type)
+                arginfo = {
+                    'name': key,
+                    'type': type,
+                    'desc': desc,
+                }
+                arglines.append('{name} ({type}) : {desc}'.format(**arginfo))
+
+            newpart = ' ' * 4 + 'Args:\n' + ub.indent('\n'.join(arglines), ' ' * 8)
+            val.__doc__ = val.__doc__ + '\n' + newpart + '\n'
+
+_process_docstrings()
