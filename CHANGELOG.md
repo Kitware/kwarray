@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 * `kwarray.embed_slice` now does error checking
+* Add `kwarray.RunningStats.update_many` to update with multiple observations at once.
 
 
 ## Version 0.6.3 - Released 2022-07-31

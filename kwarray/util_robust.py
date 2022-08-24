@@ -13,19 +13,69 @@ except Exception:
 
 def find_robust_normalizers(data, params='auto'):
     """
-    Finds robust normalization statistics for a single observation
+    Finds robust normalization statistics a set of scalar observations.
+
+    The idea is to estimate "fense" parameters: minimum and maximum values
+    where anything under / above these values are likely outliers. For
+    non-linear normalizaiton schemes we can also estimate an likely middle and
+    extent of the data.
 
     Args:
         data (ndarray): a 1D numpy array where invalid data has already been removed
-        params (str | dict): normalization params
+
+        params (str | dict): normalization params.
+
+            When passed as a dictionary valid params are:
+
+                scaling (str):
+                    This is the "mode" that will be used in the final
+                    normalization. Currently has no impact on the
+                    Defaults to 'linear'. Can also be 'sigmoid'.
+
+                extrema (str):
+                    The method for determening what the extrama are.
+                    Can be "custom-quantile" for an IQR-like method.
+                    Can be "tukey" or "IQR" for an exact IQR method.
+
+                low (float): This is the low quantile for likely inliers.
+
+                mid (float): This is the middle quantlie for likely inliers.
+
+                high (float): This is the high quantile for likely inliers.
+
+            Can be specified as a concise string.
+
+            The string "auto" defaults to:
+                ``dict(extrema='custom-quantile', scaling='linear', low=0.01, mid=0.5, high=0.9)``.
+
+            The string "tukey" defaults to:
+                ``dict(extrema='tukey', scaling='linear')``.
 
     Returns:
-        Dict[str, str | float]: normalization parameters
+        Dict[str, str | float]:
+            normalization parameters that can be passed to
+            :func:`kwarray.normalize` containing the keys:
+
+            type (str): which is always 'normalize'
+
+            mode (str): the value of `params['scaling']`
+
+            min_val (float): the determined "robust" minimum inlier value.
+
+            max_val (float): the determined "robust" maximum inlier value.
+
+            beta (float): the determined "robust" middle value for use in
+                non-linear normalizers.
+
+            alpha (float): the determined "robust" extent value for use in
+                non-linear normalizers.
+
+    Note:
+        The defaults and methods of this function are subject to change.
 
     TODO:
-        - [ ] No Magic Numbers! Use first principles to deterimine defaults.
+        - [ ] No (or minimal) Magic Numbers! Use first principles to deterimine defaults.
         - [ ] Probably a lot of literature on the subject.
-        - [ ] Is this a kwarray function in general?
         - [ ] https://arxiv.org/pdf/1707.09752.pdf
         - [ ] https://www.tandfonline.com/doi/full/10.1080/02664763.2019.1671961
         - [ ] https://www.rips-irsp.com/articles/10.5334/irsp.289/
@@ -72,7 +122,7 @@ def find_robust_normalizers(data, params='auto'):
         if isinstance(params, str):
             if params == 'auto':
                 params = {}
-            elif params == 'tukey':
+            elif params in {'tukey', 'iqr'}:
                 params = {
                     'extrema': 'tukey',
                 }
@@ -84,11 +134,11 @@ def find_robust_normalizers(data, params='auto'):
         # hack
         params = ub.dict_union(default_params, params)
 
+        # TODO:
+        # https://github.com/derekbeaton/OuRS
+        # https://en.wikipedia.org/wiki/Feature_scaling
         if params['extrema'] == 'tukey':
-            # TODO:
-            # https://github.com/derekbeaton/OuRS
-            # https://en.wikipedia.org/wiki/Feature_scaling
-            fense_extremes = _tukey_quantile_extreme_estimator(data)
+            fense_extremes = _tukey_quantile_fence(data)
         elif params['extrema'] == 'custom-quantile':
             fense_extremes = _custom_quantile_extreme_estimator(data, params)
         else:
@@ -115,17 +165,21 @@ def find_robust_normalizers(data, params='auto'):
     return normalizer
 
 
-def _tukey_quantile_extreme_estimator(data):
+def _tukey_quantile_fence(data):
+    """
+    One might wonder where the 1.5 in the above interval comes from -- Paul
+    Velleman, a statistician at Cornell University, was a student of John
+    Tukey, who invented this test for outliers. He wondered the same thing.
+    When he asked Tukey, "Why 1.5?", Tukey answered, "Because 1 is too small
+    and 2 is too large." [OxfordShapeSpread]_.
+
+    References:
+        .. [OxfordShapeSpread] http://mathcenter.oxford.emory.edu/site/math117/shapeCenterAndSpread/
+        .. [YTFindOutliers] https://www.youtube.com/watch?v=zY1WFMAA-ec
+    """
     # Tukey method for outliers
-    # https://www.youtube.com/watch?v=zY1WFMAA-ec
     q1, q2, q3 = np.quantile(data, [0.25, 0.5, 0.75])
     iqr = q3 - q1
-    # One might wonder where the 1.5 in the above interval comes from -- Paul
-    # Velleman, a statistician at Cornell University, was a student of John
-    # Tukey, who invented this test for outliers. He wondered the same thing.
-    # When he asked Tukey, "Why 1.5?", Tukey answered, "Because 1 is too small
-    # and 2 is too large."
-    # Cite: http://mathcenter.oxford.emory.edu/site/math117/shapeCenterAndSpread/
     fence_lower = q1 - 1.5 * iqr
     fence_upper = q1 + 1.5 * iqr
     return fence_lower, q2, fence_upper

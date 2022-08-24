@@ -317,6 +317,78 @@ class RunningStats(ub.NiceRepr):
         except Exception:
             return None
 
+    def update_many(run, data, weights=1):
+        """
+        Assumes first data axis represents multiple observations
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> data = rng.randn(1, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> data = rng.randn(2, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> data = rng.randn(3, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> run.update_many(1000)
+            >>> print(run.current())
+            >>> assert np.all(run.current()['n'] == 7)
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> data = rng.randn(1, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> data = rng.randn(2, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> data = rng.randn(3, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> run.update_many(1000)
+            >>> print(run.current())
+            >>> assert np.all(run.current()['n'] == 37)
+        """
+        data = np.asarray(data)
+        if run.nan_behavior == 'ignore':
+            weights = weights * (~np.isnan(data)).astype(float)
+        elif run.nan_behavior == 'propogate':
+            ...
+        else:
+            raise AssertionError('should not be here')
+        has_ignore_items = False
+        if ub.iterable(weights):
+            ignore_flags = (weights == 0)
+            has_ignore_items = np.any(ignore_flags)
+
+        if has_ignore_items:
+            data = data.copy()
+            # Replace the bad value with somehting sensible for each operation.
+            data[ignore_flags] = 0
+
+            # Multiply data by weights
+            w_data = data * weights
+
+            run.raw_total += w_data.sum(axis=0)
+            run.raw_squares += (w_data ** 2).sum(axis=0)
+            data[ignore_flags] = -np.inf
+            run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
+            data[ignore_flags] = +np.inf
+            run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
+        else:
+            w_data = data * weights
+            run.raw_total += w_data.sum(axis=0)
+            run.raw_squares += (w_data ** 2).sum(axis=0)
+            run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
+            run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
+        run.n += weights.sum(axis=0)
+
     def update(run, data, weights=1):
         """
         Updates statistics across all data dimensions on a per-element basis

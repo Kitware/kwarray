@@ -403,12 +403,12 @@ class Stitcher(ub.NiceRepr):
         >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
         >>>     kwplot.imshow(canvas, pnum=pnum_(), title=param_key)
     """
-    def __init__(stitcher, shape, device='numpy'):
+    def __init__(stitcher, shape, device='numpy', dtype='float32'):
         stitcher.shape = shape
         stitcher.device = device
         if device == 'numpy':
-            stitcher.sums = np.zeros(shape, dtype=np.float32)
-            stitcher.weights = np.zeros(shape, dtype=np.float32)
+            stitcher.sums = np.zeros(shape, dtype=dtype)
+            stitcher.weights = np.zeros(shape, dtype=dtype)
 
             stitcher.sumview = stitcher.sums.ravel()
             stitcher.weightview = stitcher.weights.ravel()
