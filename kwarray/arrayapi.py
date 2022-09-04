@@ -611,12 +611,20 @@ class TorchImpls(object):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import sys, ubelt
+            >>> from kwarray.arrayapi import *  # NOQA
             >>> data1 = torch.rand(5, 5)
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.maximum(data1, data2)
             >>> result2 = NumpyImpls.maximum(data1.numpy(), data2.numpy())
             >>> assert np.allclose(result1.numpy(), result2)
+            >>> result1 = TorchImpls.maximum(data1, 0)
+            >>> result2 = NumpyImpls.maximum(data1.numpy(), 0)
+            >>> assert np.allclose(result1.numpy(), result2)
         """
+        # OOooh, if data2 is not a tensor, this doesn't work right.
+        if torch.is_tensor(data1):
+            data2 = torch.as_tensor(data2, device=data1.device)
         return torch.max(data1, data2, out=out)
 
     @_torchmethod
