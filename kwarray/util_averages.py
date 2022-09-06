@@ -5,6 +5,7 @@ numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
 geometric-mean, standard-deviation, etc...) about data in an array.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import warnings
 import collections
 import numpy as np
 import ubelt as ub
@@ -510,48 +511,51 @@ class RunningStats(ub.NiceRepr):
             >>> #assert ub.util_indexable.indexable_allclose(s1N, s2N, rel_tol=0.0, abs_tol=0.0)
             >>> assert s0N['mean'] == 0.625
         """
-        if axis is ub.NoParam:
-            total = run.raw_total
-            squares = run.raw_squares
-            maxi = run.raw_max
-            mini = run.raw_min
-            n = run.n
-            info = ub.odict([
-                ('n', n),
-                ('max', maxi),
-                ('min', mini),
-                ('total', total),
-                ('squares', squares),
-                ('mean', total / n),
-                ('std', run._sumsq_std(total, squares, n)),
-            ])
-            return info
-        else:
-            if np.all(run.n <= 0):
-                raise RuntimeError('No statistics have been accumulated')
-            total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
-            squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
-            maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
-            mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
-            if not hasattr(run.raw_total, 'shape'):
-                n = run.n
-            elif axis is None:
-                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                # n = run.n * np.prod(run.raw_total.shape)
-            else:
-                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
+        with np.errstate(divide='ignore'):
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', 'invalid value encountered', category=RuntimeWarning)
+                if axis is ub.NoParam:
+                    total = run.raw_total
+                    squares = run.raw_squares
+                    maxi = run.raw_max
+                    mini = run.raw_min
+                    n = run.n
+                    info = ub.odict([
+                        ('n', n),
+                        ('max', maxi),
+                        ('min', mini),
+                        ('total', total),
+                        ('squares', squares),
+                        ('mean', total / n),
+                        ('std', run._sumsq_std(total, squares, n)),
+                    ])
+                    return info
+                else:
+                    if np.all(run.n <= 0):
+                        raise RuntimeError('No statistics have been accumulated')
+                    total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+                    squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
+                    maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
+                    mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
+                    if not hasattr(run.raw_total, 'shape'):
+                        n = run.n
+                    elif axis is None:
+                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        # n = run.n * np.prod(run.raw_total.shape)
+                    else:
+                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
 
-            info = ub.odict([
-                ('n', n),
-                ('max', maxi),
-                ('min', mini),
-                ('total', total),
-                ('squares', squares),
-                ('mean', total / n),
-                ('std', run._sumsq_std(total, squares, n)),
-            ])
-            return info
+                    info = ub.odict([
+                        ('n', n),
+                        ('max', maxi),
+                        ('min', mini),
+                        ('total', total),
+                        ('squares', squares),
+                        ('mean', total / n),
+                        ('std', run._sumsq_std(total, squares, n)),
+                    ])
+                    return info
 
     def current(run):
         """
