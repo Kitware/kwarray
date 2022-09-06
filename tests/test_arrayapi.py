@@ -76,21 +76,19 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
 
 def test_numpy_torch_compat():
     import pytest
+    import ubelt as ub
     import numpy as np
     import kwarray
     from kwarray import arrayapi
+    from kwarray.arrayapi import torch
 
     ArrayAPI = arrayapi.ArrayAPI
 
-    if not arrayapi._REGISTERY.registered.get('torch', None):
+    if torch is None:
         pytest.skip('no torch')
 
     # arrayapi._REGISTERY.registered['numpy']
     rows = list(arrayapi._REGISTERY.registered['api'].values())
-    for row in rows:
-        row['func_type']
-
-    import ubelt as ub
     groups = ub.group_items(rows, lambda item: item['func_type'])
 
     rng = kwarray.ensure_rng()
