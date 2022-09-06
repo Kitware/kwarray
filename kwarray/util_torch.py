@@ -59,8 +59,14 @@ def one_hot_embedding(labels, num_classes, dim=1):
         ]
         >>> t2 = one_hot_embedding(labels.numpy(), num_classes)
         >>> assert np.all(t2 == t.numpy())
-        >>> if torch.cuda.is_available():
-        >>>     t3 = one_hot_embedding(labels.to(0), num_classes)
+        >>> from kwarray.util_torch import _torch_available_devices
+        >>> devices = _torch_available_devices()
+        >>> if devices:
+        >>>     device = devices[0]
+        >>>     try:
+        >>>         t3 = one_hot_embedding(labels.to(device), num_classes)
+        >>>     except RuntimeError:
+        >>>         pass
         >>>     assert np.all(t3.cpu().numpy() == t.numpy())
 
     Example:
@@ -307,6 +313,32 @@ def one_hot_lookup(data, indices):
         ohe = np.eye(data.shape[1], dtype=np.bool)[indices]
         out = data[ohe]
     return out
+
+
+def _torch_available_devices():
+    """
+    An attempt to determine what devices this version of torch can use
+
+    Try and check that cuda is availble AND we have a good kernel image
+    """
+    available_devices = []
+    if torch is not None:
+        if torch.cuda.is_available():
+            arch_versions = []
+            for arch in torch.cuda.get_arch_list():
+                arch_major = int(arch.split('_')[1][0])
+                arch_minor = int(arch.split('_')[1][1])
+                arch_ver = (arch_major, arch_minor)
+                arch_versions.append(arch_ver)
+            arch_versions = set(arch_versions)
+
+            for idx in range(torch.cuda.device_count()):
+                device = torch.device(idx)
+                devprop = torch.cuda.get_device_properties(device)
+                dev_ver = (devprop.major, devprop.minor)
+                if dev_ver in arch_versions:
+                    available_devices.append(device)
+    return available_devices
 
 
 if __name__ == '__main__':
