@@ -64,6 +64,10 @@ class SlidingWindow(ub.NiceRepr):
         For each dimension, we generate a basis (which defines a grid), and we
         slide over that basis.
 
+    TODO:
+        - [ ] have an option that is allowed to go outside of the window bounds
+              on the right and bottom when the slider overshoots.
+
     Example:
         >>> from kwarray.util_slider import *  # NOQA
         >>> shape = (10, 10)
@@ -339,13 +343,72 @@ class Stitcher(ub.NiceRepr):
         ...     stitcher.add(sl, chip)
         >>> assert stitcher.weights.max() == 4, 'some parts should be processed 4 times'
         >>> recon = stitcher.finalize()
+
+    Example:
+        >>> # Example of weighted stitching
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> from kwarray.util_slider import *  # NOQA
+        >>> import kwimage
+        >>> import kwarray
+        >>> import sys
+        >>> data = kwimage.Mask.demo().data.astype(np.float32)
+        >>> data_dims = data.shape
+        >>> window_dims = (8, 8)
+        >>> # We are going to slide a window over the data, do some processing
+        >>> # and then stitch it all back together. There are a few ways we
+        >>> # can do it. Lets demo the params.
+        >>> basis = {
+        >>>     # Vary the overlap of the slider
+        >>>     'overlap': (0, 0.5, .9),
+        >>>     # Vary if we are using weighted stitching or not
+        >>>     'weighted': ['none', 'gauss'],
+        >>>     'keepbound': [True, False]
+        >>> }
+        >>> results = []
+        >>> gauss_weights = kwimage.gaussian_patch(window_dims)
+        >>> gauss_weights = kwimage.normalize(gauss_weights)
+        >>> for params in ub.named_product(basis):
+        >>>     if params['weighted'] == 'none':
+        >>>         weights = None
+        >>>     elif params['weighted'] == 'gauss':
+        >>>         weights = gauss_weights
+        >>>     # Build the slider and stitcher
+        >>>     slider = kwarray.SlidingWindow(
+        >>>         data_dims, window_dims, overlap=params['overlap'],
+        >>>         allow_overshoot=True,
+        >>>         keepbound=params['keepbound'])
+        >>>     stitcher = kwarray.Stitcher(data_dims)
+        >>>     # Loop over the regions
+        >>>     for sl in list(slider):
+        >>>          chip = data[sl]
+        >>>          # This is our dummy function for thie example.
+        >>>          predicted = np.ones_like(chip) * chip.sum() / chip.size
+        >>>          stitcher.add(sl, predicted, weight=weights)
+        >>>     final = stitcher.finalize()
+        >>>     results.append({
+        >>>         'final': final,
+        >>>         'params': params,
+        >>>     })
+        >>> # xdoctest: +REQUIRES(module:kwplot)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> pnum_ = kwplot.PlotNums(nCols=3, nSubplots=len(results) + 2)
+        >>> kwplot.imshow(data, pnum=pnum_(), title='input image')
+        >>> kwplot.imshow(gauss_weights, pnum=pnum_(), title='Gaussian weights')
+        >>> pnum_()
+        >>> for result in results:
+        >>>     param_key = ub.repr2(result['params'], compact=1)
+        >>>     final = result['final']
+        >>>     canvas = kwarray.normalize(final)
+        >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
+        >>>     kwplot.imshow(canvas, pnum=pnum_(), title=param_key)
     """
-    def __init__(stitcher, shape, device='numpy'):
+    def __init__(stitcher, shape, device='numpy', dtype='float32'):
         stitcher.shape = shape
         stitcher.device = device
         if device == 'numpy':
-            stitcher.sums = np.zeros(shape, dtype=np.float32)
-            stitcher.weights = np.zeros(shape, dtype=np.float32)
+            stitcher.sums = np.zeros(shape, dtype=dtype)
+            stitcher.weights = np.zeros(shape, dtype=dtype)
 
             stitcher.sumview = stitcher.sums.ravel()
             stitcher.weightview = stitcher.weights.ravel()

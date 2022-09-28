@@ -4,7 +4,19 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.3 - Unreleased
+## Version 0.6.4 - Unreleased
+
+### Changed
+* `kwarray.embed_slice` now does error checking
+* Add `kwarray.RunningStats.update_many` to update with multiple observations at once.
+* Added missing `ArrayAPI.min`, `ArrayAPI.min_argmin` funcs.
+
+### Fixed
+* Fix ArrayAPI.max for torch in the case where not both items are ints
+* Fixed various ArrayAPI cases, added tests.
+
+
+## Version 0.6.3 - Released 2022-07-31
 
 ### Added
 * `equal_with_nan` in `util_numpy`

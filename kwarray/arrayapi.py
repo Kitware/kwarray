@@ -21,6 +21,13 @@ any type checking overhead.  e..g. ``impl.<op-you-want>(data)``
 But you can also do ``kwarray.ArrayAPI.<op-you-want>(data)`` on anything and it
 will do type checking and then do the operation you want.
 
+Idea:
+    Perhaps we could separate this into its own python package (maybe called
+    "onearray"), where the module itself behaves like the ArrayAPI. Design
+    goals are to provide easy to use (as drop-in as possible) replacements for
+    torch or numpy function calls. It has to have near-zero overhead, or at
+    least a way to make that happen.
+
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
     >>> import torch
@@ -60,9 +67,9 @@ import six
 from functools import partial
 
 try:
-    from packaging.version import parse as LooseVersion
+    from packaging.version import parse as Version
 except ImportError:
-    from distutils.version import LooseVersion
+    from distutils.version import Version
 
 
 try:
@@ -71,7 +78,29 @@ except Exception:
     torch = None
     _TORCH_HAS_BOOL_COMP = False
 else:
-    _TORCH_HAS_BOOL_COMP = LooseVersion(torch.__version__) >= LooseVersion('1.2.0')
+    _TORCH_LT_1_7_0 = Version(torch.__version__) < Version('1.7')
+    _TORCH_GE_1_2_0 = Version(torch.__version__) >= Version('1.2.0')
+    _TORCH_HAS_BOOL_COMP = _TORCH_GE_1_2_0
+    _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
+
+
+__with_typing__ = True
+if __with_typing__:
+    # TODO: mabye have a array typing submodule?
+    if torch is None:
+        Tensor = 'Tensor'
+    else:
+        from torch import Tensor
+    try:
+        from typing import Union
+        import numpy.typing
+        from numbers import Number
+        ArrayLike = numpy.typing.ArrayLike
+        Numeric = Union[Number, ArrayLike, Tensor]
+    except ImportError:
+        from typing import Any
+        Numeric = Any
+        ArrayLike = Any
 
 
 def _get_funcname(func):
@@ -133,6 +162,8 @@ class _ImplRegistry(object):
                     return numpy_func(data, *args, **kwargs)
                 elif isinstance(data, (list, tuple)):
                     return numpy_func(np.asarray(data), *args, **kwargs)
+                elif isinstance(data, (np.number, np.bool_)):
+                    return numpy_func(data, *args, **kwargs)
                 else:
                     raise TypeError('unknown type {}'.format(type(data)))
             func.__name__ = str(key)  # the str wrap is for python2
@@ -231,6 +262,7 @@ class TorchImpls(object):
     def result_type(*arrays_and_dtypes):
         """
         Return type from promotion rules
+            dtype, promote_types, min_scalar_type, can_cast
         """
         # Have to work to get numpy-like behavior
         if len(arrays_and_dtypes) == 1:
@@ -529,6 +561,10 @@ class TorchImpls(object):
         return torch.argmax(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
+    def argmin(data, axis=None):
+        return torch.argmin(data, dim=axis)
+
+    @_torchmethod(func_type='data_func')
     def argsort(data, axis=-1, descending=False):
         """
         Example:
@@ -559,9 +595,10 @@ class TorchImpls(object):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
-            >>> from packaging.version import Version
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> from kwarray.arrayapi import _TORCH_HAS_MAX_BUG
             >>> import pytest
-            >>> if Version(torch.__version__) < Version('1.7'):
+            >>> if _TORCH_HAS_MAX_BUG:
             >>>     pytest.skip('torch max has a bug, which was fixed in 1.7')
             >>> data1 = torch.rand(5, 5, 5, 5, 5, 5)
             >>> data2 = data1.numpy()
@@ -587,28 +624,141 @@ class TorchImpls(object):
             return torch.max(data, dim=axis)[0]
 
     @_torchmethod(func_type='data_func')
+    def min(data, axis=None):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> from kwarray.arrayapi import _TORCH_HAS_MAX_BUG
+            >>> import pytest
+            >>> if _TORCH_HAS_MAX_BUG:
+            >>>     pytest.skip('torch min has a bug, which was fixed in 1.7')
+            >>> data1 = torch.rand(5, 5, 5, 5, 5, 5)
+            >>> data2 = data1.numpy()
+            >>> res1 = ArrayAPI.min(data1)
+            >>> res2 = ArrayAPI.min(data2)
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.min(data1, axis=(4, 0, 1))
+            >>> res2 = ArrayAPI.min(data2, axis=(4, 0, 1))
+            >>> assert np.all(res1.numpy() == res2)
+            >>> res1 = ArrayAPI.min(data1, axis=(5, -2))
+            >>> res2 = ArrayAPI.min(data2, axis=(5, -2))
+            >>> assert np.all(res1.numpy() == res2)
+        """
+        if axis is None:
+            return torch.min(data)
+        elif isinstance(axis, tuple):
+            axis_ = [d if d >= 0 else len(data.shape) + d for d in axis]
+            temp = data
+            for d in sorted(axis_)[::-1]:
+                temp = temp.min(dim=d)[0]
+            return temp
+        else:
+            return torch.min(data, dim=axis)[0]
+
+    @_torchmethod(func_type='data_func')
     def max_argmax(data, axis=None):
         """
-        Note: this isn't always gaurenteed to be compatibile with numpy
-        if there are equal elements in data. See:
-        >>> np.ones(10).argmax()   # xdoctest: +IGNORE_WANT
-        0
-        >>> torch.ones(10).argmax()   # xdoctest: +IGNORE_WANT
-        tensor(9)
+        Args:
+            data (Tensor): data to perform operation on
+            axis (None | int): axis to perform operation on
+
+        Returns:
+            Tuple[Numeric, Numeric]: The max value(s) and argmax position(s).
+
+        Note:
+            In modern versions of torch and numpy if there are multiple maximum
+            values the index of the instance is returned. This is not true in
+            older versions of torch. I'm unsure when this gaurentee was added
+            to numpy.
+
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> from kwarray.arrayapi import ArrayAPI
+            >>> data = 1 / (1 + (torch.arange(12) - 6).view(3, 4) ** 2)
+            >>> ArrayAPI.max_argmax(data)
+            (tensor(1...), tensor(6))
+            >>> # When the values are all the same, there doesn't seem
+            >>> # to be a reliable spec on which one is returned first.
+            >>> np.ones(10).argmax()   # xdoctest: +IGNORE_WANT
+            0
+            >>> # Newer versions of torch (e.g. 1.12.0)
+            >>> torch.ones(10).argmax()   # xdoctest: +IGNORE_WANT
+            tensor(0)
+            >>> # Older versions of torch  (e.g 1.6.0)
+            >>> torch.ones(10).argmax()   # xdoctest: +IGNORE_WANT
+            tensor(9)
         """
-        return torch.max(data, dim=axis)
+        if axis is None:
+            return torch.max(data), torch.argmax(data)
+        else:
+            return torch.max(data, dim=axis)
+
+    @_torchmethod(func_type='data_func')
+    def min_argmin(data, axis=None):
+        """
+        Args:
+            data (Tensor): data to perform operation on
+            axis (None | int): axis to perform operation on
+
+        Returns:
+            Tuple[Numeric, Numeric]: The min value(s) and argmin position(s).
+
+        Note:
+            In modern versions of torch and numpy if there are multiple minimum
+            values the index of the instance is returned. This is not true in
+            older versions of torch. I'm unsure when this gaurentee was added
+            to numpy.
+
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> from kwarray.arrayapi import ArrayAPI
+            >>> data = (torch.arange(12) - 6).view(3, 4) ** 2
+            >>> ArrayAPI.min_argmin(data)
+            (tensor(0), tensor(6))
+            >>> # Issue demo:
+            >>> # When the values are all the same, there doesn't seem
+            >>> # to be a reliable spec on which one is returned first.
+            >>> np.ones(10).argmin()   # xdoctest: +IGNORE_WANT
+            0
+            >>> # Newer versions of torch (e.g. 1.12.0)
+            >>> torch.ones(10).argmin()   # xdoctest: +IGNORE_WANT
+            tensor(0)
+            >>> # Older versions of torch  (e.g 1.6.0)
+            >>> torch.ones(10).argmin()   # xdoctest: +IGNORE_WANT
+            tensor(9)
+        """
+        if axis is None:
+            return torch.min(data), torch.argmin(data)
+        else:
+            return torch.min(data, dim=axis)
 
     @_torchmethod
     def maximum(data1, data2, out=None):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import sys, ubelt
+            >>> from kwarray.arrayapi import *  # NOQA
             >>> data1 = torch.rand(5, 5)
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.maximum(data1, data2)
             >>> result2 = NumpyImpls.maximum(data1.numpy(), data2.numpy())
             >>> assert np.allclose(result1.numpy(), result2)
+            >>> result1 = TorchImpls.maximum(data1, 0)
+            >>> result2 = NumpyImpls.maximum(data1.numpy(), 0)
+            >>> assert np.allclose(result1.numpy(), result2)
         """
+        # If data2 is not a tensor, torch.min/torch.max returns a
+        # extreme/argextreme tuple.
+        if torch.is_tensor(data1):
+            data2 = torch.as_tensor(data2, device=data1.device)
+            if _TORCH_LT_1_7_0:
+                dtype = torch.result_type(data1, data2)
+                data1 = data1.to(dtype)
+                data2 = data2.to(dtype)
         return torch.max(data1, data2, out=out)
 
     @_torchmethod
@@ -621,7 +771,28 @@ class TorchImpls(object):
             >>> result1 = TorchImpls.minimum(data1, data2)
             >>> result2 = NumpyImpls.minimum(data1.numpy(), data2.numpy())
             >>> assert np.allclose(result1.numpy(), result2)
+
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import sys, ubelt
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = torch.rand(5, 5)
+            >>> result1 = TorchImpls.minimum(data1, data2)
+            >>> result2 = NumpyImpls.minimum(data1.numpy(), data2.numpy())
+            >>> assert np.allclose(result1.numpy(), result2)
+            >>> result1 = TorchImpls.minimum(data1, 0)
+            >>> result2 = NumpyImpls.minimum(data1.numpy(), 0)
+            >>> assert np.allclose(result1.numpy(), result2)
         """
+        # If data2 is not a tensor, torch.min/torch.max returns a
+        # extreme/argextreme tuple.
+        if torch.is_tensor(data1):
+            data2 = torch.as_tensor(data2, device=data1.device)
+            if _TORCH_LT_1_7_0:
+                dtype = torch.result_type(data1, data2)
+                data1 = data1.to(dtype)
+                data2 = data2.to(dtype)
         return torch.min(data1, data2, out=out)
 
     # @_torchmethod(func_type='data_func')
@@ -776,7 +947,10 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def softmax(data, axis=None):
-        return torch.softmax(data, dim=axis)
+        if axis is None:
+            return torch.softmax(data.view(-1), dim=0).view(data.shape)
+        else:
+            return torch.softmax(data, dim=axis)
 
 
 class NumpyImpls(object):
@@ -796,7 +970,9 @@ class NumpyImpls(object):
         Return type from promotion rules
 
         SeeAlso:
-            np.find_common_type
+            :func:`numpy.find_common_type`
+            :func:`numpy.promote_types`
+            :func:`numpy.result_type`
         """
         # _dtype_lut = _torch_dtype_lut()
         # dtypes = (_dtype_lut.get(t, t) for t in arrays_and_dtypes)
@@ -887,6 +1063,10 @@ class NumpyImpls(object):
         return np.argmax(data, axis=axis)
 
     @_numpymethod
+    def argmin(data, axis=None):
+        return np.argmin(data, axis=axis)
+
+    @_numpymethod
     def argsort(data, axis=-1, descending=False):
         sortx = np.argsort(data, axis=axis)
         if descending:
@@ -898,8 +1078,32 @@ class NumpyImpls(object):
         return data.max(axis=axis)
 
     @_numpymethod
+    def min(data, axis=None):
+        return data.min(axis=axis)
+
+    @_numpymethod
     def max_argmax(data, axis=None):
+        """
+        Args:
+            data (ArrayLike): data to perform operation on
+            axis (None | int): axis to perform operation on
+
+        Returns:
+            Tuple[Numeric, Numeric]: The max value(s) and argmax position(s).
+        """
         return data.max(axis=axis), np.argmax(data, axis=axis)
+
+    @_numpymethod
+    def min_argmin(data, axis=None):
+        """
+        Args:
+            data (ArrayLike): data to perform operation on
+            axis (None | int): axis to perform operation on
+
+        Returns:
+            Tuple[Numeric, Numeric]: The min value(s) and argmin position(s).
+        """
+        return data.min(axis=axis), np.argmin(data, axis=axis)
 
     @_numpymethod
     def sum(data, axis=None):
@@ -1004,6 +1208,41 @@ class NumpyImpls(object):
     def softmax(data, axis=None):
         from scipy import special
         return special.softmax(data, axis=axis)
+
+    def kron(a, b):
+        """
+        Outer product
+
+        Args:
+            a (ndarray): Array of shape (r0, r1, ... rN)
+            b (ndarray): Array of shape (s0, s1, ... sN)
+
+        Returns:
+            ndarray: with shape (r0*s0, r1*s1, ..., rN*SN).
+
+        Note:
+            # From numpy doc
+            kron(a,b)[k0,k1,...,kN] = a[i0,i1,...,iN] * b[j0,j1,...,jN]
+
+            kt = it * st + jt,  t = 0,...,N
+
+        Notes:
+            If
+            a.shape = (r0,r1,..,rN) and
+            b.shape = (s0,s1,...,sN),
+            the Kronecker product has shape
+            (r0*s0, r1*s1, ..., rN*SN).
+
+        Ignore:
+            a = np.empty((2, 3, 5))
+            b = np.empty((7, 11))
+            np.kron(a, b).shape
+            np.kron(b, a).shape
+            c = np.empty((13))
+            np.kron(a, c).shape
+            np.kron(b, c).shape
+        """
+        return np.kron(a, b)
 
 
 class ArrayAPI(object):
@@ -1154,9 +1393,14 @@ class ArrayAPI(object):
     empty_like = _apimethod('empty_like')
 
     sum = _apimethod('sum')
-    argmax = _apimethod('argmax')
     argsort = _apimethod('argsort')
+
+    argmax = _apimethod('argmax')
+    argmin = _apimethod('argmin')
     max = _apimethod('max')
+    min = _apimethod('min')
+    max_argmax = _apimethod('max_argmax')
+    min_argmin = _apimethod('min_argmin')
     maximum = _apimethod('maximum')
     minimum = _apimethod('minimum')
 
@@ -1180,8 +1424,6 @@ class ArrayAPI(object):
     pad = _apimethod('pad')
 
     dtype_kind = _apimethod('dtype_kind')
-
-    max_argmax = _apimethod('max_argmax')
 
     # ones = _apimethod('ones', func_type='shape_creation')
     # full = _apimethod('full', func_type='shape_creation')

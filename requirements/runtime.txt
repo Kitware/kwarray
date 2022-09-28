@@ -1,10 +1,11 @@
-ubelt >= 0.10.0
+ubelt >= 1.2.1
 six >= 1.11.0
 
 # tensorflow requires 1.19.3
-numpy >= 1.21.6    ;                            python_version >= '3.10'  # Python 3.10+
-numpy >= 1.19.3  ; python_version < '3.10' and python_version >= '3.6.0'  # Python 3.6 - 3.9
-numpy >= 1.16.6  ; python_version < '3.6.0' and python_version >= '2.7.0' # Python 2.7 - 3.6
+numpy>=1.23.2  ;                             python_version >= '3.11'  # Python 3.11
+numpy>=1.21.6  ; python_version < '3.11' and python_version >= '3.10'  # Python 3.10
+numpy>=1.19.3  ; python_version < '3.10' and python_version >= '3.6.0'  # Python 3.6 - 3.9
+numpy>=1.16.6  ; python_version < '3.6.0' and python_version >= '2.7.0' # Python 2.7 - 3.6
 
 # python ~/local/tools/supported_python_versions_pip.py numpy
 # python ~/local/tools/supported_python_versions_pip.py scipy
@@ -13,6 +14,3 @@ scipy>=1.8.0     ; python_version < '3.10' and python_version >= '3.9'    # Pyth
 scipy>=1.8.0     ; python_version < '3.9' and python_version >= '3.8'    # Python 3.8
 scipy>=1.6.0     ; python_version < '3.8' and python_version >= '3.7'    # Python 3.7
 scipy>=1.2.1     ; python_version < '3.7.0' and python_version >= '2.7.0'  # Python 2.7 - 3.6
-
-
-future;python_version<='2.7'  # not sure why this is needed, but tests fail on py27 if it doesnt exist.

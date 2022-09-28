@@ -5,6 +5,7 @@ numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
 geometric-mean, standard-deviation, etc...) about data in an array.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import warnings
 import collections
 import numpy as np
 import ubelt as ub
@@ -317,6 +318,78 @@ class RunningStats(ub.NiceRepr):
         except Exception:
             return None
 
+    def update_many(run, data, weights=1):
+        """
+        Assumes first data axis represents multiple observations
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> data = rng.randn(1, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> data = rng.randn(2, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> data = rng.randn(3, 2, 3)
+            >>> run.update_many(data)
+            >>> print(run.current())
+            >>> run.update_many(1000)
+            >>> print(run.current())
+            >>> assert np.all(run.current()['n'] == 7)
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> data = rng.randn(1, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> data = rng.randn(2, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> data = rng.randn(3, 2, 3)
+            >>> run.update_many(data.ravel())
+            >>> print(run.current())
+            >>> run.update_many(1000)
+            >>> print(run.current())
+            >>> assert np.all(run.current()['n'] == 37)
+        """
+        data = np.asarray(data)
+        if run.nan_behavior == 'ignore':
+            weights = weights * (~np.isnan(data)).astype(float)
+        elif run.nan_behavior == 'propogate':
+            ...
+        else:
+            raise AssertionError('should not be here')
+        has_ignore_items = False
+        if ub.iterable(weights):
+            ignore_flags = (weights == 0)
+            has_ignore_items = np.any(ignore_flags)
+
+        if has_ignore_items:
+            data = data.copy()
+            # Replace the bad value with somehting sensible for each operation.
+            data[ignore_flags] = 0
+
+            # Multiply data by weights
+            w_data = data * weights
+
+            run.raw_total += w_data.sum(axis=0)
+            run.raw_squares += (w_data ** 2).sum(axis=0)
+            data[ignore_flags] = -np.inf
+            run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
+            data[ignore_flags] = +np.inf
+            run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
+        else:
+            w_data = data * weights
+            run.raw_total += w_data.sum(axis=0)
+            run.raw_squares += (w_data ** 2).sum(axis=0)
+            run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
+            run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
+        run.n += weights.sum(axis=0)
+
     def update(run, data, weights=1):
         """
         Updates statistics across all data dimensions on a per-element basis
@@ -438,48 +511,51 @@ class RunningStats(ub.NiceRepr):
             >>> #assert ub.util_indexable.indexable_allclose(s1N, s2N, rel_tol=0.0, abs_tol=0.0)
             >>> assert s0N['mean'] == 0.625
         """
-        if axis is ub.NoParam:
-            total = run.raw_total
-            squares = run.raw_squares
-            maxi = run.raw_max
-            mini = run.raw_min
-            n = run.n
-            info = ub.odict([
-                ('n', n),
-                ('max', maxi),
-                ('min', mini),
-                ('total', total),
-                ('squares', squares),
-                ('mean', total / n),
-                ('std', run._sumsq_std(total, squares, n)),
-            ])
-            return info
-        else:
-            if np.all(run.n <= 0):
-                raise RuntimeError('No statistics have been accumulated')
-            total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
-            squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
-            maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
-            mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
-            if not hasattr(run.raw_total, 'shape'):
-                n = run.n
-            elif axis is None:
-                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                # n = run.n * np.prod(run.raw_total.shape)
-            else:
-                n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
+        with np.errstate(divide='ignore'):
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', 'invalid value encountered', category=RuntimeWarning)
+                if axis is ub.NoParam:
+                    total = run.raw_total
+                    squares = run.raw_squares
+                    maxi = run.raw_max
+                    mini = run.raw_min
+                    n = run.n
+                    info = ub.odict([
+                        ('n', n),
+                        ('max', maxi),
+                        ('min', mini),
+                        ('total', total),
+                        ('squares', squares),
+                        ('mean', total / n),
+                        ('std', run._sumsq_std(total, squares, n)),
+                    ])
+                    return info
+                else:
+                    if np.all(run.n <= 0):
+                        raise RuntimeError('No statistics have been accumulated')
+                    total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+                    squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
+                    maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
+                    mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
+                    if not hasattr(run.raw_total, 'shape'):
+                        n = run.n
+                    elif axis is None:
+                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        # n = run.n * np.prod(run.raw_total.shape)
+                    else:
+                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
 
-            info = ub.odict([
-                ('n', n),
-                ('max', maxi),
-                ('min', mini),
-                ('total', total),
-                ('squares', squares),
-                ('mean', total / n),
-                ('std', run._sumsq_std(total, squares, n)),
-            ])
-            return info
+                    info = ub.odict([
+                        ('n', n),
+                        ('max', maxi),
+                        ('min', mini),
+                        ('total', total),
+                        ('squares', squares),
+                        ('mean', total / n),
+                        ('std', run._sumsq_std(total, squares, n)),
+                    ])
+                    return info
 
     def current(run):
         """

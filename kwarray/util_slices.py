@@ -57,18 +57,19 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
                 The structure of this dictionary mach change in the future
 
     Example:
+        >>> import kwarray
         >>> data = np.arange(5)
         >>> slices = [slice(-2, 7)]
 
-        >>> data_sliced = padded_slice(data, slices)
+        >>> data_sliced = kwarray.padded_slice(data, slices)
         >>> print(ub.repr2(data_sliced, with_dtype=False))
         np.array([0, 0, 0, 1, 2, 3, 4, 0, 0])
 
-        >>> data_sliced = padded_slice(data, slices, pad=(3, 3))
+        >>> data_sliced = kwarray.padded_slice(data, slices, pad=[(3, 3)])
         >>> print(ub.repr2(data_sliced, with_dtype=False))
         np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0])
 
-        >>> data_sliced = padded_slice(data, slice(3, 4), pad=[(1, 0)])
+        >>> data_sliced = kwarray.padded_slice(data, slice(3, 4), pad=[(1, 0)])
         >>> print(ub.repr2(data_sliced, with_dtype=False))
         np.array([2, 3])
 
@@ -189,11 +190,12 @@ def embed_slice(slices, data_dims, pad=None):
     Args:
         slices (Tuple[slice, ...]):
             a tuple of slices for to apply to data data dimension.
+
         data_dims (Tuple[int, ...]):
             n-dimension data sizes (e.g. 2d height, width)
-        pad (List[int|Tuple]):
-            extra pad applied to (left and right) / (both) sides of each slice
-            dim
+
+        pad (int | List[int | Tuple[int, int]]):
+            extra pad applied to (start / end) / (both) sides of each slice dim
 
     Returns:
         Tuple:
@@ -205,11 +207,11 @@ def embed_slice(slices, data_dims, pad=None):
 
     Example:
         >>> # Case where slice is inside the data dims on left edge
-        >>> from kwarray.util_slices import *  # NOQA
+        >>> import kwarray
         >>> slices = (slice(0, 10), slice(0, 10))
         >>> data_dims  = [300, 300]
         >>> pad        = [10, 5]
-        >>> a, b = embed_slice(slices, data_dims, pad)
+        >>> a, b = kwarray.embed_slice(slices, data_dims, pad)
         >>> print('data_slice = {!r}'.format(a))
         >>> print('extra_padding = {!r}'.format(b))
         data_slice = (slice(0, 20, None), slice(0, 15, None))
@@ -217,10 +219,11 @@ def embed_slice(slices, data_dims, pad=None):
 
     Example:
         >>> # Case where slice is bigger than the image
+        >>> import kwarray
         >>> slices = (slice(-10, 400), slice(-10, 400))
         >>> data_dims  = [300, 300]
         >>> pad        = [10, 5]
-        >>> a, b = embed_slice(slices, data_dims, pad)
+        >>> a, b = kwarray.embed_slice(slices, data_dims, pad)
         >>> print('data_slice = {!r}'.format(a))
         >>> print('extra_padding = {!r}'.format(b))
         data_slice = (slice(0, 300, None), slice(0, 300, None))
@@ -228,27 +231,43 @@ def embed_slice(slices, data_dims, pad=None):
 
     Example:
         >>> # Case where slice is inside than the image
+        >>> import kwarray
         >>> slices = (slice(10, 40), slice(10, 40))
         >>> data_dims  = [300, 300]
         >>> pad        = None
-        >>> a, b = embed_slice(slices, data_dims, pad)
+        >>> a, b = kwarray.embed_slice(slices, data_dims, pad)
         >>> print('data_slice = {!r}'.format(a))
         >>> print('extra_padding = {!r}'.format(b))
         data_slice = (slice(10, 40, None), slice(10, 40, None))
         extra_padding = [(0, 0), (0, 0)]
+
+    Example:
+        >>> # Test error cases
+        >>> import kwarray
+        >>> import pytest
+        >>> slices = (slice(0, 40), slice(10, 40))
+        >>> data_dims  = [300, 300]
+        >>> with pytest.raises(ValueError):
+        >>>     kwarray.embed_slice(slices, data_dims[0:1])
+        >>> with pytest.raises(ValueError):
+        >>>     kwarray.embed_slice(slices[0:1], data_dims)
+        >>> with pytest.raises(ValueError):
+        >>>     kwarray.embed_slice(slices, data_dims, pad=[(1, 1)])
+        >>> with pytest.raises(ValueError):
+        >>>     kwarray.embed_slice(slices, data_dims, pad=[1])
     """
     low_dims = [sl.start for sl in slices]
     high_dims = [sl.stop for sl in slices]
 
+    ndims = len(data_dims)
+    if len(low_dims) != ndims:
+        raise ValueError('slices and data_dims must have the same length')
+
+    pad_slice = _coerce_pad(pad, ndims)
+
     # Determine the real part of the image that can be sliced out
     data_slice_st = []
     extra_padding = []
-    if pad is None:
-        pad = 0
-    if isinstance(pad, int):
-        pad = [pad] * len(data_dims)
-    # Normalize to left/right pad value for each dim
-    pad_slice = [p if ub.iterable(p) else [p, p] for p in pad]
 
     # Determine the real part of the image that can be sliced out
     for D_img, d_low, d_high, d_pad in zip(data_dims, low_dims, high_dims, pad_slice):
@@ -278,3 +297,21 @@ def embed_slice(slices, data_dims, pad=None):
 
     data_slice = tuple(slice(s, t) for s, t in data_slice_st)
     return data_slice, extra_padding
+
+
+def _coerce_pad(pad, ndims):
+    if pad is None:
+        pad_slice = [(0, 0)] * ndims
+    elif isinstance(pad, int):
+        pad_slice = [(pad, pad)] * ndims
+    else:
+        # Normalize to left/right pad value for each dim
+        pad_slice = [p if ub.iterable(p) else [p, p] for p in pad]
+
+    if len(pad_slice) != ndims:
+        # We could "fix" it, but the user probably made a mistake
+        # n_trailing = ndims - len(pad)
+        # if n_trailing > 0:
+        #     pad = list(pad) + [(0, 0)] * n_trailing
+        raise ValueError('pad and data_dims must have the same length')
+    return pad_slice
