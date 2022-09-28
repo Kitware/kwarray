@@ -1,15 +1,27 @@
 [build-system]
-requires = ["setuptools>=41.0.1"]
+requires = [ "setuptools>=41.0.1",]
 build-backend = "setuptools.build_meta"
 
+[tool.mypy]
+ignore_missing_imports = true
 
 [tool.xcookie]
-tags = [ "purepy", "gitlab",]
+tags = [ "purepy", "gitlab", "kitware",]
 mod_name = "kwarray"
 repo_name = "kwarray"
+rel_mod_parent_dpath = "."
+ci_cpython_versions = ["3.6", "3.7", "3.8", "3.9", "3.10"]
+os = [ "osx", "all", "win", "linux",]
+min_python = 3.6
+version = "{mod_dpath}/__init__.py::__version__"
+author = "Jon Crall"
+author_email = "jon.crall@kitware.com"
+description = "The kwarray module"
+license = "Apache 2"
+dev_status = "beta"
 
 [tool.pytest.ini_options]
-addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py"
+addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py --ignore-glob=dev --ignore-glob=docs"
 norecursedirs = ".git ignore build __pycache__ dev _skbuild"
 filterwarnings = [ "default", "ignore:.*No cfgstr given in Cacher constructor or call.*:Warning", "ignore:.*Define the __nice__ method for.*:Warning", "ignore:.*private pytest class or function.*:Warning",]
 
@@ -19,6 +31,3 @@ branch = true
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", ".*  # pragma: no cover", ".*  # nocover", "def __repr__", "raise AssertionError", "raise NotImplementedError", "if 0:", "if trace is not None", "verbose = .*", "^ *raise", "^ *pass *$", "if _debug:", "if __name__ == .__main__.:", ".*if six.PY2:",]
 omit = [ "kwarray/__main__.py", "*/setup.py",]
-
-[tool.mypy]
-ignore_missing_imports = true

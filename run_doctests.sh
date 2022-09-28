@@ -1,2 +1,2 @@
-#!/bin/bash
-xdoctest kwarray --style=google all
+#!/usr/bin/env bash
+xdoctest kwarray --style=google all "$@"
