@@ -5,7 +5,6 @@ where the data only needs to be accessed by index.
 
 For data where more complex ids are needed you must use pandas.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import ubelt as ub
 import numpy as np
 import copy

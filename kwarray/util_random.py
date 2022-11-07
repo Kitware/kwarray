@@ -89,7 +89,6 @@ This results in:
     8  5.161900  6.902354  4.869275
     9  2.810358  6.902354  4.869275
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 import random
 import itertools as it

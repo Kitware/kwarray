@@ -10,7 +10,6 @@ TODO:
    - [ ] Implement linear-time maximum weight matching approximation algorithm
      from this paper: https://web.eecs.umich.edu/~pettie/papers/ApproxMWM-JACM.pdf
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 # from distutils.version import LooseVersion
 # import scipy

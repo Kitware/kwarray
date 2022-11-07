@@ -19,7 +19,6 @@ References:
     https://stackoverflow.com/questions/4265988/generate-random-numbers-with-a-given-numerical-distribution
     https://codereview.stackexchange.com/questions/196286/inverse-transform-sampling
 """
-from __future__ import print_function, division, absolute_import, unicode_literals
 import numpy as np
 import ubelt as ub
 import functools
