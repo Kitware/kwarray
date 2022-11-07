@@ -56,10 +56,14 @@ stages:
     python --version  # Print out python version for debugging
   script:
   - ls wheelhouse || echo "wheelhouse does not exist"
-  - pip install tomli ubelt
+  - pip install tomli ubelt pkginfo
   - MOD_NAME=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['tool']['xcookie']['mod_name'])")
+  - WHEEL_FPATH=$(python -c "import pathlib; print(sorted(pathlib.Path('wheelhouse').glob('$MOD_NAME*.whl'))[-1])")
+  - MOD_VERSION=$(python -c "from pkginfo import Wheel; print(Wheel('$WHEEL_FPATH').version)")
   - echo "MOD_NAME=$MOD_NAME"
-  - pip install "$MOD_NAME"[tests] -f wheelhouse
+  - echo "WHEEL_FPATH=$WHEEL_FPATH"
+  - echo "MOD_VERSION=$MOD_VERSION"
+  - pip install "$MOD_NAME"[tests]=="$MOD_VERSION" -f wheelhouse
   - |-
     mkdir -p sandbox && cd sandbox && pytest -s --xdoc --xdoctest-verbose=3 --cov-config ../pyproject.toml --cov-report html --cov-report term --cov="$MOD_NAME" "$(python -c "import ubelt; print(ubelt.modname_to_modpath('${MOD_NAME}'))")" ../tests && cd ..
 .test_full-loose_template: &test_full-loose_template
@@ -78,10 +82,14 @@ stages:
     python --version  # Print out python version for debugging
   script:
   - ls wheelhouse || echo "wheelhouse does not exist"
-  - pip install tomli ubelt
+  - pip install tomli ubelt pkginfo
   - MOD_NAME=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['tool']['xcookie']['mod_name'])")
+  - WHEEL_FPATH=$(python -c "import pathlib; print(sorted(pathlib.Path('wheelhouse').glob('$MOD_NAME*.whl'))[-1])")
+  - MOD_VERSION=$(python -c "from pkginfo import Wheel; print(Wheel('$WHEEL_FPATH').version)")
   - echo "MOD_NAME=$MOD_NAME"
-  - pip install "$MOD_NAME"[tests,optional] -f wheelhouse
+  - echo "WHEEL_FPATH=$WHEEL_FPATH"
+  - echo "MOD_VERSION=$MOD_VERSION"
+  - pip install "$MOD_NAME"[tests,optional]=="$MOD_VERSION" -f wheelhouse
   - |-
     mkdir -p sandbox && cd sandbox && pytest -s --xdoc --xdoctest-verbose=3 --cov-config ../pyproject.toml --cov-report html --cov-report term --cov="$MOD_NAME" "$(python -c "import ubelt; print(ubelt.modname_to_modpath('${MOD_NAME}'))")" ../tests && cd ..
 .test_minimal-strict_template: &test_minimal-strict_template
@@ -100,10 +108,14 @@ stages:
     python --version  # Print out python version for debugging
   script:
   - ls wheelhouse || echo "wheelhouse does not exist"
-  - pip install tomli ubelt
+  - pip install tomli ubelt pkginfo
   - MOD_NAME=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['tool']['xcookie']['mod_name'])")
+  - WHEEL_FPATH=$(python -c "import pathlib; print(sorted(pathlib.Path('wheelhouse').glob('$MOD_NAME*.whl'))[-1])")
+  - MOD_VERSION=$(python -c "from pkginfo import Wheel; print(Wheel('$WHEEL_FPATH').version)")
   - echo "MOD_NAME=$MOD_NAME"
-  - pip install "$MOD_NAME"[tests-strict,runtime-strict] -f wheelhouse
+  - echo "WHEEL_FPATH=$WHEEL_FPATH"
+  - echo "MOD_VERSION=$MOD_VERSION"
+  - pip install "$MOD_NAME"[tests-strict,runtime-strict]=="$MOD_VERSION" -f wheelhouse
   - |-
     mkdir -p sandbox && cd sandbox && pytest -s --xdoc --xdoctest-verbose=3 --cov-config ../pyproject.toml --cov-report html --cov-report term --cov="$MOD_NAME" "$(python -c "import ubelt; print(ubelt.modname_to_modpath('${MOD_NAME}'))")" ../tests && cd ..
 .test_full-strict_template: &test_full-strict_template
@@ -122,10 +134,15 @@ stages:
     python --version  # Print out python version for debugging
   script:
   - ls wheelhouse || echo "wheelhouse does not exist"
-  - pip install tomli ubelt
+  - pip install tomli ubelt pkginfo
   - MOD_NAME=$(python -c "import tomli; print(tomli.load(open('pyproject.toml', 'rb'))['tool']['xcookie']['mod_name'])")
+  - WHEEL_FPATH=$(python -c "import pathlib; print(sorted(pathlib.Path('wheelhouse').glob('$MOD_NAME*.whl'))[-1])")
+  - MOD_VERSION=$(python -c "from pkginfo import Wheel; print(Wheel('$WHEEL_FPATH').version)")
   - echo "MOD_NAME=$MOD_NAME"
-  - pip install "$MOD_NAME"[tests-strict,runtime-strict,optional-strict] -f wheelhouse
+  - echo "WHEEL_FPATH=$WHEEL_FPATH"
+  - echo "MOD_VERSION=$MOD_VERSION"
+  - pip install "$MOD_NAME"[tests-strict,runtime-strict,optional-strict]=="$MOD_VERSION"
+    -f wheelhouse
   - |-
     mkdir -p sandbox && cd sandbox && pytest -s --xdoc --xdoctest-verbose=3 --cov-config ../pyproject.toml --cov-report html --cov-report term --cov="$MOD_NAME" "$(python -c "import ubelt; print(ubelt.modname_to_modpath('${MOD_NAME}'))")" ../tests && cd ..
 build/cp36-linux-x86_64:
@@ -243,6 +260,29 @@ test/full-strict/cp310-linux-x86_64:
   image: python:3.10
   needs:
   - build/cp310-linux-x86_64
+build/cp311-linux-x86_64:
+  <<: *build_template
+  image: python:3.11
+test/minimal-loose/cp311-linux-x86_64:
+  <<: *test_minimal-loose_template
+  image: python:3.11
+  needs:
+  - build/cp311-linux-x86_64
+test/full-loose/cp311-linux-x86_64:
+  <<: *test_full-loose_template
+  image: python:3.11
+  needs:
+  - build/cp311-linux-x86_64
+test/minimal-strict/cp311-linux-x86_64:
+  <<: *test_minimal-strict_template
+  image: python:3.11
+  needs:
+  - build/cp311-linux-x86_64
+test/full-strict/cp311-linux-x86_64:
+  <<: *test_full-strict_template
+  image: python:3.11
+  needs:
+  - build/cp311-linux-x86_64
 gpgsign/wheels:
   <<: *common_template
   image: python:3.8
@@ -269,6 +309,8 @@ gpgsign/wheels:
   - job: build/cp39-linux-x86_64
     artifacts: true
   - job: build/cp310-linux-x86_64
+    artifacts: true
+  - job: build/cp311-linux-x86_64
     artifacts: true
   script:
   - ls wheelhouse

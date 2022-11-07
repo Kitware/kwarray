@@ -60,10 +60,8 @@ Example:
     >>> data1 = torch.rand(10, 10)
     >>> data2 = data1.numpy()
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 import ubelt as ub
-import six
 from functools import partial
 
 try:
@@ -103,16 +101,6 @@ if __with_typing__:
         ArrayLike = Any
 
 
-def _get_funcname(func):
-    if six.PY2:
-        try:
-            return func.func_name
-        except AttributeError:
-            return func.__name__
-    else:
-        return func.__name__
-
-
 class _ImplRegistry(object):
     def __init__(self):
         self.registered = {
@@ -122,7 +110,7 @@ class _ImplRegistry(object):
         }
 
     def _register(self, func, func_type, impl):
-        func_name = _get_funcname(func)
+        func_name = func.__name__
 
         assert func_type in {
             'data_func',       # methods where the first argument is an array
@@ -149,7 +137,7 @@ class _ImplRegistry(object):
         Creates wrapper for a "data method" --- i.e. a ArrayAPI function that has
         only one main argument, which is an array.
         """
-        if isinstance(key, six.string_types):
+        if isinstance(key, str):
             # numpy_func = self.registered['numpy'][key]['func']
             # torch_func = self.registered['torch'][key]['func']
             numpy_func = getattr(NumpyImpls, key)
@@ -1330,7 +1318,7 @@ class ArrayAPI(object):
         """
         Coerces some form of inputs into an array api (either numpy or torch).
         """
-        if isinstance(data, six.string_types):
+        if isinstance(data, str):
             from kwarray import arrayapi
             if data in ['torch', 'tensor']:
                 return arrayapi.TorchImpls
