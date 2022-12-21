@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.6 - Unreleased
 
+### Fixed:
+* Bug in `isect_flags`, which returned a bad shape if there was no intersection.
+
 
 ## Version 0.6.5 - Released 2022-11-07
 

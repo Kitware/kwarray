@@ -133,8 +133,8 @@ def isect_flags(arr, other):
         other (Iterable): items to check if they exist in arr
 
     Returns:
-        NDArray: booleans corresponding to arr indicating if that item is
-            also contained in other.
+        NDArray: booleans corresponding to arr indicating if any item in other
+            is also contained in other.
 
     Example:
         >>> arr = np.array([
@@ -151,7 +151,7 @@ def isect_flags(arr, other):
     """
     flags = iter_reduce_ufunc(np.logical_or, (arr == item for item in other))
     if flags is None:
-        flags = np.zeros(arr.size, dtype=bool)
+        flags = np.zeros(arr.shape, dtype=bool)
     return flags
 
 
