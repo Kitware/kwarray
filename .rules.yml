@@ -1,0 +1,31 @@
+# Rules for where jobs can run
+# Derived from: https://gitlab.kitware.com/cmake/cmake/-/blob/v3.25.1/.gitlab/rules.yml 
+
+.run_manually:
+    rules:
+        - if: '$CI_MERGE_REQUEST_ID'
+          when: manual
+        - if: '$CI_PROJECT_PATH == "computer-vision/kwarray" && $CI_PIPELINE_SOURCE == "schedule"'
+          when: on_success
+        - if: '$CI_PROJECT_PATH == "computer-vision/kwarray"'
+          when: manual
+        - when: never
+
+.run_automatically:
+    rules:
+        - if: '$CI_MERGE_REQUEST_ID'
+          when: on_success
+        - if: '$CI_PROJECT_PATH == "computer-vision/kwarray" && $CI_PIPELINE_SOURCE == "schedule"'
+          when: on_success
+        - if: '$CI_PROJECT_PATH == "computer-vision/kwarray"'
+          when: delayed
+          start_in: 5 minutes
+        - when: never
+
+.run_dependent:
+    rules:
+        - if: '$CI_MERGE_REQUEST_ID'
+          when: on_success
+        - if: '$CI_PROJECT_PATH == "computer-vision/kwarray"'
+          when: on_success
+        - when: never
