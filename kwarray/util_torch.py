@@ -308,9 +308,9 @@ def one_hot_lookup(data, indices):
                 ohe = torch.eye(data.shape[1], dtype=torch.uint8, device=indices.device)[indices]
             out = data[ohe]
     else:
-        # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(np.bool)
+        # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(bool)
         # Constructing the OHE with a small dtype offers a sizable speed advantage
-        ohe = np.eye(data.shape[1], dtype=np.bool)[indices]
+        ohe = np.eye(data.shape[1], dtype=bool)[indices]
         out = data[ohe]
     return out
 

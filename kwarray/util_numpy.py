@@ -42,11 +42,11 @@ def boolmask(indices, shape=None):
         >>> indices = np.array([(0, 0), (1, 1), (2, 1)])
         >>> shape = (3, 3)
         >>> mask = kwarray.boolmask(indices, shape)
-        >>> result = ub.repr2(mask)
+        >>> result = ub.repr2(mask, with_dtype=0)
         >>> print(result)
         np.array([[ True, False, False],
                   [False,  True, False],
-                  [False,  True, False]], dtype=np.bool)
+                  [False,  True, False]])
     """
     indices = np.asanyarray(indices)
     if indices.dtype.kind not in {'i', 'u'}:
