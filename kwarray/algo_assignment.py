@@ -195,7 +195,7 @@ def maxvalue_assignment(value):
         Assignment: []
         Total value: 0
     """
-    cost = (-value).astype(np.float)
+    cost = (-value).astype(float)
     cost[value <= 0] = np.inf  # dont take anything with non-positive value
     assignment, cost_tot = mincost_assignment(cost)
     value_tot = -cost_tot
