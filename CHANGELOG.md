@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed:
 * Bug in `isect_flags`, which returned a bad shape if there was no intersection.
+* Fix issue in normalize when empty arrays are given
 
 
 ## Version 0.6.5 - Released 2022-11-07

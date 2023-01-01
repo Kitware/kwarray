@@ -676,6 +676,19 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> for key, img in norms.items():
         >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
 
+    Example:
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> arr = np.array([np.inf])
+        >>> normalize(arr, mode='linear')
+        >>> normalize(arr, mode='sigmoid')
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
+        >>> pnum_ = kwplot.PlotNums(nSubplots=len(norms))
+        >>> for key, img in norms.items():
+        >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
+
     Ignore:
         # Our method is faster than standard in-line implementations.
 
@@ -757,13 +770,19 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         old_min = min_val
         float_out[float_out < min_val] = min_val
     else:
-        old_min = np.nanmin(float_out)
+        try:
+            old_min = np.nanmin(float_out)
+        except ValueError:
+            old_min = 0
 
     if max_val is not None:
         old_max = max_val
         float_out[float_out > max_val] = max_val
     else:
-        old_max = np.nanmax(float_out)
+        try:
+            old_max = np.nanmax(float_out)
+        except ValueError:
+            old_max = max(0, old_min)
 
     old_span = old_max - old_min
     new_span = new_max - new_min
