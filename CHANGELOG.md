@@ -4,7 +4,10 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.6 - Unreleased
+## Version 0.6.7 - Unreleased
+
+
+## Version 0.6.6 - Released 2023-01-02
 
 ### Fixed:
 * Bug in `isect_flags`, which returned a bad shape if there was no intersection.
