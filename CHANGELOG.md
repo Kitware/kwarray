@@ -10,6 +10,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Bug in `isect_flags`, which returned a bad shape if there was no intersection.
 * Fix issue in normalize when empty arrays are given
 
+### Changed:
+* Updated ported robust normalizer code from kwimage
+* Move normalize from `util_numpy` to `util_robust`
+
 
 ## Version 0.6.5 - Released 2022-11-07
 

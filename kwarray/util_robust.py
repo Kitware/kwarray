@@ -231,7 +231,7 @@ def _custom_quantile_extreme_estimator(data, params):
 
 
 def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
-                     dtype=np.float32, params='auto'):
+                     dtype=np.float32, params='auto', mask=None):
     """
     Normalize data intensities using heuristics to help put sensor data with
     extremely high or low contrast into a visible range.
@@ -246,21 +246,63 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
     Args:
         imdata (ndarray): raw intensity data
 
-        return_info (bool, default=False):
+        return_info (bool):
             if True, return information about the chosen normalization
             heuristic.
 
         params (str | dict):
             can contain keys, low, high, or center
+            e.g. {'low': 0.1, 'center': 0.8, 'high': 0.9}
 
-        nodata:
+        axis (None | int):
+            The axis to normalize over, if unspecified, normalize jointly
+
+        nodata (None | int):
             A value representing nodata to leave unchanged during
             normalization, for example 0
 
-        dtype : can be float32 or float64
+        dtype (type) : can be float32 or float64
+
+        mask (ndarray | None):
+            A mask indicating what pixels are valid and what pixels should be
+            considered nodata.  Mutually exclusive with ``nodata`` argument.
+            A mask value of 1 indicates a VALID pixel. A mask value of 0
+            indicates an INVALID pixel.
 
     Returns:
         ndarray: a floating point array with values between 0 and 1.
+
+    Note:
+        This is effectively a combination of :func:`find_robust_normalizers`
+        and :func:`normalize`.
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> from kwarray.util_robust import *  # NOQA
+        >>> import ubelt as ub
+        >>> import kwimage
+        >>> import kwarray
+        >>> s = 512
+        >>> bit_depth = 11
+        >>> dtype = np.uint16
+        >>> max_val = int(2 ** bit_depth)
+        >>> min_val = int(0)
+        >>> rng = kwarray.ensure_rng(0)
+        >>> background = np.random.randint(min_val, max_val, size=(s, s), dtype=dtype)
+        >>> poly1 = kwimage.Polygon.random(rng=rng).scale(s / 2)
+        >>> poly2 = kwimage.Polygon.random(rng=rng).scale(s / 2).translate(s / 2)
+        >>> forground = np.zeros_like(background, dtype=np.uint8)
+        >>> forground = poly1.fill(forground, value=255)
+        >>> forground = poly2.fill(forground, value=122)
+        >>> forground = (kwimage.ensure_float01(forground) * max_val).astype(dtype)
+        >>> imdata = background + forground
+        >>> normed, info = normalize_intensity(imdata, return_info=True)
+        >>> print('info = {}'.format(ub.repr2(info, nl=1)))
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.imshow(imdata, pnum=(1, 2, 1), fnum=1)
+        >>> kwplot.imshow(normed, pnum=(1, 2, 2), fnum=1)
 
     Example:
         >>> from kwarray.util_robust import *  # NOQA
@@ -293,41 +335,45 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         >>>     sns.histplot(data=row['result'], kde=True, bins=128, ax=ax, stat='density')
         >>>     ax.set_title(row['key'])
     """
-    import kwarray
-
     if axis is not None:
         # Hack, normalize each channel individually. This could
         # be implementd more effciently.
         assert not return_info
         reorg = imdata.swapaxes(0, axis)
-        parts = []
-        for item in reorg:
-            part = robust_normalize(item, nodata=nodata, axis=None)
-            parts.append(part[None, :])
+        if mask is None:
+            parts = []
+            for item in reorg:
+                part = robust_normalize(item, nodata=nodata, axis=None)
+                parts.append(part[None, :])
+        else:
+            reorg_mask = mask.swapaxes(0, axis)
+            parts = []
+            for item, item_mask in zip(reorg, reorg_mask):
+                part = robust_normalize(item, nodata=nodata, axis=None,
+                                           mask=item_mask)
+                parts.append(part[None, :])
         recomb = np.concatenate(parts, axis=0)
         final = recomb.swapaxes(0, axis)
         return final
 
-    if nodata is not None:
-        mask = imdata != nodata
-        imdata_valid = imdata[mask]
-    else:
-        mask = None
+    if imdata.dtype.kind == 'f':
+        if mask is None:
+            mask = ~np.isnan(imdata)
+
+    if mask is None:
+        if nodata is not None:
+            mask = imdata != nodata
+
+    if mask is None:
         imdata_valid = imdata
+    else:
+        imdata_valid = imdata[mask]
+
+    assert not np.any(np.isnan(imdata_valid))
 
     normalizer = find_robust_normalizers(imdata_valid, params=params)
-    # print('normalizer = {!r}'.format(normalizer))
-
-    if normalizer['type'] is None:
-        imdata_normalized = imdata.astype(dtype)
-    elif normalizer['type'] == 'normalize':
-        # Note: we are using kwarray normalize, the one in kwimage is deprecated
-        imdata_normalized = kwarray.normalize(
-            imdata.astype(dtype), mode=normalizer['mode'],
-            beta=normalizer['beta'], alpha=normalizer['alpha'],
-        )
-    else:
-        raise KeyError(normalizer['type'])
+    imdata_normalized = _apply_robust_normalizer(normalizer, imdata,
+                                                 imdata_valid, mask, dtype)
 
     if mask is not None:
         result = np.where(mask, imdata_normalized, imdata)
@@ -338,3 +384,262 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         return result, normalizer
     else:
         return result
+
+
+def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy=True):
+    """
+    TODO:
+        abstract into a scikit-learn-style Normalizer class which can
+        fit/predict different types of normalizers.
+    """
+    import kwarray
+    if normalizer['type'] is None:
+        imdata_normalized = imdata.astype(dtype, copy=copy)
+    elif normalizer['type'] == 'normalize':
+        # Note: we are using kwarray normalize, the one in kwimage is deprecated
+        imdata_valid_normalized = kwarray.normalize(
+            imdata_valid.astype(dtype, copy=copy), mode=normalizer['mode'],
+            beta=normalizer['beta'], alpha=normalizer['alpha'],
+        )
+        if mask is None:
+            imdata_normalized = imdata_valid_normalized
+        else:
+            imdata_normalized = imdata.copy() if copy else imdata
+            imdata_normalized[mask] = imdata_valid_normalized
+    else:
+        raise KeyError(normalizer['type'])
+    return imdata_normalized
+
+
+def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
+              min_val=None, max_val=None):
+    """
+    Normalizes input values based on a specified scheme.
+
+    The default behavior is a linear normalization between 0.0 and 1.0 based on
+    the min/max values of the input. Parameters can be specified to achieve
+    more general constrat stretching or signal rebalancing. Implements the
+    linear and sigmoid normalization methods described in [WikiNorm]_.
+
+    Args:
+        arr (NDArray): array to normalize, usually an image
+
+        out (NDArray | None): output array. Note, that we will create an
+            internal floating point copy for integer computations.
+
+        mode (str): either linear or sigmoid.
+
+        alpha (float): Only used if mode=sigmoid.  Division factor
+            (pre-sigmoid). If unspecified computed as:
+            ``max(abs(old_min - beta), abs(old_max - beta)) / 6.212606``.
+            Note this parameter is sensitive to if the input is a float or
+            uint8 image.
+
+        beta (float): subtractive factor (pre-sigmoid). This should be the
+            intensity of the most interesting bits of the image, i.e. bring
+            them to the center (0) of the distribution.
+            Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
+            to if the input is a float or uint8 image.
+
+        min_val: override minimum value
+
+        max_val: override maximum value
+
+    SeeAlso:
+        :func:`find_robust_normalizers` - determine robust parameters for
+            normalize to mitigate the effect of outliers.
+
+        :func:`robust_normalize` - finds and applies robust normalization
+            parameters
+
+    References:
+        .. [WikiNorm] https://en.wikipedia.org/wiki/Normalization_(image_processing)
+
+    Example:
+        >>> raw_f = np.random.rand(8, 8)
+        >>> norm_f = normalize(raw_f)
+
+        >>> raw_f = np.random.rand(8, 8) * 100
+        >>> norm_f = normalize(raw_f)
+        >>> assert isclose(norm_f.min(), 0)
+        >>> assert isclose(norm_f.max(), 1)
+
+        >>> raw_u = (np.random.rand(8, 8) * 255).astype(np.uint8)
+        >>> norm_u = normalize(raw_u)
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> import kwimage
+        >>> arr = kwimage.grab_test_image('lowcontrast')
+        >>> arr = kwimage.ensure_float01(arr)
+        >>> norms = {}
+        >>> norms['arr'] = arr.copy()
+        >>> norms['linear'] = normalize(arr, mode='linear')
+        >>> norms['sigmoid'] = normalize(arr, mode='sigmoid')
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
+        >>> pnum_ = kwplot.PlotNums(nSubplots=len(norms))
+        >>> for key, img in norms.items():
+        >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> arr = np.array([np.inf])
+        >>> normalize(arr, mode='linear')
+        >>> normalize(arr, mode='sigmoid')
+        >>> # xdoctest: +REQUIRES(--show)
+        >>> import kwplot
+        >>> kwplot.autompl()
+        >>> kwplot.figure(fnum=1, doclf=True)
+        >>> pnum_ = kwplot.PlotNums(nSubplots=len(norms))
+        >>> for key, img in norms.items():
+        >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
+
+    Benchmark:
+        >>> # Our method is faster than standard in-line implementations for
+        >>> # uint8 and competative with in-line float32, in addition to being
+        >>> # more concise and configurable. In 3.11 all inplace variants are
+        >>> # faster.
+        >>> # xdoctest: +REQUIRES(module:kwimage)
+        >>> import timerit
+        >>> import kwimage
+        >>> import kwarray
+        >>> ti = timerit.Timerit(1000, bestof=10, verbose=2, unit='ms')
+        >>> arr = kwimage.grab_test_image('lowcontrast', dsize=(512, 512))
+        >>> #
+        >>> arr = kwimage.ensure_float01(arr)
+        >>> out = arr.copy()
+        >>> for timer in ti.reset('inline_naive(float)'):
+        >>>     with timer:
+        >>>         (arr - arr.min()) / (arr.max() - arr.min())
+        >>> #
+        >>> for timer in ti.reset('inline_faster(float)'):
+        >>>     with timer:
+        >>>         max_ = arr.max()
+        >>>         min_ = arr.min()
+        >>>         result = (arr - min_) / (max_ - min_)
+        >>> #
+        >>> for timer in ti.reset('kwarray.normalize(float)'):
+        >>>     with timer:
+        >>>         kwarray.normalize(arr)
+        >>> #
+        >>> for timer in ti.reset('kwarray.normalize(float, inplace)'):
+        >>>     with timer:
+        >>>         kwarray.normalize(arr, out=out)
+        >>> #
+        >>> arr = kwimage.ensure_uint255(arr)
+        >>> out = arr.copy()
+        >>> for timer in ti.reset('inline_naive(uint8)'):
+        >>>     with timer:
+        >>>         (arr - arr.min()) / (arr.max() - arr.min())
+        >>> #
+        >>> for timer in ti.reset('inline_faster(uint8)'):
+        >>>     with timer:
+        >>>         max_ = arr.max()
+        >>>         min_ = arr.min()
+        >>>         result = (arr - min_) / (max_ - min_)
+        >>> #
+        >>> for timer in ti.reset('kwarray.normalize(uint8)'):
+        >>>     with timer:
+        >>>         kwarray.normalize(arr)
+        >>> #
+        >>> for timer in ti.reset('kwarray.normalize(uint8, inplace)'):
+        >>>     with timer:
+        >>>         kwarray.normalize(arr, out=out)
+        >>> print('ti.rankings = {}'.format(ub.urepr(
+        >>>     ti.rankings, nl=2, align=':', precision=5)))
+
+    Ignore:
+        globals().update(xdev.get_func_kwargs(normalize))
+    """
+    if out is None:
+        out = arr.copy()
+
+    # TODO:
+    # - [ ] Parametarize new_min / new_max values
+    #     - [ ] infer from datatype
+    #     - [ ] explicitly given
+    new_min = 0.0
+    if arr.dtype.kind in ('i', 'u'):
+        # Need a floating point workspace
+        float_out = out.astype(np.float32)
+        new_max = float(np.iinfo(arr.dtype).max)
+    elif arr.dtype.kind == 'f':
+        float_out = out
+        new_max = 1.0
+    else:
+        raise TypeError(f'Normalize not implemented for {arr.dtype}')
+
+    # TODO:
+    # - [ ] Parametarize old_min / old_max strategies
+    #     - [X] explicitly given min and max
+    #     - [ ] raw-naive min and max inference
+    #     - [ ] outlier-aware min and max inference (see util_robust)
+    if min_val is not None:
+        old_min = min_val
+        float_out[float_out < min_val] = min_val
+    else:
+        try:
+            old_min = np.nanmin(float_out)
+        except ValueError:
+            old_min = 0
+
+    if max_val is not None:
+        old_max = max_val
+        float_out[float_out > max_val] = max_val
+    else:
+        try:
+            old_max = np.nanmax(float_out)
+        except ValueError:
+            old_max = max(0, old_min)
+
+    old_span = old_max - old_min
+    new_span = new_max - new_min
+
+    if mode == 'linear':
+        # linear case
+        # out = (arr - old_min) * (new_span / old_span) + new_min
+        factor = 1.0 if old_span == 0 else (new_span / old_span)
+        if old_min != 0:
+            float_out -= old_min
+    elif mode == 'sigmoid':
+        # nonlinear case
+        # out = new_span * sigmoid((arr - beta) / alpha) + new_min
+        from scipy.special import expit as sigmoid
+        if beta is None:
+            # should center the desired distribution to visualize on zero
+            beta = old_max - old_min
+
+        if alpha is None:
+            # division factor
+            # from scipy.special import logit
+            # alpha = max(abs(old_min - beta), abs(old_max - beta)) / logit(0.998)
+            # This chooses alpha such the original min/max value will be pushed
+            # towards -1 / +1.
+            alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
+
+        if isclose(alpha, 0):
+            alpha = 1
+
+        energy = float_out
+        energy -= beta
+        energy /= alpha
+        # Ideally the data of interest is roughly in the range (-6, +6)
+        float_out = sigmoid(energy, out=float_out)
+        factor = new_span
+    else:
+        raise KeyError(mode)
+
+    # Stretch / shift to the desired output range
+    if factor != 1:
+        float_out *= factor
+
+    if new_min != 0:
+        float_out += new_min
+
+    if float_out is not out:
+        final_out = float_out.astype(out.dtype)
+        out.ravel()[:] = final_out.ravel()[:]
+    return out
