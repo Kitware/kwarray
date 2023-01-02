@@ -245,6 +245,10 @@ def _gmean(a, axis=0, dtype=None, clobber=False):
     return result
 
 
+class NoSupportError(RuntimeError):
+    ...
+
+
 class RunningStats(ub.NiceRepr):
     """
     Track mean, std, min, and max values over time with constant memory.
@@ -489,6 +493,9 @@ class RunningStats(ub.NiceRepr):
         Returns:
             Dict: containing minimum, maximum, mean, std, etc..
 
+        Raises:
+            NoSupportError : if update was never called with valid data
+
         Example:
             >>> # Test to make sure summarize works across different shapes
             >>> base = np.array([1, 1, 1, 1, 0, 0, 0, 1])
@@ -531,7 +538,7 @@ class RunningStats(ub.NiceRepr):
                     return info
                 else:
                     if np.all(run.n <= 0):
-                        raise RuntimeError('No statistics have been accumulated')
+                        raise NoSupportError('No statistics have been accumulated')
                     total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
                     squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
                     maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)

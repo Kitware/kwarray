@@ -133,8 +133,8 @@ def isect_flags(arr, other):
         other (Iterable): items to check if they exist in arr
 
     Returns:
-        NDArray: booleans corresponding to arr indicating if that item is
-            also contained in other.
+        NDArray: booleans corresponding to arr indicating if any item in other
+            is also contained in other.
 
     Example:
         >>> arr = np.array([
@@ -151,7 +151,7 @@ def isect_flags(arr, other):
     """
     flags = iter_reduce_ufunc(np.logical_or, (arr == item for item in other))
     if flags is None:
-        flags = np.zeros(arr.size, dtype=bool)
+        flags = np.zeros(arr.shape, dtype=bool)
     return flags
 
 
@@ -613,207 +613,6 @@ def arglexmax(keys, multi=False):
     return _cand_idxs if multi else _cand_idxs[0]
 
 
-def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
-              min_val=None, max_val=None):
-    """
-    Rebalance signal values via contrast stretching.
-
-    By default linearly stretches array values to minimum and maximum values.
-
-    Args:
-        arr (NDArray): array to normalize, usually an image
-
-        out (NDArray | None): output array. Note, that we will create an
-            internal floating point copy for integer computations.
-
-        mode (str): either linear or sigmoid.
-
-        alpha (float): Only used if mode=sigmoid.  Division factor
-            (pre-sigmoid). If unspecified computed as:
-            ``max(abs(old_min - beta), abs(old_max - beta)) / 6.212606``.
-            Note this parameter is sensitive to if the input is a float or
-            uint8 image.
-
-        beta (float): subtractive factor (pre-sigmoid). This should be the
-            intensity of the most interesting bits of the image, i.e. bring
-            them to the center (0) of the distribution.
-            Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
-            to if the input is a float or uint8 image.
-
-        min_val: override minimum value
-
-        max_val: override maximum value
-
-    References:
-        https://en.wikipedia.org/wiki/Normalization_(image_processing)
-
-    Example:
-        >>> raw_f = np.random.rand(8, 8)
-        >>> norm_f = normalize(raw_f)
-
-        >>> raw_f = np.random.rand(8, 8) * 100
-        >>> norm_f = normalize(raw_f)
-        >>> assert isclose(norm_f.min(), 0)
-        >>> assert isclose(norm_f.max(), 1)
-
-        >>> raw_u = (np.random.rand(8, 8) * 255).astype(np.uint8)
-        >>> norm_u = normalize(raw_u)
-
-    Example:
-        >>> # xdoctest: +REQUIRES(module:kwimage)
-        >>> import kwimage
-        >>> arr = kwimage.grab_test_image('lowcontrast')
-        >>> arr = kwimage.ensure_float01(arr)
-        >>> norms = {}
-        >>> norms['arr'] = arr.copy()
-        >>> norms['linear'] = normalize(arr, mode='linear')
-        >>> norms['sigmoid'] = normalize(arr, mode='sigmoid')
-        >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwplot
-        >>> kwplot.autompl()
-        >>> kwplot.figure(fnum=1, doclf=True)
-        >>> pnum_ = kwplot.PlotNums(nSubplots=len(norms))
-        >>> for key, img in norms.items():
-        >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
-
-    Ignore:
-        # Our method is faster than standard in-line implementations.
-
-        import timerit
-        ti = timerit.Timerit(100, bestof=10, verbose=2, unit='ms')
-        arr = kwimage.grab_test_image('lowcontrast', dsize=(512, 512))
-
-        print('--- uint8 ---')
-        arr = ensure_float01(arr)
-        out = arr.copy()
-        for timer in ti.reset('naive1-float'):
-            with timer:
-                (arr - arr.min()) / (arr.max() - arr.min())
-
-        import timerit
-        for timer in ti.reset('simple-float'):
-            with timer:
-                max_ = arr.max()
-                min_ = arr.min()
-                result = (arr - min_) / (max_ - min_)
-
-        for timer in ti.reset('normalize-float'):
-            with timer:
-                normalize(arr)
-
-        for timer in ti.reset('normalize-float-inplace'):
-            with timer:
-                normalize(arr, out=out)
-
-        print('--- float ---')
-        arr = ensure_uint255(arr)
-        out = arr.copy()
-        for timer in ti.reset('naive1-uint8'):
-            with timer:
-                (arr - arr.min()) / (arr.max() - arr.min())
-
-        import timerit
-        for timer in ti.reset('simple-uint8'):
-            with timer:
-                max_ = arr.max()
-                min_ = arr.min()
-                result = (arr - min_) / (max_ - min_)
-
-        for timer in ti.reset('normalize-uint8'):
-            with timer:
-                normalize(arr)
-
-        for timer in ti.reset('normalize-uint8-inplace'):
-            with timer:
-                normalize(arr, out=out)
-
-    Ignore:
-        globals().update(xdev.get_func_kwargs(normalize))
-    """
-    if out is None:
-        out = arr.copy()
-
-    # TODO:
-    # - [ ] Parametarize new_min / new_max values
-    #     - [ ] infer from datatype
-    #     - [ ] explicitly given
-    new_min = 0.0
-    if arr.dtype.kind in ('i', 'u'):
-        # Need a floating point workspace
-        float_out = out.astype(np.float32)
-        new_max = float(np.iinfo(arr.dtype).max)
-    elif arr.dtype.kind == 'f':
-        float_out = out
-        new_max = 1.0
-    else:
-        raise NotImplementedError
-
-    # TODO:
-    # - [ ] Parametarize old_min / old_max strategies
-    #     - [X] explicitly given min and max
-    #     - [ ] raw-naive min and max inference
-    #     - [ ] outlier-aware min and max inference
-    if min_val is not None:
-        old_min = min_val
-        float_out[float_out < min_val] = min_val
-    else:
-        old_min = np.nanmin(float_out)
-
-    if max_val is not None:
-        old_max = max_val
-        float_out[float_out > max_val] = max_val
-    else:
-        old_max = np.nanmax(float_out)
-
-    old_span = old_max - old_min
-    new_span = new_max - new_min
-
-    if mode == 'linear':
-        # linear case
-        # out = (arr - old_min) * (new_span / old_span) + new_min
-        factor = 1.0 if old_span == 0 else (new_span / old_span)
-        if old_min != 0:
-            float_out -= old_min
-    elif mode == 'sigmoid':
-        # nonlinear case
-        # out = new_span * sigmoid((arr - beta) / alpha) + new_min
-        from scipy.special import expit as sigmoid
-        if beta is None:
-            # should center the desired distribution to visualize on zero
-            beta = old_max - old_min
-
-        if alpha is None:
-            # division factor
-            # from scipy.special import logit
-            # alpha = max(abs(old_min - beta), abs(old_max - beta)) / logit(0.998)
-            # This chooses alpha such the original min/max value will be pushed
-            # towards -1 / +1.
-            alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
-
-        if isclose(alpha, 0):
-            alpha = 1
-
-        energy = float_out
-        energy -= beta
-        energy /= alpha
-        # Ideally the data of interest is roughly in the range (-6, +6)
-        float_out = sigmoid(energy, out=float_out)
-        factor = new_span
-    else:
-        raise KeyError(mode)
-
-    # Stretch / shift to the desired output range
-    if factor != 1:
-        float_out *= factor
-
-    if new_min != 0:
-        float_out += new_min
-
-    if float_out is not out:
-        out[:] = float_out.astype(out.dtype)
-    return out
-
-
 # def argsort_threshold(arr, threshold=None, num_top=None, descending=False):
 #     """
 #     TODO: Cleanup
@@ -972,3 +771,9 @@ def equal_with_nan(a1, a2):
     # If they are actually the same, they should be value same xor nansame.
     flags = value_sameness ^ nan_sameness
     return flags
+
+
+# Backwards compat: TODO: replace with a getattr style
+# backwards compatibility to provide access, but warn with
+# a deprecation message if this version of normalize is used.
+from kwarray.util_robust import normalize  # NOQA

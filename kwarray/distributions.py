@@ -1022,6 +1022,9 @@ class Exponential(ContinuousDistribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
+
+    Args:
+        scale (int) : no help given. Defaults to 1.
     """
     __params__ = ub.odict([
         ('scale', Value(1, min=0)),
