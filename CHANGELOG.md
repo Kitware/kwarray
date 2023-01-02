@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.7 - Released 2023-01-02
 
+### Fixed:
+* Removed extraneous print statement in `robust_normalize`
+
 
 ## Version 0.6.6 - Released 2023-01-02
 
