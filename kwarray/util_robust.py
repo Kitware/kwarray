@@ -191,7 +191,6 @@ def _custom_quantile_extreme_estimator(data, params):
     quant_high = params['high']
     qvals = [0, quant_low, quant_mid, quant_high, 1]
     quantile_vals = np.quantile(data, qvals)
-    print('quantile_vals = {!r}'.format(quantile_vals))
 
     (quant_low_abs, quant_low_val, quant_mid_val, quant_high_val,
      quant_high_abs) = quantile_vals
