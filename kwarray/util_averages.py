@@ -26,7 +26,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
     Args:
         inputs (ArrayLike): set of values to get statistics of
         axis (int): if ``inputs`` is ndarray then this specifies the axis
-        nan (bool): report number of nan items
+        nan (bool): report number of nan items (TODO: rename to skipna)
         sum (bool): report sum of values
         extreme (bool): report min and max values
         n_extreme (bool): report extreme value frequencies

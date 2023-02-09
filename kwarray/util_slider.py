@@ -312,6 +312,14 @@ class SlidingWindow(ub.NiceRepr):
             yield center
 
 
+__devnote__ = '''
+TODO:
+    - [ ] Look at the old "add_fast" code in the netharn version and see if
+          it is worth porting. This code is kept in the dev folder in
+          ../dev/_dev_slider.py
+'''
+
+
 class Stitcher(ub.NiceRepr):
     """
     Stitches multiple possibly overlapping slices into a larger array.
@@ -319,14 +327,9 @@ class Stitcher(ub.NiceRepr):
     This is used to invert the SlidingWindow.  For semenatic segmentation the
     patches are probability chips. Overlapping chips are averaged together.
 
-    Args:
-        shape (tuple): dimensions of the large image that will be created from
-            the smaller pixels or patches.
-
-    TODO:
-        - [ ] Look at the old "add_fast" code in the netharn version and see if
-              it is worth porting. This code is kept in the dev folder in
-              ../dev/_dev_slider.py
+    SeeAlso:
+        :class:`kwarray.RunningStats` - similarly performs running means, but
+           can also track other statistics.
 
     Example:
         >>> from kwarray.util_slider import *  # NOQA
@@ -342,6 +345,40 @@ class Stitcher(ub.NiceRepr):
         ...     stitcher.add(sl, chip)
         >>> assert stitcher.weights.max() == 4, 'some parts should be processed 4 times'
         >>> recon = stitcher.finalize()
+
+    Example:
+        >>> from kwarray.util_slider import *  # NOQA
+        >>> import sys
+        >>> # Demo stitching 3 patterns where one has nans
+        >>> pat1 = np.full((32, 32), fill_value=0.2)
+        >>> pat2 = np.full((32, 32), fill_value=0.4)
+        >>> pat3 = np.full((32, 32), fill_value=0.8)
+        >>> pat1[:, 16:] = 0.6
+        >>> pat2[16:, :] = np.nan
+        >>> # Test with skipna=True
+        >>> stitcher = Stitcher(shape=(32, 64), skipna=True)
+        >>> stitcher[0:32, 0:32](pat1)
+        >>> stitcher[0:32, 16:48](pat2)
+        >>> stitcher[0:32, 33:64](pat3[:, 1:])
+        >>> final1 = stitcher.finalize()
+        >>> # Test without skipna=False
+        >>> stitcher = Stitcher(shape=(32, 64), skipna=False)
+        >>> stitcher[0:32, 0:32](pat1)
+        >>> stitcher[0:32, 16:48](pat2)
+        >>> stitcher[0:32, 33:64](pat3[:, 1:])
+        >>> final2 = stitcher.finalize()
+        >>> # Checks
+        >>> assert np.isnan(final1).sum() == 16, 'only should contain nan where no data was stiched'
+        >>> assert np.isnan(final2).sum() == 512, 'should contain nan wherever a nan was stitched'
+        >>> # xdoctest: +REQUIRES(module:kwplot)
+        >>> import kwplot
+        >>> import kwimage
+        >>> kwplot.autompl()
+        >>> kwplot.imshow(pat1, title='pat1', pnum=(3, 3, 1))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(pat2, square_shape=1), title='pat2 (has nans)', pnum=(3, 3, 2))
+        >>> kwplot.imshow(pat3, title='pat3', pnum=(3, 3, 3))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (skipna=True)', pnum=(3, 1, 2))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (skipna=False)', pnum=(3, 1, 3))
 
     Example:
         >>> # Example of weighted stitching
@@ -402,54 +439,99 @@ class Stitcher(ub.NiceRepr):
         >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
         >>>     kwplot.imshow(canvas, pnum=pnum_(), title=param_key)
     """
-    def __init__(stitcher, shape, device='numpy', dtype='float32'):
-        stitcher.shape = shape
-        stitcher.device = device
+    def __init__(self, shape, device='numpy', dtype='float32', skipna=False):
+        """
+        Args:
+            shape (tuple): dimensions of the large image that will be created from
+                the smaller pixels or patches.
+
+            device (str | int | torch.device):
+                default is 'numpy', but if given as a torch device, then
+                underlying operations will be done with torch tensors instead.
+
+            dtype (str):
+                the datatype to use in the underlying accumulator.
+
+            skipna (bool):
+                if True, check for nans and convert any to zero weight items in
+                stitching.
+        """
+        self.skipna = skipna
+        self.shape = shape
+        self.device = device
         if device == 'numpy':
-            stitcher.sums = np.zeros(shape, dtype=dtype)
-            stitcher.weights = np.zeros(shape, dtype=dtype)
+            self.sums = np.zeros(shape, dtype=dtype)
+            self.weights = np.zeros(shape, dtype=dtype)
 
-            stitcher.sumview = stitcher.sums.ravel()
-            stitcher.weightview = stitcher.weights.ravel()
+            self.sumview = self.sums.ravel()
+            self.weightview = self.weights.ravel()
         else:
-            stitcher.sums = torch.zeros(shape, device=device)
-            stitcher.weights = torch.zeros(shape, device=device)
+            self.sums = torch.zeros(shape, device=device)
+            self.weights = torch.zeros(shape, device=device)
 
-            stitcher.sumview = stitcher.sums.view(-1)
-            stitcher.weightview = stitcher.weights.view(-1)
+            self.sumview = self.sums.view(-1)
+            self.weightview = self.weights.view(-1)
+        if self.skipna:
+            if device == 'numpy':
+                self._isnan = np.isnan
+                self._any = np.any
+            else:
+                self._isnan = torch.isnan
+                self._any = torch.any
 
-    def __nice__(stitcher):
-        return str(stitcher.sums.shape)
+    def __nice__(self):
+        return str(self.sums.shape)
 
-    def add(stitcher, indices, patch, weight=None):
+    def add(self, indices, patch, weight=None):
         """
         Incorporate a new (possibly overlapping) patch or pixel using a
         weighted sum.
 
         Args:
-            indices (slice | tuple): typically a Tuple[slice] of pixels or a
-                single pixel, but this can be any numpy fancy index.
+            indices (slice | tuple | None):
+                typically a Tuple[slice] of pixels or a single pixel, but this
+                can be any numpy fancy index.
+
             patch (ndarray): data to patch into the bigger image.
+
             weight (float | ndarray): weight of this patch (default to 1.0)
         """
-        if weight is None:
-            stitcher.sums[indices] += patch
-            stitcher.weights[indices] += 1.0
-        else:
-            stitcher.sums[indices] += (patch * weight)
-            stitcher.weights[indices] += weight
+        if self.skipna:
+            mask = self._isnan(patch)
+            if self._any(mask):
+                # Detect nans, set weight and value to zero
+                if weight is None:
+                    weight = (~mask).astype(self.weights.dtype)
+                else:
+                    weight = weight * (~mask).astype(self.weights.dtype)
+                patch = patch.copy()
+                patch[mask] = 0
 
-    def average(stitcher):
+        if weight is None:
+            self.sums[indices] += patch
+            self.weights[indices] += 1.0
+        else:
+            self.sums[indices] += (patch * weight)
+            self.weights[indices] += weight
+
+    def __getitem__(self, indices):
+        """
+        Convinience function to use slice notation directly.
+        """
+        from functools import partial
+        return partial(self.add, indices)
+
+    def average(self):
         """
         Averages out contributions from overlapping adds using weighted average
 
         Returns:
             ndarray: out - the stitched image
         """
-        out = stitcher.sums / stitcher.weights
+        out = self.sums / self.weights
         return out
 
-    def finalize(stitcher, indices=None):
+    def finalize(self, indices=None):
         """
         Averages out contributions from overlapping adds
 
@@ -461,13 +543,9 @@ class Stitcher(ub.NiceRepr):
             ndarray: final - the stitched image
         """
         if indices is None:
-            final = stitcher.sums / stitcher.weights
+            final = self.sums / self.weights
         else:
-            final = stitcher.sums[indices] / stitcher.weights[indices]
-
-        # if stitcher.device != 'numpy':
-        #     final = final.cpu().numpy()
-        # final = np.nan_to_num(final)
+            final = self.sums[indices] / self.weights[indices]
         return final
 
 
