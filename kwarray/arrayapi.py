@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The ArrayAPI is a common API that works exactly the same on both torch.Tensors
 and numpy.ndarrays.

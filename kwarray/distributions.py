@@ -1136,6 +1136,10 @@ class TruncNormal(ContinuousDistribution):
         high (float): upper bound
         rng (np.random.RandomState):
 
+    References:
+        https://en.wikipedia.org/wiki/Truncated_normal_distribution
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+
     CommandLine:
         xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
 

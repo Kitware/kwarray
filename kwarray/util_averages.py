@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Currently just defines "stats_dict", which is a nice way to gather multiple
 numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
@@ -547,10 +546,8 @@ class RunningStats(ub.NiceRepr):
                         n = run.n
                     elif axis is None:
                         n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                        # n = run.n * np.prod(run.raw_total.shape)
                     else:
                         n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                        # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
 
                     info = ub.odict([
                         ('n', n),
