@@ -321,6 +321,16 @@ class RunningStats(ub.NiceRepr):
         except Exception:
             return None
 
+    def _update_from_other(run, other):
+        """
+        Combine this runner with another one.
+        """
+        run.raw_max = np.maximum(run.raw_max, other.raw_max)
+        run.raw_min = np.minimum(run.raw_min, other.raw_min)
+        run.raw_total = run.raw_total + other.raw_total
+        run.raw_squares = run.raw_squares + other.raw_squares
+        run.n = run.n + other.n
+
     def update_many(run, data, weights=1):
         """
         Assumes first data axis represents multiple observations
@@ -570,6 +580,108 @@ class RunningStats(ub.NiceRepr):
         """
         info = run.summarize(axis=ub.NoParam)
         return info
+
+
+def _combine_mean_stds(means, stds, nums, bessel_correction=True):
+    """
+    Args:
+        means (array): means[i] is the mean of the ith entry to combine
+
+        stds (array): stds[i] is the std of the ith entry to combine
+
+        nums (array): nums[i] is the number of samples in the ith entry to combine
+
+        bessel_correction (int):
+            Set to 1 to enables bessel correction to unbias the combined std
+            estimate.  Only disable if you have the true population means, or
+            you think you know what you are doing.
+
+    References:
+        https://stats.stackexchange.com/questions/55999/is-it-possible-to-find-the-combined-standard-deviation
+
+    Ignore:
+
+        # What about the case where we don't know population size of the
+        # estimates. We could treat it as a fixed number, or perhaps take the
+        # limit as n -> infinity.
+
+        import sympy
+        import sympy as sym
+        from sympy import symbols, sqrt, limit, IndexedBase, summation
+        means = IndexedBase('m')
+        stds = IndexedBase('s')
+        from sympy import Indexed, Idx, symbols
+        i = symbols('i', cls=Idx)
+        k = symbols('k', cls=Idx)
+        n = n1 = n2 = n3 = symbols('n')
+        total = n * k
+        # combo_mean = summation(means[i], (i, 1, k)) / total
+        combo_mean = symbols('C')
+
+        bessel_correction = 0
+        p1 = summation((n - bessel_correction) * stds[i], (i, 1, k))
+        p2 = summation(n * ((means[i] - combo_mean) ** 2), (i, 1, k))
+        expr = sqrt((p1 + p2) / (total - bessel_correction))
+        print(sym.pretty(expr))
+
+        # Limit doesnt directly but we can break it into parts
+        kcase = expr.subs({k: 1})
+        print(sym.pretty(kcase))
+        print(sym.pretty(sympy.simplify(kcase)))
+        # limit(kcase, n, float('inf'))
+        # limit(expr, n, float('inf'))
+
+        lim_p1 = limit(p1 / (total - 1), n, float('inf'))
+        lim_p2 = limit(p2 / (total - 1), n, float('inf'))
+        lim_expr = sym.sqrt(lim_p1 + lim_p2)
+        print(sym.pretty(lim_expr))
+
+        # lim0_p1 = limit(p1 / (total - 1), n, 0)
+        # lim0_p2 = limit(p2 / (total - 1), n, 0)
+        # lim0_expr = sym.sqrt(lim0_p1 + lim0_p2)
+        # print(sym.pretty(lim0_expr))
+
+    Example:
+        means = np.array([1.2, 3.2, 4.1])
+        stds = np.array([4.2, 0.2, 2.1])
+        nums = np.array([10, 100, 10])
+        _combine_mean_stds(means, stds, nums)
+
+        means = np.array([1, 2, 3])
+        stds = np.array([1, 2, 3])
+
+        nums = np.array([1, 1, 1]) / 3
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=True), '- .3 B')
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=False), '- .3')
+        nums = np.array([1, 1, 1])
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=True), '- 1 B')
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=False), '- 1')
+        nums = np.array([10, 10, 10])
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=True), '- 10 B')
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=False), '- 10')
+        nums = np.array([1000, 1000, 1000])
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=True), '- 1000 B')
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=False), '- 1000')
+
+        nums = None
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=True), '- inf B')
+        print(_combine_mean_stds(means, stds, nums, bessel_correction=False), '- inf')
+    """
+    if nums is None:
+        # Assume the limit as nums -> infinite
+        combo_num = None
+        combo_mean = np.average(means, weights=None)
+        numer = stds.sum() + (((means - combo_mean) ** 2)).sum()
+        denom = len(stds)
+        combo_std = np.sqrt(numer / denom)
+    else:
+        combo_num = nums.sum()
+        weights = nums / combo_num
+        combo_mean = np.average(means, weights=weights)
+        numer = ((nums - bessel_correction) * stds).sum() + (nums * ((means - combo_mean) ** 2)).sum()
+        denom = combo_num - bessel_correction
+        combo_std = np.sqrt(numer / denom)
+    return combo_mean, combo_std, combo_num
 
 if __name__ == '__main__':
     """
