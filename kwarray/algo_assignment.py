@@ -11,9 +11,6 @@ TODO:
      from this paper: https://web.eecs.umich.edu/~pettie/papers/ApproxMWM-JACM.pdf
 """
 import numpy as np
-# from distutils.version import LooseVersion
-# import scipy
-# SCIPY_GE_1_4 = LooseVersion(scipy.__version__) >= LooseVersion('1.4.0')
 
 
 def mindist_assignment(vecs1, vecs2, p=2):

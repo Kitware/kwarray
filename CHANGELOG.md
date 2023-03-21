@@ -6,18 +6,32 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.10 - Unreleased
 
+### Added
+* Added `skipna` argument to `kwarray.Sticher`
+
+### Changed
+* Allow `None` as `indices` in `kwarray.Sticher.add`
+
 
 ## Version 0.6.9 - Released 2023-02-02
+
+### Changed
+* Enhanced the values accepted by `robust_normalize` params, added strict quantile method.
+
+### Fixed
+* Robust normalize did not respect custom params when normalizing across each axis
+* Robust normalize did not respect min/max value
 
 
 ## Version 0.6.8 - Released 2023-01-11
 
-
-## Version 0.6.7 - Released 2023-01-02
-
 ### Fixed:
 * Removed extraneous print statement in `robust_normalize`
 
+## Version 0.6.7 - Released 2023-01-02
+
+### Changed:
+* Nothing, this was an accidental release.
 
 ## Version 0.6.6 - Released 2023-01-02
 

@@ -1,15 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Numpy specific extensions
 """
 import numpy as np
-
-try:
-    # The math variant only exists in Python 3+ but is faster for scalars
-    # so try and use it
-    from math import isclose
-except Exception:
-    from numpy import isclose
 
 
 def boolmask(indices, shape=None):

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A faster-than-pandas pandas-like interface to column-major data, in the case
 where the data only needs to be accessed by index.
