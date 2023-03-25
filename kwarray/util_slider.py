@@ -355,14 +355,14 @@ class Stitcher(ub.NiceRepr):
         >>> pat3 = np.full((32, 32), fill_value=0.8)
         >>> pat1[:, 16:] = 0.6
         >>> pat2[16:, :] = np.nan
-        >>> # Test with skipna=True
-        >>> stitcher = Stitcher(shape=(32, 64), skipna=True)
+        >>> # Test with nan_policy=omit
+        >>> stitcher = Stitcher(shape=(32, 64), nan_policy='omit')
         >>> stitcher[0:32, 0:32](pat1)
         >>> stitcher[0:32, 16:48](pat2)
         >>> stitcher[0:32, 33:64](pat3[:, 1:])
         >>> final1 = stitcher.finalize()
-        >>> # Test without skipna=False
-        >>> stitcher = Stitcher(shape=(32, 64), skipna=False)
+        >>> # Test without nan_policy=propogate
+        >>> stitcher = Stitcher(shape=(32, 64), nan_policy='propogate')
         >>> stitcher[0:32, 0:32](pat1)
         >>> stitcher[0:32, 16:48](pat2)
         >>> stitcher[0:32, 33:64](pat3[:, 1:])
@@ -377,8 +377,8 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(pat1, title='pat1', pnum=(3, 3, 1))
         >>> kwplot.imshow(kwimage.nodata_checkerboard(pat2, square_shape=1), title='pat2 (has nans)', pnum=(3, 3, 2))
         >>> kwplot.imshow(pat3, title='pat3', pnum=(3, 3, 3))
-        >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (skipna=True)', pnum=(3, 1, 2))
-        >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (skipna=False)', pnum=(3, 1, 3))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (nan_policy=omit)', pnum=(3, 1, 2))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propogate)', pnum=(3, 1, 3))
 
     Example:
         >>> # Example of weighted stitching
@@ -439,7 +439,7 @@ class Stitcher(ub.NiceRepr):
         >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
         >>>     kwplot.imshow(canvas, pnum=pnum_(), title=param_key)
     """
-    def __init__(self, shape, device='numpy', dtype='float32', skipna=False):
+    def __init__(self, shape, device='numpy', dtype='float32', nan_policy='propogate'):
         """
         Args:
             shape (tuple): dimensions of the large image that will be created from
@@ -452,11 +452,11 @@ class Stitcher(ub.NiceRepr):
             dtype (str):
                 the datatype to use in the underlying accumulator.
 
-            skipna (bool):
-                if True, check for nans and convert any to zero weight items in
+            nan_policy (str):
+                if omit, check for nans and convert any to zero weight items in
                 stitching.
         """
-        self.skipna = skipna
+        self.nan_policy = nan_policy
         self.shape = shape
         self.device = device
         if device == 'numpy':
@@ -471,13 +471,15 @@ class Stitcher(ub.NiceRepr):
 
             self.sumview = self.sums.view(-1)
             self.weightview = self.weights.view(-1)
-        if self.skipna:
+        if self.nan_policy in {'omit', 'raise'}:
             if device == 'numpy':
                 self._isnan = np.isnan
                 self._any = np.any
             else:
                 self._isnan = torch.isnan
                 self._any = torch.any
+        elif self.nan_policy != 'propogate':
+            raise ValueError(self.nan_policy)
 
     def __nice__(self):
         return str(self.sums.shape)
@@ -496,7 +498,7 @@ class Stitcher(ub.NiceRepr):
 
             weight (float | ndarray): weight of this patch (default to 1.0)
         """
-        if self.skipna:
+        if self.nan_policy == 'omit':
             mask = self._isnan(patch)
             if self._any(mask):
                 # Detect nans, set weight and value to zero
@@ -506,6 +508,10 @@ class Stitcher(ub.NiceRepr):
                     weight = weight * (~mask).astype(self.weights.dtype)
                 patch = patch.copy()
                 patch[mask] = 0
+        elif self.nan_policy == 'raise':
+            mask = self._isnan(patch)
+            if self._any(mask):
+                raise ValueError('nan_policy is raise')
 
         if weight is None:
             self.sums[indices] += patch

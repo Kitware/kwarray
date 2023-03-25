@@ -486,9 +486,9 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
             Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
             to if the input is a float or uint8 image.
 
-        min_val: override minimum value
+        min_val: inputs lower than this minimum value are clipped
 
-        max_val: override maximum value
+        max_val: inputs higher than this maximum value are clipped.
 
     SeeAlso:
         :func:`find_robust_normalizers` - determine robust parameters for
@@ -624,7 +624,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
     #     - [ ] outlier-aware min and max inference (see util_robust)
     if min_val is not None:
         old_min = min_val
-        float_out[float_out < min_val] = min_val
+        np.maximum(float_out, min_val, out=float_out)
+        # float_out[float_out < min_val] = min_val
     else:
         try:
             old_min = np.nanmin(float_out)
@@ -633,7 +634,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
     if max_val is not None:
         old_max = max_val
-        float_out[float_out > max_val] = max_val
+        np.minimum(float_out, max_val, out=float_out)
+        # float_out[float_out > max_val] = max_val
     else:
         try:
             old_max = np.nanmax(float_out)
@@ -665,8 +667,11 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
 
-        if isclose(alpha, 0):
-            alpha = 1
+        try:
+            if isclose(alpha, 0):
+                alpha = 1
+        except TypeError:
+            alpha = alpha + np.isclose(alpha, 0)
 
         energy = float_out
         energy -= beta

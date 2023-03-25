@@ -7,10 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## Version 0.6.10 - Unreleased
 
 ### Added
-* Added `skipna` argument to `kwarray.Sticher`
+* Added `nan_policy` argument to `kwarray.Sticher`
+* Added `array_equal` to ArrayAPI
 
 ### Changed
 * Allow `None` as `indices` in `kwarray.Sticher.add`
+* Change `nan_behavior` to `nan_policy` in `kwarray.RunningStats`
 
 
 ## Version 0.6.9 - Released 2023-02-02
