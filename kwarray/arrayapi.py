@@ -1461,7 +1461,7 @@ class ArrayAPI(object):
     any = _apimethod('any', func_type='data_func')
     all = _apimethod('all', func_type='data_func')
 
-    array_equal = _apimethod('array_equal', func_type='data_func')
+    array_equal = _apimethod('array_equal')
 
     log2 = _apimethod('log2', func_type='data_func')
     log = _apimethod('log', func_type='data_func')

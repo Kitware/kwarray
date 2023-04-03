@@ -14,6 +14,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Allow `None` as `indices` in `kwarray.Sticher.add`
 * Change `nan_behavior` to `nan_policy` in `kwarray.RunningStats`
 
+### Fixed
+* `robust_normalize` now preserves masked arrays.
+
 
 ## Version 0.6.9 - Released 2023-02-02
 

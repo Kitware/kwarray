@@ -297,6 +297,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
             considered nodata.  Mutually exclusive with ``nodata`` argument.
             A mask value of 1 indicates a VALID pixel. A mask value of 0
             indicates an INVALID pixel.
+            Note this is the opposite of a masked array.
 
     Returns:
         ndarray | Tuple[ndarray, Any]:
@@ -399,6 +400,12 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         if return_info:
             return final, infos_to_return
 
+    is_masked = isinstance(imdata, np.ma.MaskedArray)
+    if is_masked:
+        if mask is None:
+            mask = ~imdata.mask
+        imdata = imdata.data
+
     if imdata.dtype.kind == 'f':
         if mask is None:
             mask = ~np.isnan(imdata)
@@ -422,6 +429,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         result = np.where(mask, imdata_normalized, imdata)
     else:
         result = imdata_normalized
+
+    if is_masked:
+        result = np.ma.MaskedArray(result, ~mask)
 
     if return_info:
         return result, normalizer
