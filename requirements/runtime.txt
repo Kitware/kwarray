@@ -1,4 +1,4 @@
-ubelt >= 1.2.1
+ubelt >= 1.2.3
 
 # tensorflow requires 1.19.3
 # xdev availpkg numpy
