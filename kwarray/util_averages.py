@@ -302,7 +302,7 @@ class RunningStats(ub.NiceRepr):
                 nan_policy = nan_behavior
                 ub.schedule_deprecation(
                     'kwarray', 'nan_policy', 'use nan_policy instead',
-                    deprecate='0.6.11', error='0.7.0', remove='0.8.0')
+                    deprecate='0.6.10', error='0.7.0', remove='0.8.0')
             if len(kwargs):
                 raise ValueError(f'Unsupported arguments: {list(kwargs.keys())}')
 
