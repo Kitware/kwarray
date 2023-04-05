@@ -4,17 +4,39 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.9 - Unreleased
+## Version 0.6.10 - Unreleased
+
+### Added
+* Added `nan_policy` argument to `kwarray.Sticher`
+* Added `array_equal` to ArrayAPI
+
+### Changed
+* Allow `None` as `indices` in `kwarray.Sticher.add`
+* Change `nan_behavior` to `nan_policy` in `kwarray.RunningStats`
+
+### Fixed
+* `robust_normalize` now preserves masked arrays.
+
+
+## Version 0.6.9 - Released 2023-02-02
+
+### Changed
+* Enhanced the values accepted by `robust_normalize` params, added strict quantile method.
+
+### Fixed
+* Robust normalize did not respect custom params when normalizing across each axis
+* Robust normalize did not respect min/max value
 
 
 ## Version 0.6.8 - Released 2023-01-11
 
-
-## Version 0.6.7 - Released 2023-01-02
-
 ### Fixed:
 * Removed extraneous print statement in `robust_normalize`
 
+## Version 0.6.7 - Released 2023-01-02
+
+### Changed:
+* Nothing, this was an accidental release.
 
 ## Version 0.6.6 - Released 2023-01-02
 

@@ -112,6 +112,8 @@ def test_numpy_torch_compat():
             'pad',
             'dtype_kind',
             'clip',
+
+            'array_equal',
         }
 
         if arrayapi._TORCH_LT_1_7_0:

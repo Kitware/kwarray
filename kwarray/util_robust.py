@@ -34,7 +34,8 @@ def find_robust_normalizers(data, params='auto'):
 
                 extrema (str):
                     The method for determening what the extrama are.
-                    Can be "custom-quantile" for an IQR-like method.
+                    Can be "quantile" for strict quantile clipping
+                    Can be "custom-quantile" for an IQR-like adjusted quantile method.
                     Can be "tukey" or "IQR" for an exact IQR method.
 
                 low (float): This is the low quantile for likely inliers.
@@ -122,6 +123,10 @@ def find_robust_normalizers(data, params='auto'):
         if isinstance(params, str):
             if params == 'auto':
                 params = {}
+            elif params == 'sigmoid':
+                params = {'scaling': 'sigmoid'}
+            elif params == 'linear':
+                params = {'scaling': 'linear'}
             elif params in {'tukey', 'iqr'}:
                 params = {
                     'extrema': 'tukey',
@@ -137,13 +142,16 @@ def find_robust_normalizers(data, params='auto'):
         # TODO:
         # https://github.com/derekbeaton/OuRS
         # https://en.wikipedia.org/wiki/Feature_scaling
-        if params['extrema'] == 'tukey':
+        if params['extrema'] in {'tukey', 'iqr'}:
             fense_extremes = _tukey_quantile_fence(data)
+        elif params['extrema'] in {'tukey-clip', 'iqr-clip'}:
+            fense_extremes = _tukey_quantile_fence(data)
+        elif params['extrema'] == 'quantile':
+            fense_extremes = _quantile_extreme_estimator(data, params)
         elif params['extrema'] == 'custom-quantile':
             fense_extremes = _custom_quantile_extreme_estimator(data, params)
         else:
             raise KeyError(params['extrema'])
-
         min_val, mid_val, max_val = fense_extremes
 
         beta = mid_val
@@ -165,7 +173,7 @@ def find_robust_normalizers(data, params='auto'):
     return normalizer
 
 
-def _tukey_quantile_fence(data):
+def _tukey_quantile_fence(data, clip=False):
     """
     One might wonder where the 1.5 in the above interval comes from -- Paul
     Velleman, a statistician at Cornell University, was a student of John
@@ -182,10 +190,31 @@ def _tukey_quantile_fence(data):
     iqr = q3 - q1
     fence_lower = q1 - 1.5 * iqr
     fence_upper = q1 + 1.5 * iqr
+    if clip:
+        # ensure fences are clipped to max/min values.
+        min_ = data.min()
+        max_ = data.max()
+        fence_lower = max(fence_lower, min_)
+        fence_upper = min(fence_upper, max_)
     return fence_lower, q2, fence_upper
 
 
+def _quantile_extreme_estimator(data, params):
+    # Simple quantile
+    quant_low = params['low']
+    quant_mid = params['mid']
+    quant_high = params['high']
+    qvals = [quant_low, quant_mid, quant_high]
+    quantile_vals = np.quantile(data, qvals)
+    (quant_low_val, quant_mid_val, quant_high_val) = quantile_vals
+    min_val = quant_low_val
+    max_val = quant_high_val
+    mid_val = quant_mid_val
+    return (min_val, mid_val, max_val)
+
+
 def _custom_quantile_extreme_estimator(data, params):
+    # Quantile with postprocessing
     quant_low = params['low']
     quant_mid = params['mid']
     quant_high = params['high']
@@ -250,8 +279,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
             heuristic.
 
         params (str | dict):
-            can contain keys, low, high, or center
-            e.g. {'low': 0.1, 'center': 0.8, 'high': 0.9}
+            Can contain keys, low, high, or center, scaling, extrema
+            e.g. {'low': 0.1, 'center': 0.8, 'high': 0.9, 'scaling': 'sigmoid'}
+            See documentation in :func:`find_robust_normalizers`.
 
         axis (None | int):
             The axis to normalize over, if unspecified, normalize jointly
@@ -267,9 +297,12 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
             considered nodata.  Mutually exclusive with ``nodata`` argument.
             A mask value of 1 indicates a VALID pixel. A mask value of 0
             indicates an INVALID pixel.
+            Note this is the opposite of a masked array.
 
     Returns:
-        ndarray: a floating point array with values between 0 and 1.
+        ndarray | Tuple[ndarray, Any]:
+            a floating point array with values between 0 and 1.
+            if return_info is specified, also returns extra data
 
     Note:
         This is effectively a combination of :func:`find_robust_normalizers`
@@ -337,23 +370,41 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
     if axis is not None:
         # Hack, normalize each channel individually. This could
         # be implementd more effciently.
-        assert not return_info
         reorg = imdata.swapaxes(0, axis)
+        if return_info:
+            infos_to_return = []
+            ...
         if mask is None:
             parts = []
             for item in reorg:
-                part = robust_normalize(item, nodata=nodata, axis=None)
+                part = robust_normalize(item, nodata=nodata, params=params,
+                                        dtype=dtype, axis=None,
+                                        return_info=return_info)
+                if return_info:
+                    infos_to_return.append(part[1])
+                    part = part[0]
                 parts.append(part[None, :])
         else:
             reorg_mask = mask.swapaxes(0, axis)
             parts = []
             for item, item_mask in zip(reorg, reorg_mask):
-                part = robust_normalize(item, nodata=nodata, axis=None,
-                                           mask=item_mask)
+                part = robust_normalize(item, nodata=nodata, params=params,
+                                        dtype=dtype, axis=None, mask=item_mask,
+                                        return_info=return_info)
+                if return_info:
+                    infos_to_return.append(part[1])
+                    part = part[0]
                 parts.append(part[None, :])
         recomb = np.concatenate(parts, axis=0)
         final = recomb.swapaxes(0, axis)
-        return final
+        if return_info:
+            return final, infos_to_return
+
+    is_masked = isinstance(imdata, np.ma.MaskedArray)
+    if is_masked:
+        if mask is None:
+            mask = ~imdata.mask
+        imdata = imdata.data
 
     if imdata.dtype.kind == 'f':
         if mask is None:
@@ -379,6 +430,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
     else:
         result = imdata_normalized
 
+    if is_masked:
+        result = np.ma.MaskedArray(result, ~mask)
+
     if return_info:
         return result, normalizer
     else:
@@ -399,6 +453,8 @@ def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy
         imdata_valid_normalized = kwarray.normalize(
             imdata_valid.astype(dtype, copy=copy), mode=normalizer['mode'],
             beta=normalizer['beta'], alpha=normalizer['alpha'],
+            min_val=normalizer.get('min_val', None),
+            max_val=normalizer.get('max_val', None),
         )
         if mask is None:
             imdata_normalized = imdata_valid_normalized
@@ -440,9 +496,9 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
             Defaults to ``(max - min) / 2``.  Note this parameter is sensitive
             to if the input is a float or uint8 image.
 
-        min_val: override minimum value
+        min_val: inputs lower than this minimum value are clipped
 
-        max_val: override maximum value
+        max_val: inputs higher than this maximum value are clipped.
 
     SeeAlso:
         :func:`find_robust_normalizers` - determine robust parameters for
@@ -578,7 +634,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
     #     - [ ] outlier-aware min and max inference (see util_robust)
     if min_val is not None:
         old_min = min_val
-        float_out[float_out < min_val] = min_val
+        np.maximum(float_out, min_val, out=float_out)
+        # float_out[float_out < min_val] = min_val
     else:
         try:
             old_min = np.nanmin(float_out)
@@ -587,7 +644,8 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
     if max_val is not None:
         old_max = max_val
-        float_out[float_out > max_val] = max_val
+        np.minimum(float_out, max_val, out=float_out)
+        # float_out[float_out > max_val] = max_val
     else:
         try:
             old_max = np.nanmax(float_out)
@@ -619,8 +677,11 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
             # towards -1 / +1.
             alpha = max(abs(old_min - beta), abs(old_max - beta)) / 6.212606
 
-        if isclose(alpha, 0):
-            alpha = 1
+        try:
+            if isclose(alpha, 0):
+                alpha = 1
+        except TypeError:
+            alpha = alpha + np.isclose(alpha, 0)
 
         energy = float_out
         energy -= beta

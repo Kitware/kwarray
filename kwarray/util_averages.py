@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Currently just defines "stats_dict", which is a nice way to gather multiple
 numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
@@ -26,7 +25,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
     Args:
         inputs (ArrayLike): set of values to get statistics of
         axis (int): if ``inputs`` is ndarray then this specifies the axis
-        nan (bool): report number of nan items
+        nan (bool): report number of nan items (TODO: rename to skipna)
         sum (bool): report sum of values
         extreme (bool): report min and max values
         n_extreme (bool): report extreme value frequencies
@@ -281,35 +280,47 @@ class RunningStats(ub.NiceRepr):
         >>> print('alldim-ave(k=0) = ' + ub.repr2(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
         """
 
-    def __init__(run, nan_behavior='ignore', check_weights=True):
+    def __init__(run, nan_policy='omit', check_weights=True, **kwargs):
         """
         Args:
-            nan_behavior (str): indicates how we will handle nan values
-               * if "ignore" - set weights of nan items to zero.
-               * if "propogate" - propogate nans (old behavior).
+            nan_policy (str): indicates how we will handle nan values
+               * if "omit" - set weights of nan items to zero.
+               * if "propogate" - propogate nans.
+               * if "raise" - then raise a ValueError if nans are given.
 
            check_weights (bool):
                if True, we check the weights for zeros (which can also
                implicitly occur when data has nans). Disabling this check will
                result in faster computation, but it is your responsibility to
                ensure all data passed to update is valid.
-
         """
+        if len(kwargs):
+            if 'nan_behavior' in kwargs:
+                nan_behavior = kwargs.pop('nan_behavior', None)
+                if nan_behavior == 'ignore':
+                    nan_behavior = 'omit'
+                nan_policy = nan_behavior
+                ub.schedule_deprecation(
+                    'kwarray', 'nan_policy', 'use nan_policy instead',
+                    deprecate='0.6.10', error='0.7.0', remove='0.8.0')
+            if len(kwargs):
+                raise ValueError(f'Unsupported arguments: {list(kwargs.keys())}')
+
         run.raw_max = -np.inf
         run.raw_min = np.inf
         run.raw_total = 0
         run.raw_squares = 0
         run.n = 0
-        run.nan_behavior = nan_behavior
+        run.nan_policy = nan_policy
         run.check_weights = check_weights
-        if run.nan_behavior not in {'ignore', 'propogate'}:
-            if run.nan_behavior == 'ignore':
+        if run.nan_policy not in {'omit', 'propogate'}:
+            if run.nan_policy == 'omit':
                 if run.check_weights:
                     raise ValueError(
                         'To prevent foot-shooting, check weights must be '
-                        'initialized to True when nan behavior is ignore'
+                        'initialized to True when nan_policy is omit'
                     )
-            raise KeyError(run.nan_behavior)
+            raise KeyError(run.nan_policy)
 
     def __nice__(self):
         return '{}'.format(self.shape)
@@ -320,6 +331,16 @@ class RunningStats(ub.NiceRepr):
             return run.raw_total.shape
         except Exception:
             return None
+
+    def _update_from_other(run, other):
+        """
+        Combine this runner with another one.
+        """
+        run.raw_max = np.maximum(run.raw_max, other.raw_max)
+        run.raw_min = np.minimum(run.raw_min, other.raw_min)
+        run.raw_total = run.raw_total + other.raw_total
+        run.raw_squares = run.raw_squares + other.raw_squares
+        run.n = run.n + other.n
 
     def update_many(run, data, weights=1):
         """
@@ -360,10 +381,13 @@ class RunningStats(ub.NiceRepr):
             >>> assert np.all(run.current()['n'] == 37)
         """
         data = np.asarray(data)
-        if run.nan_behavior == 'ignore':
+        if run.nan_policy == 'omit':
             weights = weights * (~np.isnan(data)).astype(float)
-        elif run.nan_behavior == 'propogate':
+        elif run.nan_policy == 'propogate':
             ...
+        elif run.nan_policy == 'raise':
+            if np.any(np.isnan(data)):
+                raise ValueError('nan policy is raise')
         else:
             raise AssertionError('should not be here')
         has_ignore_items = False
@@ -429,10 +453,13 @@ class RunningStats(ub.NiceRepr):
             >>> print('summary(axis=1) = {}'.format(ub.repr2(run.summarize(axis=1), nl=1)))
             >>> print('summary(axis=0) = {}'.format(ub.repr2(run.summarize(axis=0), nl=1)))
         """
-        if run.nan_behavior == 'ignore':
+        if run.nan_policy == 'omit':
             weights = weights * (~np.isnan(data)).astype(float)
-        elif run.nan_behavior == 'propogate':
+        elif run.nan_policy == 'propogate':
             ...
+        elif run.nan_policy == 'raise':
+            if np.any(np.isnan(data)):
+                raise ValueError('nan policy is raise')
         else:
             raise AssertionError('should not be here')
 
@@ -547,10 +574,8 @@ class RunningStats(ub.NiceRepr):
                         n = run.n
                     elif axis is None:
                         n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                        # n = run.n * np.prod(run.raw_total.shape)
                     else:
                         n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
-                        # n = run.n * np.prod(np.take(run.raw_total.shape, axis))
 
                     info = ub.odict([
                         ('n', n),
@@ -570,6 +595,249 @@ class RunningStats(ub.NiceRepr):
         """
         info = run.summarize(axis=ub.NoParam)
         return info
+
+
+def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
+                       bessel=True):
+    r"""
+    Args:
+        means (array): means[i] is the mean of the ith entry to combine
+
+        stds (array): stds[i] is the std of the ith entry to combine
+
+        nums (array | None):
+            nums[i] is the number of samples in the ith entry to combine.
+            if None, assumes sample sizes are infinite.
+
+        axis (int | Tuple[int] | None):
+            axis to combine the statistics over
+
+        keepdims (bool):
+            if True return arrays with the same number of dimensions they were
+            given in.
+
+        bessel (int):
+            Set to 1 to enables bessel correction to unbias the combined std
+            estimate.  Only disable if you have the true population means, or
+            you think you know what you are doing.
+
+    References:
+        https://stats.stackexchange.com/questions/55999/is-it-possible-to-find-the-combined-standard-deviation
+
+    Sympy:
+        >>> # xdoctest: +REQUIRES(env:SHOW_SYMPY)
+        >>> # What about the case where we don't know population size of the
+        >>> # estimates. We could treat it as a fixed number, or perhaps take the
+        >>> # limit as n -> infinity.
+        >>> import sympy
+        >>> import sympy as sym
+        >>> from sympy import symbols, sqrt, limit, IndexedBase, summation
+        >>> from sympy import Indexed, Idx, symbols
+        >>> means = IndexedBase('m')
+        >>> stds = IndexedBase('s')
+        >>> nums = IndexedBase('n')
+        >>> i = symbols('i', cls=Idx)
+        >>> k = symbols('k', cls=Idx)
+        >>> #
+        >>> combo_mean = symbols('C')
+        >>> #
+        >>> bessel = 1
+        >>> total = summation(nums[i], (i, 1, k))
+        >>> combo_mean_expr = summation(nums[i] * means[i], (i, 1, k)) / total
+        >>> p1 = summation((nums[i] - bessel) * stds[i], (i, 1, k))
+        >>> p2 = summation(nums[i] * ((means[i] - combo_mean) ** 2), (i, 1, k))
+        >>> #
+        >>> combo_std_expr = sqrt((p1 + p2) / (total - bessel))
+        >>> print('------------------------------------')
+        >>> print('General Combined Mean / Std Formulas')
+        >>> print('C = combined mean')
+        >>> print('S = combined std')
+        >>> print('------------------------------------')
+        >>> print(ub.hzcat(['C = ', sym.pretty(combo_mean_expr, use_unicode=True, use_unicode_sqrt_char=True)]))
+        >>> print(ub.hzcat(['S = ', sym.pretty(combo_std_expr, use_unicode=True, use_unicode_sqrt_char=True)]))
+        >>> print('')
+        >>> print('---------')
+        >>> print('Now assuming all sample sizes are the same constant value N')
+        >>> print('---------')
+        >>> # Now assume all n[i] = N (i.e. a constant value)
+        >>> N = symbols('N')
+        >>> combo_mean_const_n_expr = combo_mean_expr.copy().xreplace({nums[i]: N})
+        >>> combo_std_const_n_expr = combo_std_expr.copy().xreplace({nums[i]: N})
+        >>> p1_const_n = p1.copy().xreplace({nums[i]: N})
+        >>> p2_const_n = p2.copy().xreplace({nums[i]: N})
+        >>> total_const_n = total.copy().xreplace({nums[i]: N})
+        >>> #
+        >>> print(ub.hzcat(['C = ', sym.pretty(combo_mean_const_n_expr, use_unicode=True, use_unicode_sqrt_char=True)]))
+        >>> print(ub.hzcat(['S = ', sym.pretty(combo_std_const_n_expr, use_unicode=True, use_unicode_sqrt_char=True)]))
+        >>> #
+        >>> print('')
+        >>> print('---------')
+        >>> print('Take the limit as N -> infinity')
+        >>> print('---------')
+        >>> #
+        >>> # Limit doesnt directly but we can break it into parts
+        >>> lim_C = limit(combo_mean_const_n_expr, N, float('inf'))
+        >>> lim_p1 = limit(p1_const_n / (total_const_n - bessel), N, float('inf'))
+        >>> lim_p2 = limit(p2_const_n / (total_const_n - bessel), N, float('inf'))
+        >>> lim_expr = sym.sqrt(lim_p1 + lim_p2)
+        >>> print(ub.hzcat(['lim(C, N->inf) = ', sym.pretty(lim_C)]))
+        >>> print(ub.hzcat(['lim(S, N->inf) = ', sym.pretty(lim_expr)]))
+
+    Ignore:
+        # lim0_p1 = limit(p1 / (total - 1), n, 0)
+        # lim0_p2 = limit(p2 / (total - 1), n, 0)
+        # lim0_expr = sym.sqrt(lim0_p1 + lim0_p2)
+        # print(sym.pretty(lim0_expr))
+
+        kcase = combo_std_expr.subs({k: 2})
+        print(sym.pretty(kcase))
+        print(sym.pretty(sympy.simplify(kcase)))
+        limit(kcase, N, float('inf'))
+        limit(combo_std_expr, N, float('inf'))
+
+    Example:
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> from kwarray.util_averages import _combine_mean_stds
+        >>> means = np.array([1.2, 3.2, 4.1])
+        >>> stds = np.array([4.2, 0.2, 2.1])
+        >>> nums = np.array([10, 100, 10])
+        >>> _combine_mean_stds(means, stds, nums)
+        >>> means = np.array([1, 2, 3])
+        >>> stds = np.array([1, 2, 3])
+        >>> #
+        >>> nums = np.array([1, 1, 1]) / 3
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=True), '- .3 B')
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=False), '- .3')
+        >>> nums = np.array([1, 1, 1])
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=True), '- 1 B')
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=False), '- 1')
+        >>> nums = np.array([10, 10, 10])
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=True), '- 10 B')
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=False), '- 10')
+        >>> nums = np.array([1000, 1000, 1000])
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=True), '- 1000 B')
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=False), '- 1000')
+        >>> #
+        >>> nums = None
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=True), '- inf B')
+        >>> print(_combine_mean_stds(means, stds, nums, bessel=False), '- inf')
+
+    Example:
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> from kwarray.util_averages import _combine_mean_stds
+        >>> means = np.stack([np.array([1.2, 3.2, 4.1])] * 100, axis=0)
+        >>> stds = np.stack([np.array([4.2, 0.2, 2.1])] * 100, axis=0)
+        >>> nums = np.stack([np.array([10, 100, 10])] * 100, axis=0)
+        >>> cm1, cs1, _ = _combine_mean_stds(means, stds, nums, axis=None)
+        >>> print('combo_mean = {}'.format(ub.urepr(cm1, nl=1)))
+        >>> print('combo_std  = {}'.format(ub.urepr(cs1, nl=1)))
+        >>> means = np.stack([np.array([1.2, 3.2, 4.1])] * 1, axis=0)
+        >>> stds = np.stack([np.array([4.2, 0.2, 2.1])] * 1, axis=0)
+        >>> nums = np.stack([np.array([10, 100, 10])] * 1, axis=0)
+        >>> cm2, cs2, _ = _combine_mean_stds(means, stds, nums, axis=None)
+        >>> print('combo_mean = {}'.format(ub.urepr(cm2, nl=1)))
+        >>> print('combo_std  = {}'.format(ub.urepr(cs2, nl=1)))
+        >>> means = np.stack([np.array([1.2, 3.2, 4.1])] * 5, axis=0)
+        >>> stds = np.stack([np.array([4.2, 0.2, 2.1])] * 5, axis=0)
+        >>> nums = np.stack([np.array([10, 100, 10])] * 5, axis=0)
+        >>> cm3, cs3, combo_num = _combine_mean_stds(means, stds, nums, axis=1)
+        >>> print('combo_mean = {}'.format(ub.urepr(cm3, nl=1)))
+        >>> print('combo_std  = {}'.format(ub.urepr(cs3, nl=1)))
+        >>> assert np.allclose(cm1, cm2) and np.allclose(cm2,  cm3)
+        >>> assert not np.allclose(cs1, cs2)
+        >>> assert np.allclose(cs2, cs3)
+
+    Example:
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> from kwarray.util_averages import _combine_mean_stds
+        >>> means = np.random.rand(2, 3, 5, 7)
+        >>> stds = np.random.rand(2, 3, 5, 7)
+        >>> nums = (np.random.rand(2, 3, 5, 7) * 10) + 1
+        >>> cm, cs, cn = _combine_mean_stds(means, stds, nums, axis=1, keepdims=1)
+        >>> assert cm.shape == cs.shape == cn.shape
+        >>> print(f'cm.shape={cm.shape}')
+        >>> cm, cs, cn = _combine_mean_stds(means, stds, nums, axis=(0, 2), keepdims=1)
+        >>> assert cm.shape == cs.shape == cn.shape
+        >>> print(f'cm.shape={cm.shape}')
+        >>> cm, cs, cn = _combine_mean_stds(means, stds, nums, axis=(1, 3), keepdims=1)
+        >>> assert cm.shape == cs.shape == cn.shape
+        >>> print(f'cm.shape={cm.shape}')
+        >>> cm, cs, cn = _combine_mean_stds(means, stds, nums, axis=None)
+        >>> assert cm.shape == cs.shape == cn.shape
+        >>> print(f'cm.shape={cm.shape}')
+        cm.shape=(2, 1, 5, 7)
+        cm.shape=(1, 3, 1, 7)
+        cm.shape=(2, 1, 5, 1)
+        cm.shape=()
+    """
+    if nums is None:
+        # Assume the limit as nums -> infinite
+        combo_num = None
+        combo_mean = np.average(means, weights=None, axis=axis)
+        combo_mean = _postprocess_keepdims(means, combo_mean, axis)
+        numer_p1 = stds.sum(axis=axis, keepdims=1)
+        numer_p2 = (((means - combo_mean) ** 2)).sum(axis=axis, keepdims=1)
+        numer = numer_p1 + numer_p2
+        denom = len(stds)
+        combo_std = np.sqrt(numer / denom)
+    else:
+        combo_num = nums.sum(axis=axis, keepdims=1)
+        weights = nums / combo_num
+        combo_mean = np.average(means, weights=weights, axis=axis)
+        combo_mean = _postprocess_keepdims(means, combo_mean, axis)
+        numer_p1 = ((nums - bessel) * stds).sum(axis=axis, keepdims=1)
+        numer_p2 = (nums * ((means - combo_mean) ** 2)).sum(axis=axis, keepdims=1)
+        numer = numer_p1 + numer_p2
+        denom = combo_num - bessel
+        combo_std = np.sqrt(numer / denom)
+
+    if not keepdims:
+        indexer = _no_keepdim_indexer(combo_mean, axis)
+        combo_mean = combo_mean[indexer]
+        combo_std = combo_std[indexer]
+        if combo_num is not None:
+            combo_num = combo_num[indexer]
+
+    return combo_mean, combo_std, combo_num
+
+
+def _no_keepdim_indexer(result, axis):
+    """
+    Computes an indexer to postprocess a result with keepdims=True
+    that will modify the result as if keepdims=False
+    """
+    if axis is None:
+        indexer = [0] * len(result.shape)
+    else:
+        indexer = [slice(None)] * len(result.shape)
+        if isinstance(axis, (list, tuple)):
+            for a in axis:
+                indexer[a] = 0
+        else:
+            indexer[axis] = 0
+    indexer = tuple(indexer)
+    return indexer
+
+
+def _postprocess_keepdims(original, result, axis):
+    """
+    Can update the result of a function that does not support keepdims to look
+    as if keepdims was supported.
+    """
+    # Newer versions of numpy have keepdims on more functions
+    if axis is not None:
+        expander = [slice(None)] * len(original.shape)
+        if isinstance(axis, (list, tuple)):
+            for a in axis:
+                expander[a] = None
+        else:
+            expander[axis] = None
+        result = result[tuple(expander)]
+    else:
+        expander = [None] * len(original.shape)
+        result = np.array(result)[tuple(expander)]
+    return result
+
 
 if __name__ == '__main__':
     """

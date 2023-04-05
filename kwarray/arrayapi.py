@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The ArrayAPI is a common API that works exactly the same on both torch.Tensors
 and numpy.ndarrays.
@@ -783,6 +782,46 @@ class TorchImpls(object):
                 data2 = data2.to(dtype)
         return torch.min(data1, data2, out=out)
 
+    @_torchmethod
+    def array_equal(data1, data2, equal_nan=False) -> bool:
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = data1 + 1
+            >>> result1 = TorchImpls.array_equal(data1, data2)
+            >>> result2 = NumpyImpls.array_equal(data1.numpy(), data2.numpy())
+            >>> result3 = TorchImpls.array_equal(data1, data1)
+            >>> result4 = NumpyImpls.array_equal(data1.numpy(), data1.numpy())
+            >>> assert result1 is False
+            >>> assert result2 is False
+            >>> assert result3 is True
+            >>> assert result4 is True
+
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> data1 = torch.rand(5, 5)
+            >>> data1[0] = np.nan
+            >>> data2 = data1
+            >>> result1 = TorchImpls.array_equal(data1, data2)
+            >>> result2 = NumpyImpls.array_equal(data1.numpy(), data2.numpy())
+            >>> result3 = TorchImpls.array_equal(data1, data2, equal_nan=True)
+            >>> result4 = NumpyImpls.array_equal(data1.numpy(), data2.numpy(), equal_nan=True)
+            >>> assert result1 is False
+            >>> assert result2 is False
+            >>> assert result3 is True
+            >>> assert result4 is True
+        """
+        if equal_nan:
+            val_flags = torch.eq(data1, data2)
+            nan_flags = (data1.isnan() & data2.isnan())
+            flags = val_flags | nan_flags
+            return bool(flags.all())
+        else:
+            return torch.equal(data1, data2)
+
     # @_torchmethod(func_type='data_func')
     # def matmul(data1, data2, out=None):
     #     return torch.matmul(data1, data2, out=out)
@@ -1112,6 +1151,7 @@ class NumpyImpls(object):
 
     nan_to_num = _numpymethod(np.nan_to_num)
 
+    array_equal = _numpymethod(np.array_equal)
     log = _numpymethod(np.log)
     log2 = _numpymethod(np.log2)
 
@@ -1420,6 +1460,8 @@ class ArrayAPI(object):
 
     any = _apimethod('any', func_type='data_func')
     all = _apimethod('all', func_type='data_func')
+
+    array_equal = _apimethod('array_equal')
 
     log2 = _apimethod('log2', func_type='data_func')
     log = _apimethod('log', func_type='data_func')

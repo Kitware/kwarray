@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Functions for partitioning numpy arrays into groups.
 """
@@ -187,6 +186,8 @@ def group_indices(idx_to_groupid, assume_sorted=False):
             np.array([1]),
         ]
     """
+    # FIXME: there is a bug when input is a list of integer tuples. This
+    # function interprets it as .
     _idx_to_groupid_orig = idx_to_groupid
     idx_to_groupid = np.array(idx_to_groupid, copy=False)
     _n_item = idx_to_groupid.size
