@@ -32,6 +32,9 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         median (bool): report median
         size (bool): report array size
         shape (bool): report array shape
+        quantile (str | bool | List[float]):
+            defaults to 'auto'. Can also be a list of quantiles to compute.
+            if truthy computes quantiles.
 
     Returns:
         collections.OrderedDict:
