@@ -181,7 +181,7 @@ def random_combinations(items, size, num=None, rng=None):
         >>> rng = 0
         >>> # xdoctest: +IGNORE_WANT
         >>> combos = list(random_combinations(items, size, num, rng))
-        >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
+        >>> print('combos = {}'.format(ub.urepr(combos, nl=1)))
         combos = [
             (0, 6, 9),
             (4, 7, 8),
@@ -195,7 +195,7 @@ def random_combinations(items, size, num=None, rng=None):
         >>> items = list(zip(range(10), range(10)))
         >>> # xdoctest: +IGNORE_WANT
         >>> combos = list(random_combinations(items, 3, num=5, rng=0))
-        >>> print('combos = {}'.format(ub.repr2(combos, nl=1)))
+        >>> print('combos = {}'.format(ub.urepr(combos, nl=1)))
         combos = [
             ((0, 0), (6, 6), (9, 9)),
             ((4, 4), (7, 7), (8, 8)),
@@ -255,10 +255,10 @@ def random_product(items, num=None, rng=None):
         >>> rng = 0
         >>> # xdoctest: +IGNORE_WANT
         >>> products = list(random_product(items, rng=0))
-        >>> print(ub.repr2(products, nl=0))
+        >>> print(ub.urepr(products, nl=0))
         [(3, 4), (1, 7), (3, 6), (2, 7),... (1, 6), (2, 5), (2, 4)]
         >>> products = list(random_product(items, num=3, rng=0))
-        >>> print(ub.repr2(products, nl=0))
+        >>> print(ub.urepr(products, nl=0))
         [(3, 4), (1, 7), (3, 6)]
 
     Example:

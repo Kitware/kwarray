@@ -62,15 +62,15 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
         >>> slices = [slice(-2, 7)]
 
         >>> data_sliced = kwarray.padded_slice(data, slices)
-        >>> print(ub.repr2(data_sliced, with_dtype=False))
+        >>> print(ub.urepr(data_sliced, with_dtype=False))
         np.array([0, 0, 0, 1, 2, 3, 4, 0, 0])
 
         >>> data_sliced = kwarray.padded_slice(data, slices, pad=[(3, 3)])
-        >>> print(ub.repr2(data_sliced, with_dtype=False))
+        >>> print(ub.urepr(data_sliced, with_dtype=False))
         np.array([0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0])
 
         >>> data_sliced = kwarray.padded_slice(data, slice(3, 4), pad=[(1, 0)])
-        >>> print(ub.repr2(data_sliced, with_dtype=False))
+        >>> print(ub.urepr(data_sliced, with_dtype=False))
         np.array([2, 3])
 
     """

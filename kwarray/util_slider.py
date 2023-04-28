@@ -10,11 +10,6 @@ import ubelt as ub
 import numpy as np
 import itertools as it
 
-try:
-    import torch
-except ImportError:
-    torch = None
-
 
 class SlidingWindow(ub.NiceRepr):
     """
@@ -433,7 +428,7 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(gauss_weights, pnum=pnum_(), title='Gaussian weights')
         >>> pnum_()
         >>> for result in results:
-        >>>     param_key = ub.repr2(result['params'], compact=1)
+        >>>     param_key = ub.urepr(result['params'], compact=1)
         >>>     final = result['final']
         >>>     canvas = kwarray.normalize(final)
         >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
@@ -466,6 +461,7 @@ class Stitcher(ub.NiceRepr):
             self.sumview = self.sums.ravel()
             self.weightview = self.weights.ravel()
         else:
+            import torch
             self.sums = torch.zeros(shape, device=device)
             self.weights = torch.zeros(shape, device=device)
 

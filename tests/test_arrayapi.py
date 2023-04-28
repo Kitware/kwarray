@@ -10,7 +10,10 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
     import numpy as np
     from math import isclose
     from functools import partial
-    from kwarray.arrayapi import torch
+    try:
+        import torch
+    except ImportError:
+        torch = None
 
     isclose_ = partial(isclose, rel_tol=rel_tol, abs_tol=abs_tol)
     np_isclose_ = partial(np.isclose, rtol=rel_tol, atol=abs_tol)
@@ -80,7 +83,10 @@ def test_numpy_torch_compat():
     import numpy as np
     import kwarray
     from kwarray import arrayapi
-    from kwarray.arrayapi import torch
+    try:
+        import torch
+    except ImportError:
+        torch = None
 
     ArrayAPI = arrayapi.ArrayAPI
 

@@ -75,7 +75,7 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
         >>> items = np.array([0, 1, 2, 3, 4, 5, 6, 7])
         >>> keys = np.array( [2, 2, 1, 1, 0, 1, 0, 1])
         >>> grouped = group_items(items, keys)
-        >>> print(ub.repr2(grouped, nl=1, with_dtype=False))
+        >>> print(ub.urepr(grouped, nl=1, with_dtype=False))
         {
             0: np.array([4, 6]),
             1: np.array([2, 3, 5, 7]),
@@ -130,8 +130,8 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([2, 1, 2, 1, 2, 1, 2, 3, 3, 3, 3])
         >>> (keys, groupxs) = group_indices(idx_to_groupid)
-        >>> print(ub.repr2(keys, with_dtype=False))
-        >>> print(ub.repr2(groupxs, with_dtype=False))
+        >>> print(ub.urepr(keys, with_dtype=False))
+        >>> print(ub.urepr(groupxs, with_dtype=False))
         np.array([1, 2, 3])
         [
             np.array([1, 3, 5]),
@@ -147,8 +147,8 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> # 2d arrays must be flattened before coming into this function so
         >>> # information is on the last axis
         >>> (keys, groupxs) = group_indices(idx_to_groupid.T[0])
-        >>> print(ub.repr2(keys, with_dtype=False))
-        >>> print(ub.repr2(groupxs, with_dtype=False))
+        >>> print(ub.urepr(keys, with_dtype=False))
+        >>> print(ub.urepr(groupxs, with_dtype=False))
         np.array([ 24, 129, 659, 822])
         [
             np.array([ 0,  4, 10]),
@@ -162,8 +162,8 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([True, True, False, True, False, False, True])
         >>> (keys, groupxs) = group_indices(idx_to_groupid)
-        >>> print(ub.repr2(keys, with_dtype=False))
-        >>> print(ub.repr2(groupxs, with_dtype=False))
+        >>> print(ub.urepr(keys, with_dtype=False))
+        >>> print(ub.urepr(groupxs, with_dtype=False))
         np.array([False,  True])
         [
             np.array([2, 4, 5]),
@@ -175,8 +175,8 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         >>> import ubelt as ub
         >>> idx_to_groupid = [('a', 'b'),  ('d', 'b'), ('a', 'b'), ('a', 'b')]
         >>> (keys, groupxs) = group_indices(idx_to_groupid)
-        >>> print(ub.repr2(keys, with_dtype=False))
-        >>> print(ub.repr2(groupxs, with_dtype=False))
+        >>> print(ub.urepr(keys, with_dtype=False))
+        >>> print(ub.urepr(groupxs, with_dtype=False))
         [
             ('a', 'b'),
             ('d', 'b'),

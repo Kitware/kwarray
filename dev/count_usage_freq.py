@@ -31,7 +31,7 @@ def count_usage(cmdline=True):
             for fpath in fpaths:
                 all_fpaths.append((name, fpath))
 
-    print('names = {}'.format(ub.repr2(names)))
+    print('names = {}'.format(ub.urepr(names)))
 
     import re
 
@@ -68,7 +68,7 @@ def count_usage(cmdline=True):
     usage = ub.odict(sorted(usage.items(), key=lambda t: t[1])[::-1])
 
     if config['print_packages']:
-        print(ub.repr2(pkg_to_hist, nl=2))
+        print(ub.urepr(pkg_to_hist, nl=2))
 
     if config['remove_zeros']:
         for k, v in list(usage.items()):
@@ -86,7 +86,7 @@ def count_usage(cmdline=True):
     #         if k in dir(_util_deprecated):
     #             usage.pop(k)
 
-    print(ub.repr2(usage, nl=1))
+    print(ub.urepr(usage, nl=1))
     return usage
 
 

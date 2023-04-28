@@ -55,11 +55,11 @@ def setcover(candidate_sets_dict, items=None, set_weights=None,
         >>>     'e': [6, 7, 8, 9, 0],
         >>> }
         >>> greedy_soln = setcover(candidate_sets_dict, algo='greedy')
-        >>> print('greedy_soln = {}'.format(ub.repr2(greedy_soln, nl=0)))
+        >>> print('greedy_soln = {}'.format(ub.urepr(greedy_soln, nl=0)))
         greedy_soln = {'a': [1, 2, 3, 8, 9, 0], 'c': [4, 5, 7], 'd': [5, 6, 7]}
         >>> # xdoc: +REQUIRES(module:pulp)
         >>> exact_soln = setcover(candidate_sets_dict, algo='exact')
-        >>> print('exact_soln = {}'.format(ub.repr2(exact_soln, nl=0)))
+        >>> print('exact_soln = {}'.format(ub.urepr(exact_soln, nl=0)))
         exact_soln = {'b': [1, 2, 3, 4, 5], 'e': [6, 7, 8, 9, 0]}
     """
     if algo in ['approx', 'greedy']:
@@ -187,7 +187,7 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
         >>> greedy_soln = _setcover_greedy_new(candidate_sets_dict)
         >>> #print(repr(greedy_soln))
         ...
-        >>> print('greedy_soln = {}'.format(ub.repr2(greedy_soln, nl=0)))
+        >>> print('greedy_soln = {}'.format(ub.urepr(greedy_soln, nl=0)))
         greedy_soln = {'a': [1, 2, 3, 8, 9, 0], 'c': [4, 5, 7], 'd': [5, 6, 7]}
 
     Example:
@@ -204,13 +204,13 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
         >>> greedy_soln = _setcover_greedy_new(candidate_sets_dict,
         >>>                             item_values=item_values,
         >>>                             set_weights=set_weights)
-        >>> print('greedy_soln = {}'.format(ub.repr2(greedy_soln, nl=0)))
+        >>> print('greedy_soln = {}'.format(ub.urepr(greedy_soln, nl=0)))
         greedy_soln = {'a': [1, 2, 3, 8, 9, 0], 'c': [4, 5, 7], 'd': [5, 6, 7]}
 
     Example:
         >>> candidate_sets_dict = {}
         >>> greedy_soln = _setcover_greedy_new(candidate_sets_dict)
-        >>> print('greedy_soln = {}'.format(ub.repr2(greedy_soln, nl=0)))
+        >>> print('greedy_soln = {}'.format(ub.urepr(greedy_soln, nl=0)))
         greedy_soln = {}
     """
     if len(candidate_sets_dict) == 0:
@@ -255,8 +255,8 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
         for key, vals in avail_covers.items()
     ])
 
-    print('avail_covers = {}'.format(ub.repr2(avail_covers, nl=1)))
-    print('avail_totals = {}'.format(ub.repr2(avail_totals, nl=1)))
+    print('avail_covers = {}'.format(ub.urepr(avail_covers, nl=1)))
+    print('avail_totals = {}'.format(ub.urepr(avail_totals, nl=1)))
 
     # While we still need covers
     while solution_weight < max_weight and len(avail_covers) > 0:
@@ -296,8 +296,8 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
             newval = get_value(avail_covers[key])
             avail_totals[key] = newval
 
-        print('avail_covers = {}'.format(ub.repr2(avail_covers, nl=1)))
-        print('avail_totals = {}'.format(ub.repr2(avail_totals, nl=1)))
+        print('avail_covers = {}'.format(ub.urepr(avail_covers, nl=1)))
+        print('avail_totals = {}'.format(ub.urepr(avail_totals, nl=1)))
 
     print('solution_cover = {!r}'.format(solution_cover))
     return solution_cover
@@ -316,7 +316,7 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         >>> # xdoc: +REQUIRES(module:pulp)
         >>> candidate_sets_dict = {}
         >>> exact_soln = _setcover_ilp(candidate_sets_dict)
-        >>> print('exact_soln = {}'.format(ub.repr2(exact_soln, nl=0)))
+        >>> print('exact_soln = {}'.format(ub.urepr(exact_soln, nl=0)))
         exact_soln = {}
 
     Example:

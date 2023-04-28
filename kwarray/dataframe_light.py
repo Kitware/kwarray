@@ -587,7 +587,7 @@ class DataFrameLight(ub.NiceRepr):
         Example:
             >>> from kwarray.dataframe_light import *  # NOQA
             >>> self = DataFrameLight._demodata(num=3)
-            >>> print(ub.repr2(list(self.iterrows())))
+            >>> print(ub.urepr(list(self.iterrows()), sort=1))
             [
                 (0, {'bar': 0, 'baz': 2.73, 'foo': 0}),
                 (1, {'bar': 1, 'baz': 2.73, 'foo': 0}),

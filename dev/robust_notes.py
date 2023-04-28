@@ -178,7 +178,7 @@ def tukey_biweight_loss(r, c=4.685):
         >>>     'c': [4.685, 2, 6],
         >>> })
         >>> for kwargs in grid:
-        >>>     key = ub.repr2(kwargs, compact=1)
+        >>>     key = ub.urepr(kwargs, compact=1)
         >>>     loss = tukey_biweight_loss(r, **kwargs)
         >>>     data[key] = loss
         >>> import pandas as pd

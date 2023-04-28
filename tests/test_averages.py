@@ -27,7 +27,7 @@ def test_run_avg_cases():
             s0N = run0.summarize(axis=None, keepdims=keepdims)
             s1N = run1.summarize(axis=None, keepdims=keepdims)
             s2N = run2.summarize(axis=None, keepdims=keepdims)
-            print('s2N = {}'.format(ub.repr2(s2N, nl=1)))
+            print('s2N = {}'.format(ub.urepr(s2N, nl=1)))
             # assert ub.util_indexable.indexable_allclose(s0N, s1N, rel_tol=0.0, abs_tol=0.0)
             # assert ub.util_indexable.indexable_allclose(s1N, s2N, rel_tol=0.0, abs_tol=0.0)
             assert s0N['mean'] == 0.625
@@ -36,8 +36,8 @@ def test_run_avg_cases():
             # Summarizing over everything should be exactly the same
             s1N = run1.summarize(axis=1, keepdims=keepdims)
             s2N = run2.summarize(axis=2, keepdims=keepdims)
-            print('s1N = {}'.format(ub.repr2(s1N, nl=1)))
-            print('s2N = {}'.format(ub.repr2(s2N, nl=1)))
+            print('s1N = {}'.format(ub.urepr(s1N, nl=1)))
+            print('s2N = {}'.format(ub.urepr(s2N, nl=1)))
             s1N = ub.map_vals(np.ravel, s1N)
             s2N = ub.map_vals(np.ravel, s2N)
             assert np.allclose(s1N['mean'], s2N['mean'], rtol=0.0, atol=0.0)
@@ -59,10 +59,10 @@ def test_run_avg_with_zero_weight():
     SN = run.summarize(axis=None)
     S1 = run.summarize(axis=1)
     S0 = run.summarize(axis=0)
-    print('C = {}'.format(ub.repr2(C, nl=1)))
-    print('SN = {}'.format(ub.repr2(SN, nl=1)))
-    print('S1 = {}'.format(ub.repr2(S1, nl=1)))
-    print('S0 = {}'.format(ub.repr2(S0, nl=1)))
+    print('C = {}'.format(ub.urepr(C, nl=1)))
+    print('SN = {}'.format(ub.urepr(SN, nl=1)))
+    print('S1 = {}'.format(ub.urepr(S1, nl=1)))
+    print('S0 = {}'.format(ub.urepr(S0, nl=1)))
 
     stack_d = np.stack(stacked_data, axis=-1)
     stack_w = np.stack(stacked_weights, axis=-1)
@@ -114,7 +114,7 @@ def test_fuzzed_random_running():
             run.update(data, weights=weights)
 
         C = run.current()
-        print('C = {}'.format(ub.repr2(C, nl=1)))
+        print('C = {}'.format(ub.urepr(C, nl=1)))
         SN = run.summarize(axis=None, keepdims=keepdims)
         S0 = run.summarize(axis=0, keepdims=keepdims)
 
@@ -135,16 +135,16 @@ def test_fuzzed_random_running():
 
         ourN = SN['mean']
         aveN = np.average(stack_d, weights=stack_w, **ave_kw)
-        print('ourN = {}'.format(ub.repr2(ourN, nl=1, precision=4)))
-        print('aveN = {}'.format(ub.repr2(aveN, nl=1, precision=4)))
+        print('ourN = {}'.format(ub.urepr(ourN, nl=1, precision=4)))
+        print('aveN = {}'.format(ub.urepr(aveN, nl=1, precision=4)))
         assert np.allclose(ourN, aveN)
 
         our0 = S0['mean']
         ave0 = np.average(stack_d, weights=stack_w, axis=(0, -1), **ave_kw)
         if keepdims:
             ave0 = ave0[..., 0]
-        print('our0 = {}'.format(ub.repr2(our0, nl=1, precision=4)))
-        print('ave0 = {}'.format(ub.repr2(ave0, nl=1, precision=4)))
+        print('our0 = {}'.format(ub.urepr(our0, nl=1, precision=4)))
+        print('ave0 = {}'.format(ub.urepr(ave0, nl=1, precision=4)))
         assert np.allclose(our0, ave0)
 
         if len(params['shape']) > 1:
@@ -153,6 +153,6 @@ def test_fuzzed_random_running():
             ave1 = np.average(stack_d, weights=stack_w, axis=(1, -1), **ave_kw)
             if keepdims:
                 ave1 = ave1[..., 0]
-            print('our1 = {}'.format(ub.repr2(our1, nl=1, precision=4)))
-            print('ave1 = {}'.format(ub.repr2(ave1, nl=1, precision=4)))
+            print('our1 = {}'.format(ub.urepr(our1, nl=1, precision=4)))
+            print('ave1 = {}'.format(ub.urepr(ave1, nl=1, precision=4)))
             assert np.allclose(our1, ave1)
