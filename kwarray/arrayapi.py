@@ -71,18 +71,26 @@ except ImportError:
     from distutils.version import Version
 
 
-# import pkg_resources
-import importlib.metadata
 try:
-    # _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
-    _TORCH_VERSION = Version(importlib.metadata.version('torch'))
-    _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
-    _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
-    # except pkg_resources.DistributionNotFound:
-except importlib.metadata.PackageNotFoundError:
-    _TORCH_VERSION = None
-    _TORCH_LT_1_7_0 = None
-    _TORCH_HAS_MAX_BUG = None
+    import importlib.metadata
+    try:
+        _TORCH_VERSION = Version(importlib.metadata.version('torch'))
+        _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
+        _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
+    except importlib.metadata.PackageNotFoundError:
+        _TORCH_VERSION = None
+        _TORCH_LT_1_7_0 = None
+        _TORCH_HAS_MAX_BUG = None
+except ImportError:
+    import pkg_resources
+    try:
+        _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
+        _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
+        _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
+    except pkg_resources.DistributionNotFound:
+        _TORCH_VERSION = None
+        _TORCH_LT_1_7_0 = None
+        _TORCH_HAS_MAX_BUG = None
 
 # torch = None
 # try:
