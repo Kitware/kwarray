@@ -29,25 +29,26 @@ Idea:
 
 Example:
     >>> # xdoctest: +REQUIRES(module:torch)
+    >>> import kwarray
     >>> import torch
     >>> import numpy as np
     >>> data1 = torch.rand(10, 10)
     >>> data2 = data1.numpy()
     >>> # Method 1: grab the appropriate sub-impl
-    >>> impl1 = ArrayAPI.impl(data1)
-    >>> impl2 = ArrayAPI.impl(data2)
+    >>> impl1 = kwarray.ArrayAPI.impl(data1)
+    >>> impl2 = kwarray.ArrayAPI.impl(data2)
     >>> result1 = impl1.sum(data1, axis=0)
     >>> result2 = impl2.sum(data2, axis=0)
-    >>> res1_np = ArrayAPI.numpy(result1)
-    >>> res2_np = ArrayAPI.numpy(result2)
+    >>> res1_np = kwarray.ArrayAPI.numpy(result1)
+    >>> res2_np = kwarray.ArrayAPI.numpy(result2)
     >>> print('res1_np = {!r}'.format(res1_np))
     >>> print('res2_np = {!r}'.format(res2_np))
     >>> assert np.allclose(res1_np, res2_np)
     >>> # Method 2: choose the impl on the fly
-    >>> result1 = ArrayAPI.sum(data1, axis=0)
-    >>> result2 = ArrayAPI.sum(data2, axis=0)
-    >>> res1_np = ArrayAPI.numpy(result1)
-    >>> res2_np = ArrayAPI.numpy(result2)
+    >>> result1 = kwarray.ArrayAPI.sum(data1, axis=0)
+    >>> result2 = kwarray.ArrayAPI.sum(data2, axis=0)
+    >>> res1_np = kwarray.ArrayAPI.numpy(result1)
+    >>> res2_np = kwarray.ArrayAPI.numpy(result2)
     >>> print('res1_np = {!r}'.format(res1_np))
     >>> print('res2_np = {!r}'.format(res2_np))
     >>> assert np.allclose(res1_np, res2_np)
@@ -60,6 +61,7 @@ Example:
     >>> data2 = data1.numpy()
 """
 import numpy as np
+import sys
 import ubelt as ub
 from functools import partial
 
@@ -69,35 +71,46 @@ except ImportError:
     from distutils.version import Version
 
 
+# import pkg_resources
+import importlib
 try:
-    import torch
-except Exception:
-    torch = None
-    _TORCH_HAS_BOOL_COMP = False
-else:
-    _TORCH_LT_1_7_0 = Version(torch.__version__) < Version('1.7')
-    _TORCH_GE_1_2_0 = Version(torch.__version__) >= Version('1.2.0')
-    _TORCH_HAS_BOOL_COMP = _TORCH_GE_1_2_0
+    # _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
+    _TORCH_VERSION = Version(importlib.metadata.version('torch'))
+    _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
     _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
+    # except pkg_resources.DistributionNotFound:
+except importlib.metadata.PackageNotFoundError:
+    _TORCH_VERSION = None
+    _TORCH_LT_1_7_0 = None
+    _TORCH_HAS_MAX_BUG = None
+
+# torch = None
+# try:
+#     import torch
+# except Exception:
+#     torch = None
+# else:
+#     _TORCH_LT_1_7_0 = Version(torch.__version__) < Version('1.7')
+#     _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
 
 
-__with_typing__ = True
-if __with_typing__:
-    # TODO: mabye have a array typing submodule?
-    if torch is None:
-        Tensor = 'Tensor'
-    else:
-        from torch import Tensor
-    try:
-        from typing import Union
-        import numpy.typing
-        from numbers import Number
-        ArrayLike = numpy.typing.ArrayLike
-        Numeric = Union[Number, ArrayLike, Tensor]
-    except ImportError:
-        from typing import Any
-        Numeric = Any
-        ArrayLike = Any
+# __with_typing__ = False
+# if __with_typing__:
+#     # TODO: mabye have a array typing submodule?
+#     if torch is None:
+#         Tensor = 'Tensor'
+#     else:
+#         from torch import Tensor
+#     try:
+#         from typing import Union
+#         import numpy.typing
+#         from numbers import Number
+#         ArrayLike = numpy.typing.ArrayLike
+#         Numeric = Union[Number, ArrayLike, Tensor]
+#     except ImportError:
+#         from typing import Any
+#         Numeric = Any
+#         ArrayLike = Any
 
 
 class _ImplRegistry(object):
@@ -140,9 +153,10 @@ class _ImplRegistry(object):
             # numpy_func = self.registered['numpy'][key]['func']
             # torch_func = self.registered['torch'][key]['func']
             numpy_func = getattr(NumpyImpls, key)
-            if torch is not None:
-                torch_func = getattr(TorchImpls, key)
+            # if torch is not None:
+            torch_func = getattr(TorchImpls, key)
             def func(data, *args, **kwargs):
+                torch = sys.modules.get('torch', None)
                 if torch is not None and torch.is_tensor(data):
                     return torch_func(data, *args, **kwargs)
                 elif isinstance(data, np.ndarray):
@@ -255,6 +269,7 @@ class TorchImpls(object):
         if len(arrays_and_dtypes) == 1:
             return arrays_and_dtypes[0]
         else:
+            import torch
             a, b = arrays_and_dtypes[0:2]
             a_ = torch.empty(0, dtype=a)
             b_ = torch.empty(0, dtype=b)
@@ -267,6 +282,7 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='array_sequence')
     def cat(datas, axis=-1):
+        import torch
         return torch.cat(datas, dim=axis)
 
     @_torchmethod(func_type='array_sequence')
@@ -276,12 +292,14 @@ class TorchImpls(object):
 
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import torch
             >>> datas1 = [torch.arange(10), torch.arange(10)]
             >>> datas2 = [d.numpy() for d in datas1]
             >>> ans1 = TorchImpls.hstack(datas1)
             >>> ans2 = NumpyImpls.hstack(datas2)
             >>> assert np.all(ans1.numpy() == ans2)
         """
+        import torch
         axis = 1
         if len(datas[0].shape) == 1:
             axis = 0
@@ -295,12 +313,14 @@ class TorchImpls(object):
 
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import torch
             >>> datas1 = [torch.arange(10), torch.arange(10)]
             >>> datas2 = [d.numpy() for d in datas1]
             >>> ans1 = TorchImpls.vstack(datas1)
             >>> ans2 = NumpyImpls.vstack(datas2)
             >>> assert np.all(ans1.numpy() == ans2)
         """
+        import torch
         datas = [TorchImpls.atleast_nd(d, n=2, front=True) for d in datas]
         return torch.cat(datas, dim=0)
 
@@ -323,6 +343,7 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def take(data, indices, axis=None):
+        import torch
         if not torch.is_tensor(indices):
             indices = torch.LongTensor(indices).to(data.device)
         if axis is None:
@@ -336,6 +357,7 @@ class TorchImpls(object):
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> import kwarray
+            >>> import torch
             >>> data = torch.rand(10, 4, 2)
             >>> impl = kwarray.ArrayAPI.coerce(data)
 
@@ -360,12 +382,10 @@ class TorchImpls(object):
             >>> out = impl.compress(data, flags, axis=axis)
             >>> assert tuple(out.shape) == (5,)
         """
+        import torch
         if not torch.is_tensor(flags):
             flags = np.asarray(flags).astype(np.uint8)
-            if _TORCH_HAS_BOOL_COMP:
-                flags = torch.BoolTensor(flags).to(data.device)
-            else:
-                flags = torch.ByteTensor(flags).to(data.device)
+            flags = torch.BoolTensor(flags).to(data.device)
         if flags.ndimension() != 1:
             raise ValueError('condition must be a 1-d tensor')
         if axis is None:
@@ -409,6 +429,7 @@ class TorchImpls(object):
             >>>             #print('ans2.shape = {!r}'.format(tuple(ans2.shape)))
             >>>             assert np.all(ans1.numpy() == ans2)
         """
+        import torch
         n_prepend = len(reps) - len(data.shape)
         if n_prepend > 0:
             reps = [1] * n_prepend + list(reps)
@@ -451,6 +472,7 @@ class TorchImpls(object):
             ArrayAPI.repeat(data.numpy(), [1, 2])
         """
         raise NotImplementedError
+        import torch
         if False:
             # hack! may not always work
             return np.repeat(data, repeats, axis=axis)
@@ -487,6 +509,7 @@ class TorchImpls(object):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import torch
             >>> data1 = torch.rand(2, 3, 5)
             >>> data2 = data1.numpy()
             >>> res1 = ArrayAPI.transpose(data1, (2, 0, 1))
@@ -503,41 +526,49 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def full_like(data, fill_value, dtype=None):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full_like(data, fill_value, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
     def empty_like(data, dtype=None):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.empty_like(data, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
     def zeros_like(data, dtype=None):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.zeros_like(data, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
     def ones_like(data, dtype=None):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.ones_like(data, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def full(shape, fill_value, dtype=float):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full(shape, fill_value, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def empty(shape, dtype=float):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full(shape, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def zeros(shape, dtype=float):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.zeros(shape, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
     def ones(shape, dtype=float):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.ones(shape, dtype=dtype)
 
@@ -545,10 +576,12 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def argmax(data, axis=None):
+        import torch
         return torch.argmax(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
     def argmin(data, axis=None):
+        import torch
         return torch.argmin(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
@@ -557,6 +590,7 @@ class TorchImpls(object):
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
             >>> rng = np.random.RandomState(0)
             >>> data2 = rng.rand(5, 5)
             >>> data1 = torch.from_numpy(data2)
@@ -575,6 +609,7 @@ class TorchImpls(object):
             >>> res2 = ArrayAPI.argsort(data2, axis=0, descending=True)
             >>> assert np.all(res1.numpy() == res2)
         """
+        import torch
         return torch.argsort(data, dim=axis, descending=descending)
 
     @_torchmethod(func_type='data_func')
@@ -584,6 +619,7 @@ class TorchImpls(object):
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
             >>> from kwarray.arrayapi import _TORCH_HAS_MAX_BUG
+            >>> import torch
             >>> import pytest
             >>> if _TORCH_HAS_MAX_BUG:
             >>>     pytest.skip('torch max has a bug, which was fixed in 1.7')
@@ -599,6 +635,7 @@ class TorchImpls(object):
             >>> res2 = ArrayAPI.max(data2, axis=(5, -2))
             >>> assert np.all(res1.numpy() == res2)
         """
+        import torch
         if axis is None:
             return torch.max(data)
         elif isinstance(axis, tuple):
@@ -618,6 +655,7 @@ class TorchImpls(object):
             >>> from kwarray.arrayapi import *  # NOQA
             >>> from kwarray.arrayapi import _TORCH_HAS_MAX_BUG
             >>> import pytest
+            >>> import torch
             >>> if _TORCH_HAS_MAX_BUG:
             >>>     pytest.skip('torch min has a bug, which was fixed in 1.7')
             >>> data1 = torch.rand(5, 5, 5, 5, 5, 5)
@@ -632,6 +670,7 @@ class TorchImpls(object):
             >>> res2 = ArrayAPI.min(data2, axis=(5, -2))
             >>> assert np.all(res1.numpy() == res2)
         """
+        import torch
         if axis is None:
             return torch.min(data)
         elif isinstance(axis, tuple):
@@ -663,6 +702,7 @@ class TorchImpls(object):
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
             >>> from kwarray.arrayapi import ArrayAPI
+            >>> import torch
             >>> data = 1 / (1 + (torch.arange(12) - 6).view(3, 4) ** 2)
             >>> ArrayAPI.max_argmax(data)
             (tensor(1...), tensor(6))
@@ -677,6 +717,7 @@ class TorchImpls(object):
             >>> torch.ones(10).argmax()   # xdoctest: +IGNORE_WANT
             tensor(9)
         """
+        import torch
         if axis is None:
             return torch.max(data), torch.argmax(data)
         else:
@@ -702,6 +743,7 @@ class TorchImpls(object):
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
             >>> from kwarray.arrayapi import ArrayAPI
+            >>> import torch
             >>> data = (torch.arange(12) - 6).view(3, 4) ** 2
             >>> ArrayAPI.min_argmin(data)
             (tensor(0), tensor(6))
@@ -717,6 +759,7 @@ class TorchImpls(object):
             >>> torch.ones(10).argmin()   # xdoctest: +IGNORE_WANT
             tensor(9)
         """
+        import torch
         if axis is None:
             return torch.min(data), torch.argmin(data)
         else:
@@ -729,6 +772,7 @@ class TorchImpls(object):
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> import sys, ubelt
             >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
             >>> data1 = torch.rand(5, 5)
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.maximum(data1, data2)
@@ -738,6 +782,7 @@ class TorchImpls(object):
             >>> result2 = NumpyImpls.maximum(data1.numpy(), 0)
             >>> assert np.allclose(result1.numpy(), result2)
         """
+        import torch
         # If data2 is not a tensor, torch.min/torch.max returns a
         # extreme/argextreme tuple.
         if torch.is_tensor(data1):
@@ -753,6 +798,7 @@ class TorchImpls(object):
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import torch
             >>> data1 = torch.rand(5, 5)
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.minimum(data1, data2)
@@ -763,6 +809,7 @@ class TorchImpls(object):
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> import sys, ubelt
             >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
             >>> data1 = torch.rand(5, 5)
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.minimum(data1, data2)
@@ -772,6 +819,7 @@ class TorchImpls(object):
             >>> result2 = NumpyImpls.minimum(data1.numpy(), 0)
             >>> assert np.allclose(result1.numpy(), result2)
         """
+        import torch
         # If data2 is not a tensor, torch.min/torch.max returns a
         # extreme/argextreme tuple.
         if torch.is_tensor(data1):
@@ -788,6 +836,7 @@ class TorchImpls(object):
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
             >>> data1 = torch.rand(5, 5)
             >>> data2 = data1 + 1
             >>> result1 = TorchImpls.array_equal(data1, data2)
@@ -802,6 +851,7 @@ class TorchImpls(object):
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
             >>> data1 = torch.rand(5, 5)
             >>> data1[0] = np.nan
             >>> data2 = data1
@@ -814,6 +864,7 @@ class TorchImpls(object):
             >>> assert result3 is True
             >>> assert result4 is True
         """
+        import torch
         if equal_nan:
             val_flags = torch.eq(data1, data2)
             nan_flags = (data1.isnan() & data2.isnan())
@@ -822,11 +873,12 @@ class TorchImpls(object):
         else:
             return torch.equal(data1, data2)
 
-    # @_torchmethod(func_type='data_func')
-    # def matmul(data1, data2, out=None):
-    #     return torch.matmul(data1, data2, out=out)
-    if torch is not None:
-        matmul = _torchmethod(torch.matmul)
+    @_torchmethod(func_type='data_func')
+    def matmul(data1, data2, out=None):
+        import torch
+        return torch.matmul(data1, data2, out=out)
+    # if torch is not None:
+    #     matmul = _torchmethod(torch.matmul)
 
     @_torchmethod(func_type='data_func')
     def sum(data, axis=None):
@@ -837,6 +889,7 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def nan_to_num(x, copy=True):
+        import torch
         if copy:
             x = x.clone()
         x[torch.isnan(x)] = 0
@@ -844,16 +897,38 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def copy(data):
+        import torch
         return torch.clone(data)
 
-    if torch is not None:
-        log = _torchmethod(torch.log)
-        log2 = _torchmethod(torch.log2)
-        any = _torchmethod(torch.any)
-        all = _torchmethod(torch.all)
+    @_torchmethod(func_type='data_func')
+    def log(data):
+        import torch
+        return torch.log(data)
+
+    @_torchmethod(func_type='data_func')
+    def log2(data):
+        import torch
+        return torch.log2(data)
+
+    @_torchmethod(func_type='data_func')
+    def any(data):
+        import torch
+        return torch.any(data)
+
+    @_torchmethod(func_type='data_func')
+    def all(data):
+        import torch
+        return torch.all(data)
+
+    # if torch is not None:
+    #     log = _torchmethod(torch.log)
+    #     log2 = _torchmethod(torch.log2)
+    #     any = _torchmethod(torch.any)
+    #     all = _torchmethod(torch.all)
 
     @_torchmethod(func_type='data_func')
     def nonzero(data):
+        import torch
         # torch returns an NxD tensor, whereas numpy returns
         # a D-tuple of N-dimensional arrays.
         return tuple(torch.nonzero(data).t())
@@ -886,6 +961,7 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def pad(data, pad_width, mode='constant'):
+        import torch
         pad = list(ub.flatten(pad_width[::-1]))
         return torch.nn.functional.pad(data, pad, mode=mode)
 
@@ -897,6 +973,7 @@ class TorchImpls(object):
         Example:
             >>> data = np.empty((2, 0, 196, 196), dtype=np.float32)
         """
+        import torch
         if not isinstance(data, torch.Tensor):
             data
             try:
@@ -916,6 +993,7 @@ class TorchImpls(object):
     @_torchmethod(func_type='data_func')
     def dtype_kind(data):
         """ returns the numpy code for the data type kind """
+        import torch
         if data.dtype.is_floating_point:
             return 'f'
         elif data.dtype == torch.uint8:
@@ -925,18 +1003,22 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def floor(data, out=None):
+        import torch
         return torch.floor(data, out=out)
 
     @_torchmethod(func_type='data_func')
     def ceil(data, out=None):
+        import torch
         return torch.ceil(data, out=out)
 
     @_torchmethod(func_type='data_func')
     def ifloor(data, out=None):
+        import torch
         return torch.floor(data, out=out).int()
 
     @_torchmethod(func_type='data_func')
     def iceil(data, out=None):
+        import torch
         return torch.ceil(data, out=out).int()
 
     @_torchmethod(func_type='data_func')
@@ -945,6 +1027,7 @@ class TorchImpls(object):
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> import kwarray
+            >>> import torch
             >>> rng = kwarray.ensure_rng(0)
             >>> np_data = rng.rand(10) * 100
             >>> pt_data = torch.from_numpy(np_data)
@@ -955,6 +1038,7 @@ class TorchImpls(object):
             >>> b = kwarray.ArrayAPI.round(pt_data, 2)
             >>> assert np.all(a == b.numpy())
         """
+        import torch
         if decimals == 0:
             return torch.round(data, out=out)
         else:
@@ -965,15 +1049,18 @@ class TorchImpls(object):
 
     @_torchmethod(func_type='data_func')
     def iround(data, out=None, dtype=int):
+        import torch
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.round(data, out=out).to(dtype)
 
     @_torchmethod(func_type='data_func')
     def clip(data, a_min=None, a_max=None, out=None):
+        import torch
         return torch.clamp(data, a_min, a_max, out=out)
 
     @_torchmethod(func_type='data_func')
     def softmax(data, axis=None):
+        import torch
         if axis is None:
             return torch.softmax(data.view(-1), dim=0).view(data.shape)
         else:
@@ -1168,6 +1255,7 @@ class NumpyImpls(object):
 
     @_numpymethod(func_type='data_func')
     def tensor(data, device=ub.NoParam):
+        import torch
         if torch is None:
             raise Exception('torch is not available')
         data = torch.from_numpy(np.ascontiguousarray(data))
@@ -1196,6 +1284,7 @@ class NumpyImpls(object):
         """
         Cast data into a numpy representation
         """
+        import torch
         if torch is not None and isinstance(data, torch.Tensor):
             data = data.cpu().numpy()
         return np.asarray(data, dtype=dtype)
@@ -1273,7 +1362,7 @@ class NumpyImpls(object):
         return np.kron(a, b)
 
 
-class ArrayAPI(object):
+class ArrayAPI:
     """
     Compatability API between torch and numpy.
 
@@ -1293,7 +1382,9 @@ class ArrayAPI(object):
     Example:
         >>> # Use the easy-to-use, but inefficient array api
         >>> # xdoctest: +REQUIRES(module:torch)
-        >>> take = ArrayAPI.take
+        >>> import kwarray
+        >>> import torch
+        >>> take = kwarray.ArrayAPI.take
         >>> np_data = np.arange(0, 143).reshape(11, 13)
         >>> pt_data = torch.LongTensor(np_data)
         >>> indices = [1, 3, 5, 7, 11, 13, 17, 21]
@@ -1306,7 +1397,9 @@ class ArrayAPI(object):
     Example:
         >>> # Use the easy-to-use, but inefficient array api
         >>> # xdoctest: +REQUIRES(module:torch)
-        >>> compress = ArrayAPI.compress
+        >>> import kwarray
+        >>> import torch
+        >>> compress = kwarray.ArrayAPI.compress
         >>> np_data = np.arange(0, 143).reshape(11, 13)
         >>> pt_data = torch.LongTensor(np_data)
         >>> flags = (np_data % 2 == 0).ravel()
@@ -1320,6 +1413,7 @@ class ArrayAPI(object):
         >>> # Use ArrayAPI to coerce an identical API that doesnt do type checks
         >>> # xdoctest: +REQUIRES(module:torch)
         >>> import kwarray
+        >>> import torch
         >>> np_data = np.arange(0, 15).reshape(3, 5)
         >>> pt_data = torch.LongTensor(np_data)
         >>> # The new ``impl`` object has the same API as ArrayAPI, but works
@@ -1348,6 +1442,7 @@ class ArrayAPI(object):
             data (ndarray | Tensor): data to be operated on
 
         """
+        import torch
         if torch is not None and torch.is_tensor(data):
             return TorchImpls
         else:
@@ -1483,12 +1578,16 @@ class ArrayAPI(object):
 TorchNumpyCompat = ArrayAPI  # backwards compat
 
 
-if __debug__ and torch is not None:
-    _REGISTERY._ensure_datamethods_names_are_registered()
+# if __debug__ and torch is not None:
+#     _REGISTERY._ensure_datamethods_names_are_registered()
 
 
 @ub.memoize
 def _torch_dtype_lut():
+    try:
+        import torch
+    except ImportError:
+        torch = None
     lut = {}
     if torch is None:
         return lut
@@ -1574,6 +1673,7 @@ def dtype_info(dtype):
 
     Example:
         >>> from kwarray.arrayapi import *  # NOQA
+        >>> import torch
         >>> results = []
         >>> results += [dtype_info(float)]
         >>> results += [dtype_info(int)]
@@ -1592,6 +1692,7 @@ def dtype_info(dtype):
         >>> for info in results:
         >>>     print('info.bits = {!r}'.format(info.bits))
     """
+    torch = sys.modules.get('torch', None)
     if torch is not None and isinstance(dtype, torch.dtype):
         # Using getattr on is_complex for torch 1.4
         _probably_float = dtype.is_floating_point
