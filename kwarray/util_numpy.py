@@ -34,7 +34,7 @@ def boolmask(indices, shape=None):
         >>> indices = np.array([(0, 0), (1, 1), (2, 1)])
         >>> shape = (3, 3)
         >>> mask = kwarray.boolmask(indices, shape)
-        >>> result = ub.repr2(mask, with_dtype=0)
+        >>> result = ub.urepr(mask, with_dtype=0)
         >>> print(result)
         np.array([[ True, False, False],
                   [False,  True, False],
@@ -179,7 +179,7 @@ def atleast_nd(arr, n, front=False):
         >>> arr = np.array([1, 1, 1])
         >>> arr_ = atleast_nd(arr, n)
         >>> import ubelt as ub  # NOQA
-        >>> result = ub.repr2(arr_.tolist(), nl=0)
+        >>> result = ub.urepr(arr_.tolist(), nl=0)
         >>> print(result)
         [[1], [1], [1]]
 
@@ -192,9 +192,9 @@ def atleast_nd(arr, n, front=False):
         >>> arr2_ = atleast_nd(arr2, n)
         >>> arr3_ = atleast_nd(arr3, n)
         >>> import ubelt as ub  # NOQA
-        >>> result1 = ub.repr2(arr1_.tolist(), nl=0)
-        >>> result2 = ub.repr2(arr2_.tolist(), nl=0)
-        >>> result3 = ub.repr2(arr3_.tolist(), nl=0)
+        >>> result1 = ub.urepr(arr1_.tolist(), nl=0)
+        >>> result2 = ub.urepr(arr2_.tolist(), nl=0)
+        >>> result3 = ub.urepr(arr3_.tolist(), nl=0)
         >>> result = '\n'.join([result1, result2, result3])
         >>> print(result)
         [[[[1]]], [[[1]]], [[[1]]]]
@@ -696,7 +696,7 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
         >>> for params in grid:
         >>>     y = generalized_logistic(x, **params)
         >>>     data = pd.DataFrame({'x': x, 'y': y})
-        >>>     key = ub.repr2(params, compact=1)
+        >>>     key = ub.urepr(params, compact=1)
         >>>     data['key'] = key
         >>>     for k, v in params.items():
         >>>         data[k] = v

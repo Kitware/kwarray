@@ -188,7 +188,7 @@ class _ImplRegistry(object):
         missing_api = universe - api_names - shape_creation_methods
 
         if missing_numpy or missing_torch:
-            print('self.registered = {}'.format(ub.repr2(self.registered, nl=2)))
+            print('self.registered = {}'.format(ub.urepr(self.registered, nl=2)))
             message = ub.codeblock(
                 '''
                 missing_torch = {}

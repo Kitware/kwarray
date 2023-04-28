@@ -44,7 +44,7 @@ class Value(ub.NiceRepr):
         >>> print(Value(name='lucy'))
         >>> print(Value(name='jeff', default=1))
         >>> self = Value(name='fred', default=1.0)
-        >>> print('self = {}'.format(ub.repr2(self, nl=1)))
+        >>> print('self = {}'.format(ub.urepr(self, nl=1)))
         >>> print(Value(name='bob', default=1.0, min=-5, max=5))
         >>> print(Value(name='alice', default=1.0, min=-5))
     """
@@ -256,10 +256,10 @@ class Parameterized(ub.NiceRepr):
             >>>         self.y = Tail5()
             >>> self = Dummy2()
             >>> print(self.idstr())
-            >>> print(ub.repr2(self.json_id()))
+            >>> print(ub.urepr(self.json_id()))
         """
         classname = self.__class__.__name__
-        self_part = ['{}={}'.format(key, ub.repr2(value, precision=2, si=True, nl=0))
+        self_part = ['{}={}'.format(key, ub.urepr(value, precision=2, si=True, nl=0))
                      for key, value in self._params.items()]
         child_part = ['{}={}'.format(key, child.idstr(nl, thresh=thresh - 2))
                       for key, child in self.children()]
@@ -298,7 +298,7 @@ class Parameterized(ub.NiceRepr):
     def __nice__(self):
         try:
             params = ub.odict(self.parameters())
-            return ub.repr2(params, nl=0, precision=2, si=True, nobr=True,
+            return ub.urepr(params, nl=0, precision=2, si=True, nobr=True,
                             explicit=True)
         except Exception:
             return '?'
@@ -910,7 +910,7 @@ class Composed(MixedDistribution):
         >>> operation = np.add
         >>> self = Composed(operation, operands)
         >>> data = self.sample(5)
-        >>> print(ub.repr2(list(data), nl=0, precision=5))
+        >>> print(ub.urepr(list(data), nl=0, precision=5))
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
@@ -926,7 +926,7 @@ class Composed(MixedDistribution):
         >>> e = np.exp(1)
         >>> self = lam * e ** (-lam * X)
         >>> data = self.sample(5)
-        >>> print(ub.repr2(list(data), nl=0, precision=5))
+        >>> print(ub.urepr(list(data), nl=0, precision=5))
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
@@ -1156,7 +1156,7 @@ class TruncNormal(ContinuousDistribution):
         >>> self = TruncNormal(low=low, high=high, std=std, rng=0)
         >>> shape = (3, 3)
         >>> data = self(*shape)
-        >>> print(ub.repr2(data, precision=5))
+        >>> print(ub.urepr(data, precision=5))
         np.array([[ 0.01841,  0.0817 ,  0.0388 ],
                   [ 0.01692, -0.0288 ,  0.05517],
                   [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
@@ -1297,9 +1297,9 @@ class NonlinearUniform(ContinuousDistribution):
 
     Example:
         >>> self = NonlinearUniform(0, 100, np.sqrt, rng=0)
-        >>> print(ub.repr2(list(self.sample(2)), precision=2, nl=0))
+        >>> print(ub.urepr(list(self.sample(2)), precision=2, nl=0))
         [74.08, 84.57]
-        >>> print(ub.repr2(self.sample(2, 3), precision=2, nl=1))
+        >>> print(ub.urepr(self.sample(2, 3), precision=2, nl=1))
         np.array([[77.64, 73.82, 65.09],
                   [80.37, 66.15, 94.43]], dtype=np.float64)
 

@@ -428,7 +428,7 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(gauss_weights, pnum=pnum_(), title='Gaussian weights')
         >>> pnum_()
         >>> for result in results:
-        >>>     param_key = ub.repr2(result['params'], compact=1)
+        >>>     param_key = ub.urepr(result['params'], compact=1)
         >>>     final = result['final']
         >>>     canvas = kwarray.normalize(final)
         >>>     canvas = kwimage.fill_nans_with_checkers(canvas)

@@ -85,7 +85,7 @@ def main():
     #         if make_rand is make_rand_torch:
     #             torch.cuda.synchronize()
 
-    print(ub.repr2(ti.measures, precision=6))
+    print(ub.urepr(ti.measures, precision=6))
 
     import pandas as pd
     print(pd.DataFrame(ti.measures))

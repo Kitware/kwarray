@@ -48,7 +48,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> inputs = rng.rand(10, 2).astype(np.float32)
         >>> stats = stats_dict(inputs, axis=axis, nan=False, median=True)
         >>> import ubelt as ub  # NOQA
-        >>> result = str(ub.repr2(stats, nl=1, precision=4, with_dtype=True))
+        >>> result = str(ub.urepr(stats, nl=1, precision=4, with_dtype=True))
         >>> print(result)
         {
             'mean': np.array([[0.5206, 0.6425]], dtype=np.float32),
@@ -71,7 +71,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>> inputs[4] = np.nan
         >>> stats = stats_dict(inputs, axis=axis, nan=True, quantile='auto')
         >>> import ubelt as ub  # NOQA
-        >>> result = str(ub.repr2(stats, nl=0, precision=1, strkeys=True))
+        >>> result = str(ub.urepr(stats, nl=0, precision=1, strkeys=True))
         >>> print(result)
 
     Example:
@@ -102,8 +102,8 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         >>>         inputs = orig_inputs
         >>>     stats = kwarray.stats_dict(inputs, **kwargs)
         >>>     print('---')
-        >>>     print('params = {}'.format(ub.repr2(params, nl=1)))
-        >>>     print('stats = {}'.format(ub.repr2(stats, nl=1)))
+        >>>     print('params = {}'.format(ub.urepr(params, nl=1)))
+        >>>     print('stats = {}'.format(ub.urepr(stats, nl=1)))
 
     Ignore:
         import kwarray
@@ -268,16 +268,16 @@ class RunningStats(ub.NiceRepr):
         >>> run.update(np.dstack([ch1 + 1, ch2]))
         >>> run.update(np.dstack([ch1 + 2, ch2]))
         >>> # No marginalization
-        >>> print('current-ave = ' + ub.repr2(run.summarize(axis=ub.NoParam), nl=2, precision=3))
+        >>> print('current-ave = ' + ub.urepr(run.summarize(axis=ub.NoParam), nl=2, precision=3))
         >>> # Average over channels (keeps spatial dims separate)
-        >>> print('chann-ave(k=1) = ' + ub.repr2(run.summarize(axis=0), nl=2, precision=3))
-        >>> print('chann-ave(k=0) = ' + ub.repr2(run.summarize(axis=0, keepdims=0), nl=2, precision=3))
+        >>> print('chann-ave(k=1) = ' + ub.urepr(run.summarize(axis=0), nl=2, precision=3))
+        >>> print('chann-ave(k=0) = ' + ub.urepr(run.summarize(axis=0, keepdims=0), nl=2, precision=3))
         >>> # Average over spatial dims (keeps channels separate)
-        >>> print('spatial-ave(k=1) = ' + ub.repr2(run.summarize(axis=(1, 2)), nl=2, precision=3))
-        >>> print('spatial-ave(k=0) = ' + ub.repr2(run.summarize(axis=(1, 2), keepdims=0), nl=2, precision=3))
+        >>> print('spatial-ave(k=1) = ' + ub.urepr(run.summarize(axis=(1, 2)), nl=2, precision=3))
+        >>> print('spatial-ave(k=0) = ' + ub.urepr(run.summarize(axis=(1, 2), keepdims=0), nl=2, precision=3))
         >>> # Average over all dims
-        >>> print('alldim-ave(k=1) = ' + ub.repr2(run.summarize(axis=None), nl=2, precision=3))
-        >>> print('alldim-ave(k=0) = ' + ub.repr2(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
+        >>> print('alldim-ave(k=1) = ' + ub.urepr(run.summarize(axis=None), nl=2, precision=3))
+        >>> print('alldim-ave(k=0) = ' + ub.urepr(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
         """
 
     def __init__(run, nan_policy='omit', check_weights=True, **kwargs):
@@ -437,10 +437,10 @@ class RunningStats(ub.NiceRepr):
             >>> run = kwarray.RunningStats()
             >>> data = np.array([[1, np.nan, np.nan], [0, np.nan, 1.]])
             >>> run.update(data)
-            >>> print('current = {}'.format(ub.repr2(run.current(), nl=1)))
-            >>> print('summary(axis=None) = {}'.format(ub.repr2(run.summarize(), nl=1)))
-            >>> print('summary(axis=1) = {}'.format(ub.repr2(run.summarize(axis=1), nl=1)))
-            >>> print('summary(axis=0) = {}'.format(ub.repr2(run.summarize(axis=0), nl=1)))
+            >>> print('current = {}'.format(ub.urepr(run.current(), nl=1)))
+            >>> print('summary(axis=None) = {}'.format(ub.urepr(run.summarize(), nl=1)))
+            >>> print('summary(axis=1) = {}'.format(ub.urepr(run.summarize(axis=1), nl=1)))
+            >>> print('summary(axis=0) = {}'.format(ub.urepr(run.summarize(axis=0), nl=1)))
             >>> data = np.array([[2, 0, 1], [0, 1, np.nan]])
             >>> run.update(data)
             >>> data = np.array([[3, 1, 1], [0, 1, np.nan]])
@@ -448,10 +448,10 @@ class RunningStats(ub.NiceRepr):
             >>> data = np.array([[4, 1, 1], [0, 1, 1.]])
             >>> run.update(data)
             >>> print('----')
-            >>> print('current = {}'.format(ub.repr2(run.current(), nl=1)))
-            >>> print('summary(axis=None) = {}'.format(ub.repr2(run.summarize(), nl=1)))
-            >>> print('summary(axis=1) = {}'.format(ub.repr2(run.summarize(axis=1), nl=1)))
-            >>> print('summary(axis=0) = {}'.format(ub.repr2(run.summarize(axis=0), nl=1)))
+            >>> print('current = {}'.format(ub.urepr(run.current(), nl=1)))
+            >>> print('summary(axis=None) = {}'.format(ub.urepr(run.summarize(), nl=1)))
+            >>> print('summary(axis=1) = {}'.format(ub.urepr(run.summarize(axis=1), nl=1)))
+            >>> print('summary(axis=0) = {}'.format(ub.urepr(run.summarize(axis=0), nl=1)))
         """
         if run.nan_policy == 'omit':
             weights = weights * (~np.isnan(data)).astype(float)

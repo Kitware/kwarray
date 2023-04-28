@@ -45,7 +45,7 @@ def benchmark_atleast_nd():
     rows = []
     for datakw in data_grid:
         arr = np.empty(datakw['shape'])
-        datakey = ub.repr2(datakw, compact=1)
+        datakey = ub.urepr(datakw, compact=1)
 
         # Extra summary info
         datarow = datakw.copy()
@@ -54,7 +54,7 @@ def benchmark_atleast_nd():
         datarow['numel'] = arr.size
 
         for methodkw in method_grid:
-            methodkey = ub.repr2(methodkw, compact=1)
+            methodkey = ub.urepr(methodkw, compact=1)
             key = methodkey + ':' + datakey
 
             # Extra summary info
