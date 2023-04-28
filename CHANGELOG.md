@@ -16,6 +16,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 * Allow `None` as `indices` in `kwarray.Sticher.add`
 * Change `nan_behavior` to `nan_policy` in `kwarray.RunningStats`
+* Avoiding torch inputs when possible. `util_slider` now imports torch locally if it needs to.
 
 ### Fixed
 * `robust_normalize` now preserves masked arrays.

@@ -10,11 +10,6 @@ import ubelt as ub
 import numpy as np
 import itertools as it
 
-try:
-    import torch
-except ImportError:
-    torch = None
-
 
 class SlidingWindow(ub.NiceRepr):
     """
@@ -466,6 +461,7 @@ class Stitcher(ub.NiceRepr):
             self.sumview = self.sums.ravel()
             self.weightview = self.weights.ravel()
         else:
+            import torch
             self.sums = torch.zeros(shape, device=device)
             self.weights = torch.zeros(shape, device=device)
 

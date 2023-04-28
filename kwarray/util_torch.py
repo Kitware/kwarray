@@ -2,22 +2,13 @@
 Torch specific extensions
 """
 import numpy as np
-try:
-    from packaging.version import parse as LooseVersion
-except ImportError:
-    from distutils.version import LooseVersion
-
-
-try:
-    import torch
-except Exception:
-    torch = None
-    _TORCH_HAS_BOOL_COMP = False
-else:
-    _TORCH_HAS_BOOL_COMP = LooseVersion(torch.__version__) >= LooseVersion('1.2.0')
+import sys
 
 
 def _is_in_onnx_export():
+    torch = sys.modules.get('torch', None)
+    if torch is None:
+        return False
     try:
         # Does not exist for older torch versions
         return torch.onnx.is_in_onnx_export()
@@ -43,6 +34,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
     Example:
         >>> # each element in target has to have 0 <= value < C
         >>> # xdoctest: +REQUIRES(module:torch)
+        >>> import torch
         >>> labels = torch.LongTensor([0, 0, 1, 4, 2, 3])
         >>> num_classes = max(labels) + 1
         >>> t = one_hot_embedding(labels, num_classes)
@@ -71,6 +63,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
 
     Example:
         >>> # xdoctest: +REQUIRES(module:torch)
+        >>> import torch
         >>> nC = num_classes = 3
         >>> labels = (torch.rand(10, 11, 12) * nC).long()
         >>> assert one_hot_embedding(labels, nC, dim=0).shape == (3, 10, 11, 12)
@@ -84,6 +77,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
         >>> assert one_hot_embedding(labels, nC, dim=0).shape == (3, 10)
         >>> assert one_hot_embedding(labels, nC, dim=1).shape == (10, 3)
     """
+    torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(labels):
         in_dims = labels.ndimension()
         if dim < 0:
@@ -259,6 +253,7 @@ def one_hot_lookup(data, indices):
         >>> print('tf_outputs = {!r}'.format(tf_outputs))
         >>> print('pt_outputs = {!r}'.format(pt_outputs))
     """
+    torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(indices):
         if _is_in_onnx_export():
 
@@ -302,10 +297,7 @@ def one_hot_lookup(data, indices):
             # Have to use multiply trick to satisfy onnx
             out = (data * ohe).sum(dim=1)
         else:
-            if _TORCH_HAS_BOOL_COMP:
-                ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
-            else:
-                ohe = torch.eye(data.shape[1], dtype=torch.uint8, device=indices.device)[indices]
+            ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
             out = data[ohe]
     else:
         # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(bool)
@@ -321,6 +313,7 @@ def _torch_available_devices():
 
     Try and check that cuda is availble AND we have a good kernel image
     """
+    torch = sys.modules.get('torch', None)
     available_devices = []
     if torch is not None:
         if torch.cuda.is_available():

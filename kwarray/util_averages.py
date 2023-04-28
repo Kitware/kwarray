@@ -7,12 +7,7 @@ import warnings
 import collections
 import numpy as np
 import ubelt as ub
-
-
-try:
-    import torch
-except Exception:
-    torch = None
+import sys
 
 
 # Maybe name or alias or use in kwarray.describe?
@@ -116,6 +111,8 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         stats = kwarray.stats_dict(inputs, axis=2, nan=True, quantile='auto')
     """
     stats = collections.OrderedDict([])
+    # only use torch if its already in use
+    torch = sys.modules.get('torch', None)
 
     # Ensure input is in numpy format
     if isinstance(inputs, np.ndarray):
