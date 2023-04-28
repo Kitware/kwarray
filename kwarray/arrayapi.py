@@ -1442,7 +1442,7 @@ class ArrayAPI:
             data (ndarray | Tensor): data to be operated on
 
         """
-        import torch
+        torch = sys.modules.get('torch', None)
         if torch is not None and torch.is_tensor(data):
             return TorchImpls
         else:
