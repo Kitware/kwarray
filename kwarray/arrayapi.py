@@ -1681,7 +1681,10 @@ def dtype_info(dtype):
 
     Example:
         >>> from kwarray.arrayapi import *  # NOQA
-        >>> import torch
+        >>> try:
+        >>>     import torch
+        >>> except ImportError:
+        >>>     torch = None
         >>> results = []
         >>> results += [dtype_info(float)]
         >>> results += [dtype_info(int)]
