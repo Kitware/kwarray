@@ -72,7 +72,7 @@ except ImportError:
 
 
 # import pkg_resources
-import importlib
+import importlib.metadata
 try:
     # _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
     _TORCH_VERSION = Version(importlib.metadata.version('torch'))
