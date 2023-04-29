@@ -1292,7 +1292,7 @@ class NumpyImpls(object):
         """
         Cast data into a numpy representation
         """
-        import torch
+        torch = sys.modules.get('torch', None)
         if torch is not None and isinstance(data, torch.Tensor):
             data = data.cpu().numpy()
         return np.asarray(data, dtype=dtype)
@@ -1669,6 +1669,8 @@ def _torch_dtype_lut():
 
 def dtype_info(dtype):
     """
+    Lookup datatype information
+
     Args:
         dtype (type): a numpy, torch, or python numeric data type
 
@@ -1677,7 +1679,7 @@ def dtype_info(dtype):
             an iinfo of finfo structure depending on the input type.
 
     References:
-        https://higra.readthedocs.io/en/stable/_modules/higra/hg_utils.html#dtype_info
+        ..[DtypeNotes] https://higra.readthedocs.io/en/stable/_modules/higra/hg_utils.html#dtype_info
 
     Example:
         >>> from kwarray.arrayapi import *  # NOQA
