@@ -6,9 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.12 - Unreleased
 
+### Fixed:
+* Problems with last release
+
 
 ## Version 0.6.11 - Released 2023-04-28
 
+
+### Changed
+* Avoiding global torch imports. This may slow down the ArrayAPI, and we should
+  revisit a refactor after removing 3.6 support.
 
 ## Version 0.6.10 - Released 2023-04-04
 
@@ -19,8 +26,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 * Allow `None` as `indices` in `kwarray.Sticher.add`
 * Change `nan_behavior` to `nan_policy` in `kwarray.RunningStats`
-* Avoiding global torch imports. This may slow down the ArrayAPI, and we should
-  revisit a refactor after removing 3.6 support.
 * Updated `ub.repr2` to `ub.urepr`.
 
 ### Fixed

@@ -1292,7 +1292,7 @@ class NumpyImpls(object):
         """
         Cast data into a numpy representation
         """
-        import torch
+        torch = sys.modules.get('torch', None)
         if torch is not None and isinstance(data, torch.Tensor):
             data = data.cpu().numpy()
         return np.asarray(data, dtype=dtype)
@@ -1681,10 +1681,7 @@ def dtype_info(dtype):
 
     Example:
         >>> from kwarray.arrayapi import *  # NOQA
-        >>> try:
-        >>>     import torch
-        >>> except ImportError:
-        >>>     torch = None
+        >>> import torch
         >>> results = []
         >>> results += [dtype_info(float)]
         >>> results += [dtype_info(int)]
