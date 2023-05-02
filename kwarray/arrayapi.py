@@ -68,7 +68,7 @@ from functools import partial
 try:
     from packaging.version import parse as Version
 except ImportError:
-    from distutils.version import Version
+    from distutils.version import LooseVersion as Version
 
 
 try:
