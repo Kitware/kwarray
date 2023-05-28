@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.13 - Unreleased
 
+### Fixed
+* Bug in robust normalizers with quantile-clip extrema
+
 
 ## Version 0.6.12 - Released 2023-04-28
 

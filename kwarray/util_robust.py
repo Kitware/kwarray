@@ -143,9 +143,9 @@ def find_robust_normalizers(data, params='auto'):
         # https://github.com/derekbeaton/OuRS
         # https://en.wikipedia.org/wiki/Feature_scaling
         if params['extrema'] in {'tukey', 'iqr'}:
-            fense_extremes = _tukey_quantile_fence(data)
+            fense_extremes = _tukey_quantile_fence(data, clip=False)
         elif params['extrema'] in {'tukey-clip', 'iqr-clip'}:
-            fense_extremes = _tukey_quantile_fence(data)
+            fense_extremes = _tukey_quantile_fence(data, clip=True)
         elif params['extrema'] == 'quantile':
             fense_extremes = _quantile_extreme_estimator(data, params)
         elif params['extrema'] == 'custom-quantile':
@@ -160,7 +160,8 @@ def find_robust_normalizers(data, params='auto'):
         # alpha = max(abs(old_min - beta), abs(old_max - beta)) / logit(0.998)
         # This chooses alpha such the original min/max value will be pushed
         # towards -1 / +1.
-        alpha = max(abs(min_val - beta), abs(max_val - beta)) / 6.212606
+        logit_998 = 6.212606095751518  # value of logit(0.998)
+        alpha = max(abs(min_val - beta), abs(max_val - beta)) / logit_998
 
         normalizer = {
             'type': 'normalize',
@@ -170,6 +171,7 @@ def find_robust_normalizers(data, params='auto'):
             'beta': beta,
             'alpha': alpha,
         }
+    print('returning normalizer = {}'.format(ub.urepr(normalizer, nl=1)))
     return normalizer
 
 
@@ -420,8 +422,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         imdata_valid = imdata[mask]
 
     assert not np.any(np.isnan(imdata_valid))
-
+    print(f'params={params}')
     normalizer = find_robust_normalizers(imdata_valid, params=params)
+    print(f'found normalizer={normalizer}')
     imdata_normalized = _apply_robust_normalizer(normalizer, imdata,
                                                  imdata_valid, mask, dtype)
 
@@ -446,6 +449,7 @@ def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy
         fit/predict different types of normalizers.
     """
     import kwarray
+    print(f'apply normalizer={normalizer}')
     if normalizer['type'] is None:
         imdata_normalized = imdata.astype(dtype, copy=copy)
     elif normalizer['type'] == 'normalize':
