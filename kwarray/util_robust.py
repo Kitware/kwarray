@@ -35,7 +35,7 @@ def find_robust_normalizers(data, params='auto'):
                 extrema (str):
                     The method for determening what the extrama are.
                     Can be "quantile" for strict quantile clipping
-                    Can be "custom-quantile" for an IQR-like adjusted quantile method.
+                    Can be "adaptive-quantile" for an IQR-like adjusted quantile method.
                     Can be "tukey" or "IQR" for an exact IQR method.
 
                 low (float): This is the low quantile for likely inliers.
@@ -47,7 +47,7 @@ def find_robust_normalizers(data, params='auto'):
             Can be specified as a concise string.
 
             The string "auto" defaults to:
-                ``dict(extrema='custom-quantile', scaling='linear', low=0.01, mid=0.5, high=0.9)``.
+                ``dict(extrema='adaptive-quantile', scaling='linear', low=0.01, mid=0.5, high=0.9)``.
 
             The string "tukey" defaults to:
                 ``dict(extrema='tukey', scaling='linear')``.
@@ -59,7 +59,7 @@ def find_robust_normalizers(data, params='auto'):
 
             type (str): which is always 'normalize'
 
-            mode (str): the value of `params['scaling']`
+            mode (str): the value of ``params['scaling']``
 
             min_val (float): the determined "robust" minimum inlier value.
 
@@ -113,7 +113,7 @@ def find_robust_normalizers(data, params='auto'):
         # should center the desired distribution to visualize on zero
         # beta = np.median(imdata)
         default_params = {
-            'extrema': 'custom-quantile',
+            'extrema': 'adaptive-quantile',
             'scaling': 'linear',
             'low': 0.01,
             'mid': 0.5,
@@ -138,6 +138,7 @@ def find_robust_normalizers(data, params='auto'):
 
         # hack
         params = ub.dict_union(default_params, params)
+        print('params = {}'.format(ub.urepr(params, nl=1)))
 
         # TODO:
         # https://github.com/derekbeaton/OuRS
@@ -148,7 +149,7 @@ def find_robust_normalizers(data, params='auto'):
             fense_extremes = _tukey_quantile_fence(data, clip=True)
         elif params['extrema'] == 'quantile':
             fense_extremes = _quantile_extreme_estimator(data, params)
-        elif params['extrema'] == 'custom-quantile':
+        elif params['extrema'] in {'custom-quantile', 'adaptive-quantile'}:
             fense_extremes = _custom_quantile_extreme_estimator(data, params)
         else:
             raise KeyError(params['extrema'])
@@ -238,22 +239,22 @@ def _custom_quantile_extreme_estimator(data, params):
     # upper_lower_range = quant_mid_val - quant_low_val
 
     # Compute amount of weight in each quantile
-    quant_center_amount = (quant_high_val - quant_low_val)
+    quant_mid_amount = (quant_high_val - quant_low_val)
     quant_low_amount = (quant_mid_val - quant_low_val)
     quant_high_amount = (quant_high_val - quant_mid_val)
 
-    if isclose(quant_center_amount, 0):
+    if isclose(quant_mid_amount, 0):
         high_weight = 0.5
         low_weight = 0.5
     else:
-        high_weight = quant_high_amount / quant_center_amount
-        low_weight = quant_low_amount / quant_center_amount
+        high_weight = quant_high_amount / quant_mid_amount
+        low_weight = quant_low_amount / quant_mid_amount
 
     quant_high_residual = (1.0 - quant_high)
     quant_low_residual = (quant_low - 0.0)
     # todo: verify, having slight head fog, not 100% sure
-    low_pad_val = quant_low_residual * (low_weight * quant_center_amount)
-    high_pad_val = quant_high_residual * (high_weight * quant_center_amount)
+    low_pad_val = quant_low_residual * (low_weight * quant_mid_amount)
+    high_pad_val = quant_high_residual * (high_weight * quant_mid_amount)
     min_val = max(quant_low_abs, quant_low_val - low_pad_val)
     max_val = max(quant_high_abs, quant_high_val - high_pad_val)
     mid_val = quant_mid_val
@@ -281,8 +282,8 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
             heuristic.
 
         params (str | dict):
-            Can contain keys, low, high, or center, scaling, extrema
-            e.g. {'low': 0.1, 'center': 0.8, 'high': 0.9, 'scaling': 'sigmoid'}
+            Can contain keys, low, high, or mid, scaling, extrema
+            e.g. {'low': 0.1, 'mid': 0.8, 'high': 0.9, 'scaling': 'sigmoid'}
             See documentation in :func:`find_robust_normalizers`.
 
         axis (None | int):
