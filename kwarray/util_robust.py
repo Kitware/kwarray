@@ -138,7 +138,6 @@ def find_robust_normalizers(data, params='auto'):
 
         # hack
         params = ub.dict_union(default_params, params)
-        print('params = {}'.format(ub.urepr(params, nl=1)))
 
         # TODO:
         # https://github.com/derekbeaton/OuRS
@@ -172,7 +171,6 @@ def find_robust_normalizers(data, params='auto'):
             'beta': beta,
             'alpha': alpha,
         }
-    print('returning normalizer = {}'.format(ub.urepr(normalizer, nl=1)))
     return normalizer
 
 
@@ -423,9 +421,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         imdata_valid = imdata[mask]
 
     assert not np.any(np.isnan(imdata_valid))
-    print(f'params={params}')
     normalizer = find_robust_normalizers(imdata_valid, params=params)
-    print(f'found normalizer={normalizer}')
     imdata_normalized = _apply_robust_normalizer(normalizer, imdata,
                                                  imdata_valid, mask, dtype)
 
@@ -450,7 +446,6 @@ def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy
         fit/predict different types of normalizers.
     """
     import kwarray
-    print(f'apply normalizer={normalizer}')
     if normalizer['type'] is None:
         imdata_normalized = imdata.astype(dtype, copy=copy)
     elif normalizer['type'] == 'normalize':
