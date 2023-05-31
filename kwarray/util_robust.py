@@ -168,6 +168,7 @@ def find_robust_normalizers(data, params='auto'):
             'mode': params['scaling'],
             'min_val': min_val,
             'max_val': max_val,
+            'mid_val': mid_val,
             'beta': beta,
             'alpha': alpha,
         }
