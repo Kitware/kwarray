@@ -97,6 +97,7 @@ def find_robust_normalizers(data, params='auto'):
         >>> print('norm_params3 = {}'.format(ub.urepr(norm_params3, nl=1)))
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.util_robust import *  # NOQA
         >>> from kwarray.distributions import Mixture
         >>> import ubelt as ub
@@ -311,6 +312,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         and :func:`normalize`.
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.util_robust import *  # NOQA
         >>> from kwarray.distributions import Mixture
         >>> import ubelt as ub

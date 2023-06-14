@@ -220,6 +220,7 @@ class Parameterized(ub.NiceRepr):
     def idstr(self, nl=None, thresh=80):
         """
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> self = TruncNormal()
             >>> self.idstr()
             >>> #
@@ -591,6 +592,7 @@ class Distribution(Parameterized, _RBinOpMixin):
             xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> from kwarray.distributions import *  # NOQA
             >>> self = Distribution.random()
             >>> print('self = {!r}'.format(self))
