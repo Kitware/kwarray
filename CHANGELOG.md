@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.14 - Unreleased
 
+### Changed
+* Make scipy optional
+
 
 ## Version 0.6.13 - Released 2023-05-31
 

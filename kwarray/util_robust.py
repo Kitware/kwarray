@@ -531,6 +531,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> norms = {}
         >>> norms['arr'] = arr.copy()
         >>> norms['linear'] = normalize(arr, mode='linear')
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> norms['sigmoid'] = normalize(arr, mode='sigmoid')
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
@@ -544,6 +545,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> # xdoctest: +REQUIRES(module:kwimage)
         >>> arr = np.array([np.inf])
         >>> normalize(arr, mode='linear')
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> normalize(arr, mode='sigmoid')
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot

@@ -1144,11 +1144,13 @@ class TruncNormal(ContinuousDistribution):
         xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> self = TruncNormal(rng=0)
         >>> self()  # output of this changes before/after scipy version 1.5
         ...0.1226...
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.distributions import *  # NOQA
         >>> low = -np.pi / 16
         >>> high = np.pi / 16
@@ -1382,6 +1384,7 @@ class PDF(Distribution):
         p (list): probability sample for each domain sample
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.distributions import PDF # NOQA
         >>> x = np.linspace(800, 4500)
         >>> p = np.log10(x)
