@@ -860,6 +860,7 @@ class Mixture(MixedDistribution):
                 number of random distributions in the mixture
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> from kwarray.distributions import *  # NOQA
             >>> print('Mixture = {!r}'.format(Mixture))
             >>> print('Mixture = {!r}'.format(dir(Mixture)))
