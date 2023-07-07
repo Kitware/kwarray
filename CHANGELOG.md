@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Changed
 * Make scipy optional
 
+### Fixed
+* Issue in `_combine_mean_stds` when nums is less than 1 and bessel correction is on.
+
 
 ## Version 0.6.13 - Released 2023-05-31
 
