@@ -1122,7 +1122,7 @@ class Normal(ContinuousDistribution):
         rng = ensure_rng(rng)
         mean = (rng.rand() * 1024) - 512
         std = np.abs((rng.randn() * 32)) + 1
-        return cls(mean=mean, std=std)
+        return cls(mean=mean, std=std, rng=rng)
 
 
 class TruncNormal(ContinuousDistribution):
@@ -1274,6 +1274,10 @@ class Categorical(DiscreteDistribution):
         array([[5, 5, 1],
                [5, 1, 1]])
     """
+    __params__ = ub.odict([
+        ('categories', Value()),
+        ('weights', Value(None)),
+    ])
     def __init__(self, categories, weights=None, rng=None):
         super(Categorical, self).__init__(rng=rng)
         self._setparam('categories', np.array(categories))

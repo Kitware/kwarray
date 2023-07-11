@@ -11,6 +11,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 * Issue in `_combine_mean_stds` when nums is less than 1 and bessel correction is on.
+* Added `__params__` to Categorical
+* Fixed case where `rng` passed to `Normal.random` was not respected.
 
 
 ## Version 0.6.13 - Released 2023-05-31
