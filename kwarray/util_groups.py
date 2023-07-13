@@ -222,10 +222,10 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         groupids_sorted = idx_to_groupid
     else:
         if ARGSORT_HAS_STABLE_KIND:
-            argsort_kw = {}
-        else:
             # Handle output variation introduced (roughly) in numpy 1.25
             argsort_kw = {'kind': 'stable'}
+        else:
+            argsort_kw = {}
         sortx = idx_to_groupid.argsort(**argsort_kw)
         groupids_sorted = idx_to_groupid.take(sortx)
 
