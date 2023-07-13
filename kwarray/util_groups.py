@@ -3,6 +3,9 @@ Functions for partitioning numpy arrays into groups.
 """
 import numpy as np
 import ubelt as ub
+from packaging.version import parse as Version
+
+ARGSORT_HAS_STABLE_KIND = Version(np.__version__) >= Version('1.15.0')
 
 
 __TODO__ = """
@@ -75,13 +78,10 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
         >>> items = np.array([0, 1, 2, 3, 4, 5, 6, 7, 1, 1])
         >>> keys = np.array( [2, 2, 1, 1, 0, 1, 0, 1, 1, 1])
         >>> grouped = group_items(items, keys)
-        >>> # Different versions of numpy may produce different orderings
-        >>> # so normalize these to make test output consistent
-        >>> [gxs.sort() for gxs in grouped.values()]
         >>> print('grouped = ' + ub.urepr(grouped, nl=1, with_dtype=False, sort=1))
         grouped = {
             0: np.array([4, 6]),
-            1: np.array([1, 1, 2, 3, 5, 7]),
+            1: np.array([2, 3, 5, 7, 1, 1]),
             2: np.array([0, 1]),
         }
     """
@@ -130,9 +130,10 @@ def group_indices(idx_to_groupid, assume_sorted=False):
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> import kwarray
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([2, 1, 2, 1, 2, 1, 2, 3, 3, 3, 3])
-        >>> (keys, groupxs) = group_indices(idx_to_groupid)
+        >>> (keys, groupxs) = kwarray.group_indices(idx_to_groupid)
         >>> print('keys = ' + ub.urepr(keys, with_dtype=False))
         >>> print('groupxs = ' + ub.urepr(groupxs, with_dtype=False))
         keys = np.array([1, 2, 3])
@@ -144,15 +145,16 @@ def group_indices(idx_to_groupid, assume_sorted=False):
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> import kwarray
         >>> import ubelt as ub
-        >>> idx_to_groupid = np.array([[  24], [ 129], [ 659], [ 659], [ 24],
-        ...       [659], [ 659], [ 822], [ 659], [ 659], [24]])
         >>> # 2d arrays must be flattened before coming into this function so
         >>> # information is on the last axis
-        >>> (keys, groupxs) = group_indices(idx_to_groupid.T[0])
+        >>> idx_to_groupid = np.array([[  24], [ 129], [ 659], [ 659], [ 24],
+        ...       [659], [ 659], [ 822], [ 659], [ 659], [24]]).T[0]
+        >>> (keys, groupxs) = kwarray.group_indices(idx_to_groupid)
         >>> # Different versions of numpy may produce different orderings
         >>> # so normalize these to make test output consistent
-        >>> [gxs.sort() for gxs in groupxs]
+        >>> #[gxs.sort() for gxs in groupxs]
         >>> print('keys = ' + ub.urepr(keys, with_dtype=False))
         >>> print('groupxs = ' + ub.urepr(groupxs, with_dtype=False))
         keys = np.array([ 24, 129, 659, 822])
@@ -165,9 +167,10 @@ def group_indices(idx_to_groupid, assume_sorted=False):
 
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
+        >>> import kwarray
         >>> import ubelt as ub
         >>> idx_to_groupid = np.array([True, True, False, True, False, False, True])
-        >>> (keys, groupxs) = group_indices(idx_to_groupid)
+        >>> (keys, groupxs) = kwarray.group_indices(idx_to_groupid)
         >>> print(ub.urepr(keys, with_dtype=False))
         >>> print(ub.urepr(groupxs, with_dtype=False))
         np.array([False,  True])
@@ -179,8 +182,9 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     Example:
         >>> # xdoctest: +IGNORE_WHITESPACE
         >>> import ubelt as ub
+        >>> import kwarray
         >>> idx_to_groupid = [('a', 'b'),  ('d', 'b'), ('a', 'b'), ('a', 'b')]
-        >>> (keys, groupxs) = group_indices(idx_to_groupid)
+        >>> (keys, groupxs) = kwarray.group_indices(idx_to_groupid)
         >>> print(ub.urepr(keys, with_dtype=False))
         >>> print(ub.urepr(groupxs, with_dtype=False))
         [
@@ -217,7 +221,12 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         sortx = np.arange(len(idx_to_groupid))
         groupids_sorted = idx_to_groupid
     else:
-        sortx = idx_to_groupid.argsort()
+        if ARGSORT_HAS_STABLE_KIND:
+            argsort_kw = {}
+        else:
+            # Handle output variation introduced (roughly) in numpy 1.25
+            argsort_kw = {'kind': 'stable'}
+        sortx = idx_to_groupid.argsort(**argsort_kw)
         groupids_sorted = idx_to_groupid.take(sortx)
 
     if _kind == 'b':
