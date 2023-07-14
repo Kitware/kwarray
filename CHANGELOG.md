@@ -4,7 +4,19 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.13 - Unreleased
+## Version 0.6.14 - Unreleased
+
+### Changed
+* Make scipy optional
+
+### Fixed
+* Issue in `_combine_mean_stds` when nums is less than 1 and bessel correction is on.
+* Added `__params__` to Categorical
+* Fixed case where `rng` passed to `Normal.random` was not respected.
+* Ensure `kwarray.group_indicies` has consistent output across numpy versions
+
+
+## Version 0.6.13 - Released 2023-05-31
 
 ### Fixed
 * Bug in robust normalizers with quantile-clip extrema

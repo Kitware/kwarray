@@ -220,6 +220,7 @@ class Parameterized(ub.NiceRepr):
     def idstr(self, nl=None, thresh=80):
         """
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> self = TruncNormal()
             >>> self.idstr()
             >>> #
@@ -591,6 +592,7 @@ class Distribution(Parameterized, _RBinOpMixin):
             xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> from kwarray.distributions import *  # NOQA
             >>> self = Distribution.random()
             >>> print('self = {!r}'.format(self))
@@ -858,6 +860,7 @@ class Mixture(MixedDistribution):
                 number of random distributions in the mixture
 
         Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
             >>> from kwarray.distributions import *  # NOQA
             >>> print('Mixture = {!r}'.format(Mixture))
             >>> print('Mixture = {!r}'.format(dir(Mixture)))
@@ -1119,7 +1122,7 @@ class Normal(ContinuousDistribution):
         rng = ensure_rng(rng)
         mean = (rng.rand() * 1024) - 512
         std = np.abs((rng.randn() * 32)) + 1
-        return cls(mean=mean, std=std)
+        return cls(mean=mean, std=std, rng=rng)
 
 
 class TruncNormal(ContinuousDistribution):
@@ -1144,11 +1147,13 @@ class TruncNormal(ContinuousDistribution):
         xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> self = TruncNormal(rng=0)
         >>> self()  # output of this changes before/after scipy version 1.5
         ...0.1226...
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.distributions import *  # NOQA
         >>> low = -np.pi / 16
         >>> high = np.pi / 16
@@ -1269,6 +1274,10 @@ class Categorical(DiscreteDistribution):
         array([[5, 5, 1],
                [5, 1, 1]])
     """
+    __params__ = ub.odict([
+        ('categories', Value()),
+        ('weights', Value(None)),
+    ])
     def __init__(self, categories, weights=None, rng=None):
         super(Categorical, self).__init__(rng=rng)
         self._setparam('categories', np.array(categories))
@@ -1382,6 +1391,7 @@ class PDF(Distribution):
         p (list): probability sample for each domain sample
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.distributions import PDF # NOQA
         >>> x = np.linspace(800, 4500)
         >>> p = np.log10(x)

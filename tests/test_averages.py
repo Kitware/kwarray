@@ -156,3 +156,71 @@ def test_fuzzed_random_running():
             print('our1 = {}'.format(ub.urepr(our1, nl=1, precision=4)))
             print('ave1 = {}'.format(ub.urepr(ave1, nl=1, precision=4)))
             assert np.allclose(our1, ave1)
+
+
+def test_with_nan_case():
+    import kwarray
+    run = kwarray.RunningStats(nan_policy='omit')
+    n = float('nan')
+    im1 = np.array([[[0, 0, 1], [1, 0, 1]], [[1, 2, 3], [4, 5, 6]]])
+    im2 = np.array([[[2, 3, 2], [1, 3, 2]], [[0, 8, 8], [8, 4, 3]]])
+    im3 = np.array([[[0, 0, 1], [1, 0, 1]], [[n, n, n], [n, n, n]]])
+    im4 = np.array([[[n, n, n], [n, n, n]], [[n, n, n], [n, n, n]]])
+
+    # summary = run.summarize(axis=ub.NoParam, keepdims=True)
+    # print('summary = {}'.format(ub.urepr(summary, nl=1)))
+
+    run.update(im1)
+    summary = run.summarize(axis=ub.NoParam, keepdims=True)
+    print('summary = {}'.format(ub.urepr(summary, nl=1)))
+
+    run.update(im2)
+    summary = run.summarize(axis=ub.NoParam, keepdims=True)
+    print('summary = {}'.format(ub.urepr(summary, nl=1)))
+
+    run.update(im3)
+    summary = run.summarize(axis=ub.NoParam, keepdims=True)
+    print('summary = {}'.format(ub.urepr(summary, nl=1)))
+
+    run.update(im4)
+    summary = run.summarize(axis=ub.NoParam, keepdims=True)
+    print('summary = {}'.format(ub.urepr(summary, nl=1)))
+
+
+def combine_mean_std_zero_nums():
+    """
+    Test for bug that occurs when nums are zero and bessel correction causes
+    the numerator to be negative.
+    """
+    from kwarray.util_averages import _combine_mean_stds
+    means = np.array([[0.154509, 0.192753, 0.182485],
+                      [0.      , 0.      , 0.      ],
+                      [0.122889, 0.170761, 0.15622 ],
+                      [0.202546, 0.24321 , 0.282333]], dtype=np.float64)
+    stds = np.array([[1.26812e-01, 1.33810e-01, 1.30416e-01],
+                     [1.00000e+08, 1.00000e+08, 1.00000e+08],
+                     [1.31318e-01, 1.38126e-01, 1.28543e-01],
+                     [9.27550e-02, 8.76810e-02, 1.21056e-01]], dtype=np.float64)
+    nums = np.array([[200704., 200704., 200704.],
+                     [     0.,      0.,      0.],
+                     [200704., 200704., 200704.],
+                     [150528., 150528., 150528.]], dtype=np.float64)
+
+    cm1, cs1, _ = _combine_mean_stds(means, stds, nums, axis=0)
+    assert not np.any(np.isnan(cs1))
+
+    means = np.array([[0.1, 0.1, 0.1],
+                      [  0, 0.,   0.],
+                      [0.1, 0.1, 0.1],
+                      [0.2, 0.2, 0.2]], dtype=np.float64)
+    stds = np.array([[1.2, 1.3, 1.3],
+                     [1e8, 3.0, 1e1],
+                     [1.3, 1.3, 1.2],
+                     [9.2, 8.7, 1.2]], dtype=np.float64)
+    nums = np.array([[20., 20., 20.],
+                     [ 0.,  0., 0.],
+                     [20., 20., 20.],
+                     [15., 15., 15.]], dtype=np.float64)
+
+    cm1, cs1, _ = _combine_mean_stds(means, stds, nums, axis=0, bessel=False)
+    assert not np.any(np.isnan(cs1))

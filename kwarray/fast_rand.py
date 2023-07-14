@@ -131,6 +131,7 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
         * :func:`standard_normal64`
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> import scipy
         >>> import scipy.stats
         >>> pts = 1000

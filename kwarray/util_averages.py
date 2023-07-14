@@ -785,10 +785,10 @@ def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
         weights = nums / combo_num
         combo_mean = np.average(means, weights=weights, axis=axis)
         combo_mean = _postprocess_keepdims(means, combo_mean, axis)
-        numer_p1 = ((nums - bessel) * stds).sum(axis=axis, keepdims=1)
+        numer_p1 = (np.maximum(nums - bessel, 0) * stds).sum(axis=axis, keepdims=1)
         numer_p2 = (nums * ((means - combo_mean) ** 2)).sum(axis=axis, keepdims=1)
         numer = numer_p1 + numer_p2
-        denom = combo_num - bessel
+        denom = np.maximum(combo_num - bessel, 0)
         combo_std = np.sqrt(numer / denom)
 
     if not keepdims:

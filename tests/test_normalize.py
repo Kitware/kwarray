@@ -1,15 +1,20 @@
 import kwarray
 import numpy as np
 
-NORMALIZE_PARAM_BASIS = {
-    'dtype': [np.float32, np.uint8, int, float],
-    'mode': ['linear', 'sigmoid'],
-    'use_out': [True, False],
-}
-
 
 def test_normalize_grid():
     import ubelt as ub
+
+    NORMALIZE_PARAM_BASIS = {
+        'dtype': [np.float32, np.uint8, int, float],
+        'mode': ['linear', 'sigmoid'],
+        'use_out': [True, False],
+    }
+    try:
+        import scipy  # NOQA
+    except ImportError:
+        NORMALIZE_PARAM_BASIS['mode'] = ['linear']
+
     basis = {
         'shape': [
             [], [0], [0, 1], [1, 0], [3, 8, 0, 2],

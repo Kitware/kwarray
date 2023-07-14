@@ -174,6 +174,7 @@ def random_combinations(items, size, num=None, rng=None):
         Tuple: a random combination of ``items`` of length ``size``.
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> import ubelt as ub
         >>> items = list(range(10))
         >>> size = 3
@@ -191,6 +192,7 @@ def random_combinations(items, size, num=None, rng=None):
         ]
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> import ubelt as ub
         >>> items = list(zip(range(10), range(10)))
         >>> # xdoctest: +IGNORE_WANT
@@ -205,11 +207,24 @@ def random_combinations(items, size, num=None, rng=None):
         ]
 
     """
-    import scipy.special
+    import sys
     rng = ensure_rng(rng, api='python')
     num_ = np.inf if num is None else num
     # Ensure we dont request more than is possible
-    n_max = int(scipy.special.comb(len(items), size))
+    if sys.version_info[0:2] >= (3, 8):
+        import math
+        n_max = math.comb(len(items), size)
+    else:
+        try:
+            import scipy.special
+            n_max = int(scipy.special.comb(len(items), size))
+        except ImportError:
+            # https://stackoverflow.com/questions/26560726/python-binomial-coefficient
+            from math import factorial as fac
+            a = len(items)
+            b = size
+            n_max = int(fac(a) // fac(b) // fac(a - b))
+
     num_ = min(n_max, num_)
     if num is not None and num_ > n_max // 2:
         # If num is too big just generate all combinations and shuffle them

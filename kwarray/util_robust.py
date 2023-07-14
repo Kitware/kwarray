@@ -81,7 +81,7 @@ def find_robust_normalizers(data, params='auto'):
         - [ ] https://www.tandfonline.com/doi/full/10.1080/02664763.2019.1671961
         - [ ] https://www.rips-irsp.com/articles/10.5334/irsp.289/
 
-        - [ ] This function is not possible to get write in every case
+        - [ ] This function is not possible to get right in every case
               (probably can prove this with a NFL theroem), might be useful
               to allow the user to specify a "model" which is specific to some
               domain.
@@ -97,6 +97,7 @@ def find_robust_normalizers(data, params='auto'):
         >>> print('norm_params3 = {}'.format(ub.urepr(norm_params3, nl=1)))
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.util_robust import *  # NOQA
         >>> from kwarray.distributions import Mixture
         >>> import ubelt as ub
@@ -311,6 +312,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         and :func:`normalize`.
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> from kwarray.util_robust import *  # NOQA
         >>> from kwarray.distributions import Mixture
         >>> import ubelt as ub
@@ -531,6 +533,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> norms = {}
         >>> norms['arr'] = arr.copy()
         >>> norms['linear'] = normalize(arr, mode='linear')
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> norms['sigmoid'] = normalize(arr, mode='sigmoid')
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
@@ -544,6 +547,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> # xdoctest: +REQUIRES(module:kwimage)
         >>> arr = np.array([np.inf])
         >>> normalize(arr, mode='linear')
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> normalize(arr, mode='sigmoid')
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
