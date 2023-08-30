@@ -1,5 +1,4 @@
 from typing import List
-from typing import Union
 from typing import Tuple
 import ubelt as ub
 from _typeshed import Incomplete
@@ -13,13 +12,13 @@ class FlatIndexer(ub.NiceRepr):
         ...
 
     @classmethod
-    def fromlist(cls, items: List[list]):
+    def fromlist(cls, items: List[list]) -> FlatIndexer:
         ...
 
-    def __len__(self):
+    def __len__(self) -> int:
         ...
 
-    def unravel(self, index: Union[int, List[int]]) -> Tuple[int, int]:
+    def unravel(self, index: int | List[int]) -> Tuple[int, int]:
         ...
 
     def ravel(self, outer, inner) -> List[int]:

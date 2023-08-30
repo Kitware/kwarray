@@ -1,18 +1,19 @@
 from nptyping import NDArray
-from typing import Union
 from typing import Dict
 from typing import Any
 from typing import List
 from typing import Tuple
 from nptyping import Int
+from _typeshed import Incomplete
 
+ARGSORT_HAS_STABLE_KIND: Incomplete
 __TODO__: str
 
 
 def group_items(item_list: NDArray,
                 groupid_list: NDArray,
                 assume_sorted: bool = False,
-                axis: Union[int, None] = None) -> Dict[Any, NDArray]:
+                axis: int | None = None) -> Dict[Any, NDArray]:
     ...
 
 

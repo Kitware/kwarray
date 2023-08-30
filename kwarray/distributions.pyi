@@ -1,4 +1,3 @@
-from typing import Union
 import random
 import numpy
 from typing import List
@@ -19,7 +18,7 @@ class Value(ub.NiceRepr):
     help: Incomplete
     type: Incomplete
     constraints: Incomplete
-    category: Incomplete
+    category: str
     numeric: Incomplete
 
     def __init__(self,
@@ -225,7 +224,7 @@ class _RBinOpMixin(_BinOpMixin):
 
 
 class Distribution(Parameterized, _RBinOpMixin):
-    __params__: Incomplete
+    __params__ = NotImplemented
     rng: Incomplete
 
     def __init__(self, *args, **kwargs):
@@ -242,8 +241,8 @@ class Distribution(Parameterized, _RBinOpMixin):
 
     @classmethod
     def random(cls,
-               rng: Union[int, float, None, numpy.random.RandomState,
-                          random.Random] = None):
+               rng: int | float | None | numpy.random.RandomState
+               | random.Random = None):
         ...
 
     @classmethod
@@ -260,7 +259,7 @@ class Distribution(Parameterized, _RBinOpMixin):
 
     def plot(self,
              n: str = ...,
-             bins: Union[int, List[Number], str] = 'auto',
+             bins: int | List[Number] | str = 'auto',
              stat: str = 'count',
              color: Incomplete | None = ...,
              kde: bool = ...,
@@ -295,8 +294,8 @@ class Mixture(MixedDistribution):
 
     @classmethod
     def random(cls,
-               rng: Union[int, float, None, numpy.random.RandomState,
-                          random.Random] = None,
+               rng: int | float | None | numpy.random.RandomState
+               | random.Random = None,
                n: int = 3):
         ...
 
@@ -395,6 +394,7 @@ class Binomial(DiscreteDistribution):
 
 
 class Categorical(DiscreteDistribution):
+    __params__: Incomplete
 
     def __init__(self,
                  categories,

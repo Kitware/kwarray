@@ -120,6 +120,14 @@ except ImportError:
 #         Numeric = Any
 #         ArrayLike = Any
 
+__docstubs__ = """
+from torch import Tensor
+from typing import Union
+import numpy.typing
+from numbers import Number
+Numeric = Union[Number, ArrayLike, Tensor]
+"""
+
 
 class _ImplRegistry(object):
     def __init__(self):
@@ -1334,6 +1342,7 @@ class NumpyImpls(object):
         from scipy import special
         return special.softmax(data, axis=axis)
 
+    @staticmethod
     def kron(a, b):
         """
         Outer product

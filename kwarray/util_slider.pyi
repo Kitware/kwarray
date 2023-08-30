@@ -1,10 +1,9 @@
 from typing import Tuple
-from typing import Union
+import torch
 from numpy import ndarray
 import ubelt as ub
 from _typeshed import Incomplete
 from collections.abc import Generator
-from typing import Any
 
 
 class SlidingWindow(ub.NiceRepr):
@@ -39,7 +38,7 @@ class SlidingWindow(ub.NiceRepr):
         ...
 
     @property
-    def grid(self) -> Generator[Any, None, None]:
+    def grid(self) -> Generator[Tuple[int, ...], None, None]:
         ...
 
     @property
@@ -51,23 +50,39 @@ class SlidingWindow(ub.NiceRepr):
         ...
 
 
+__devnote__: str
+
+
 class Stitcher(ub.NiceRepr):
+    nan_policy: str
+    shape: tuple
+    device: str | int | torch.device
+    sums: Incomplete
+    weights: Incomplete
+    sumview: Incomplete
+    weightview: Incomplete
 
-    def __init__(stitcher, shape, device: str = ...) -> None:
+    def __init__(self,
+                 shape: tuple,
+                 device: str | int | torch.device = 'numpy',
+                 dtype: str = 'float32',
+                 nan_policy: str = 'propogate') -> None:
         ...
 
-    def __nice__(stitcher):
+    def __nice__(self):
         ...
 
-    def add(stitcher,
-            indices: Union[slice, tuple],
+    def add(self,
+            indices: slice | tuple | None,
             patch: ndarray,
-            weight: Union[float, ndarray] = None) -> None:
+            weight: float | ndarray | None = None) -> None:
         ...
 
-    def average(stitcher) -> ndarray:
+    def __getitem__(self, indices):
         ...
 
-    def finalize(stitcher,
-                 indices: Union[None, slice, tuple] = None) -> ndarray:
+    def average(self) -> ndarray:
+        ...
+
+    def finalize(self, indices: None | slice | tuple = None) -> ndarray:
         ...
