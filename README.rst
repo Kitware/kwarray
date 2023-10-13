@@ -1,9 +1,20 @@
 The Kitware Array Module
 ========================
 
-.. # TODO Get CI services running on gitlab 
+.. # TODO Get CI services running on gitlab
 
 |GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Pypi| |Downloads| |ReadTheDocs|
+
+
++------------------+-------------------------------------------------------+
+| Read the docs    | https://kwarray.readthedocs.io                        |
++------------------+-------------------------------------------------------+
+| Gitlab (main)    | https://gitlab.kitware.com/computer-vision/kwarray    |
++------------------+-------------------------------------------------------+
+| Github (mirror)  | https://github.com/Kitware/kwarray                    |
++------------------+-------------------------------------------------------+
+| Pypi             | https://pypi.org/project/kwarray                      |
++------------------+-------------------------------------------------------+
 
 The main webpage for this project is: https://gitlab.kitware.com/computer-vision/kwarray
 
@@ -13,7 +24,7 @@ The ``kwarray`` module started as extensions for numpy + a simplified
 pandas-like DataFrame object with much faster item row and column access. But
 it also include an ArrayAPI, which is a wrapper that allows 100%
 interoperability between torch and numpy. It also contains a few algorithms
-like setcover and mincost_assignment. 
+like setcover and mincost_assignment.
 
 
 Read the docs here: https://kwarray.readthedocs.io/en/master/
@@ -50,7 +61,7 @@ The ArrayAPI
 On of the most useful features in ``kwarray`` is the ``kwarray.ArrayAPI`` --- a
 class that helps bridge between numpy and torch. This class consists of static
 methods that implement part of the numpy API and operate equivalently on either
-torch.Tensor or numpy.ndarray objects. 
+torch.Tensor or numpy.ndarray objects.
 
 This works because every function call checks if the input is a torch tensor or
 a numpy array and then takes the appropriate action.
@@ -59,7 +70,7 @@ As you can imagine, it can be slow to validate your inputs on each function
 call. Therefore the recommended way of using the array API is via the
 ``kwarray.ArrayAPI.impl`` function. This function does the check once and then
 returns another object that directly performs the correct operations on
-subsequent data items of the same type. 
+subsequent data items of the same type.
 
 The following example demonstrates both modes of usage.
 
@@ -111,7 +122,7 @@ indices.
 
 ``boolmask`` effectively inverts ``np.where``.
 
-Usefulness: 
+Usefulness:
 -----------
 
 This is the frequency that I've used various components of this library with in
