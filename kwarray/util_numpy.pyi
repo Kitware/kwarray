@@ -1,5 +1,4 @@
 from nptyping import NDArray
-from typing import Union
 from typing import Any
 from nptyping import Int
 from typing import Callable
@@ -10,14 +9,14 @@ from _typeshed import Incomplete
 
 
 def boolmask(indices: NDArray,
-             shape: Union[int, tuple] = None) -> NDArray[Any, Int]:
+             shape: int | tuple | None = None) -> NDArray[Any, Int]:
     ...
 
 
 def iter_reduce_ufunc(ufunc: Callable,
                       arrs: Iterator[NDArray],
                       out: Incomplete | None = ...,
-                      default: object = None) -> NDArray:
+                      default: object | None = None) -> NDArray:
     ...
 
 
@@ -31,14 +30,14 @@ def atleast_nd(arr: ArrayLike, n: int, front: bool = False) -> NDArray:
 
 def argmaxima(arr: NDArray,
               num: int,
-              axis: Union[int, None] = None,
-              ordered: bool = True):
+              axis: int | None = None,
+              ordered: bool = True) -> NDArray:
     ...
 
 
 def argminima(arr: NDArray,
               num: int,
-              axis: Union[int, None] = None,
+              axis: int | None = None,
               ordered: bool = True):
     ...
 
@@ -51,22 +50,16 @@ def arglexmax(keys: tuple, multi: bool = False) -> int | NDArray[Any, Int]:
     ...
 
 
-def normalize(arr: NDArray,
-              mode: str = 'linear',
-              alpha: float = None,
-              beta: float = None,
-              out: Union[NDArray, None] = None,
-              min_val: Incomplete | None = ...,
-              max_val: Incomplete | None = ...):
-    ...
-
-
 def generalized_logistic(x: NDArray,
                          floor: float = 0,
                          capacity: float = 1,
                          C: float = 1,
-                         y_intercept: Union[float, None] = None,
-                         Q: Union[float, None] = None,
+                         y_intercept: float | None = None,
+                         Q: float | None = None,
                          growth: float = 1,
                          v: float = 1) -> NDArray:
+    ...
+
+
+def equal_with_nan(a1: ArrayLike, a2: ArrayLike):
     ...

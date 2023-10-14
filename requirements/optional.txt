@@ -19,3 +19,10 @@ scipy>=1.8.0     ; python_version < '3.10' and python_version >= '3.9'    # Pyth
 scipy>=1.8.0     ; python_version < '3.9'  and python_version >= '3.8'    # Python 3.8
 scipy>=1.6.0     ; python_version < '3.8'  and python_version >= '3.7'    # Python 3.7
 scipy>=1.2.1     ; python_version < '3.7'  and python_version >= '3.6'    # Python 3.6
+
+nptyping>=2.4.0     ; python_version < '4.0'  and python_version >= '3.11'    # Python 3.11+
+nptyping>=2.0.0     ; python_version < '3.11' and python_version >= '3.10'    # Python 3.10
+nptyping>=1.4.4     ; python_version < '3.10' and python_version >= '3.9'     # Python 3.9
+nptyping>=1.4.4     ; python_version < '3.9'  and python_version >= '3.8'     # Python 3.8
+nptyping>=1.4.4     ; python_version < '3.8'  and python_version >= '3.7'     # Python 3.7
+nptyping>=1.4.4     ; python_version < '3.7'  and python_version >= '3.6'     # Python 3.6

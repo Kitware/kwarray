@@ -3,8 +3,8 @@ from typing import List
 from typing import Optional
 from typing import TypeVar
 
-KT = TypeVar("KT")
 VT = TypeVar("VT")
+KT = TypeVar("KT")
 
 
 def setcover(candidate_sets_dict: Dict[KT, List[VT]],

@@ -1,4 +1,3 @@
-from typing import Union
 from typing import Sequence
 from typing import Dict
 from typing import Tuple
@@ -43,7 +42,7 @@ class DataFrameLight(ub.NiceRepr):
     def to_string(self, *args, **kwargs):
         ...
 
-    def to_dict(self, orient: str = 'dict', into: type = dict):
+    def to_dict(self, orient: str = 'dict', into: type = dict) -> dict:
         ...
 
     def pandas(self):
@@ -92,8 +91,7 @@ class DataFrameLight(ub.NiceRepr):
     def copy(self):
         ...
 
-    def extend(self, other: Union[DataFrameLight, dict[str,
-                                                       Sequence]]) -> None:
+    def extend(self, other: DataFrameLight | dict[str, Sequence]) -> None:
         ...
 
     def union(self, *others):
@@ -114,7 +112,7 @@ class DataFrameLight(ub.NiceRepr):
     def reset_index(self, drop: bool = ...):
         ...
 
-    def groupby(self, by: str = None, *args, **kwargs):
+    def groupby(self, by: str | None = None, *args, **kwargs):
         ...
 
     def rename(self,

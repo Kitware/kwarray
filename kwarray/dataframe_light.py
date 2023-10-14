@@ -195,6 +195,10 @@ class DataFrameLight(ub.NiceRepr):
         return self_vals == other_vals
 
     def to_string(self, *args, **kwargs):
+        """
+        Returns:
+            str:
+        """
         return self.pandas().to_string(*args, **kwargs)
 
     def to_dict(self, orient='dict', into=dict):
@@ -230,6 +234,9 @@ class DataFrameLight(ub.NiceRepr):
     def pandas(self):
         """
         Convert back to pandas if you need the full API
+
+        Returns:
+            pd.DataFrame:
 
         Example:
             >>> # xdoctest: +REQUIRES(module:pandas)

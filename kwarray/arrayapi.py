@@ -75,22 +75,23 @@ try:
     import importlib.metadata
     try:
         _TORCH_VERSION = Version(importlib.metadata.version('torch'))
-        _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
-        _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
     except importlib.metadata.PackageNotFoundError:
         _TORCH_VERSION = None
-        _TORCH_LT_1_7_0 = None
-        _TORCH_HAS_MAX_BUG = None
 except ImportError:
     import pkg_resources
     try:
         _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
-        _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
-        _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
     except pkg_resources.DistributionNotFound:
         _TORCH_VERSION = None
-        _TORCH_LT_1_7_0 = None
-        _TORCH_HAS_MAX_BUG = None
+
+if _TORCH_VERSION is None:
+    _TORCH_LT_1_7_0 = None
+    _TORCH_LT_2_1_0 = None
+    _TORCH_HAS_MAX_BUG = None
+else:
+    _TORCH_LT_1_7_0 = _TORCH_VERSION < Version('1.7')
+    _TORCH_LT_2_1_0 = _TORCH_VERSION < Version('2.1')
+    _TORCH_HAS_MAX_BUG = _TORCH_LT_1_7_0
 
 # torch = None
 # try:
@@ -119,6 +120,14 @@ except ImportError:
 #         from typing import Any
 #         Numeric = Any
 #         ArrayLike = Any
+
+__docstubs__ = """
+from torch import Tensor
+from typing import Union
+import numpy.typing
+from numbers import Number
+Numeric = Union[Number, ArrayLike, Tensor]
+"""
 
 
 class _ImplRegistry(object):
@@ -841,6 +850,17 @@ class TorchImpls(object):
     @_torchmethod
     def array_equal(data1, data2, equal_nan=False) -> bool:
         """
+        Returns True if all elements in the array are equal.
+        This mirrors the behavior of :func:`numpy.array_equal`.
+
+        Args:
+            data1 (Tensor): first array
+            data2 (Tensor): second array
+            equal_nan (bool): Whether to compare NaN's as equal.
+
+        Returns:
+            bool
+
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
             >>> from kwarray.arrayapi import *  # NOQA
@@ -879,7 +899,14 @@ class TorchImpls(object):
             flags = val_flags | nan_flags
             return bool(flags.all())
         else:
-            return torch.equal(data1, data2)
+            if _TORCH_LT_2_1_0:
+                return torch.equal(data1, data2)
+            else:
+                # Torch 2.1 introduced a bug so we need an alternate
+                # implementation.
+                # References:
+                #     https://github.com/pytorch/pytorch/issues/111251
+                return bool(torch.eq(data1, data2).all())
 
     @_torchmethod(func_type='data_func')
     def matmul(data1, data2, out=None):
@@ -1334,6 +1361,7 @@ class NumpyImpls(object):
         from scipy import special
         return special.softmax(data, axis=axis)
 
+    @staticmethod
     def kron(a, b):
         """
         Outer product

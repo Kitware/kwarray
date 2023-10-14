@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import ndarray
 from typing import Tuple
-import numpy as np
 
 
 def mindist_assignment(vecs1: np.ndarray,
