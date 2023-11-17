@@ -18,4 +18,8 @@ python:
   install:
   - requirements: requirements/docs.txt
   - method: pip
+    path: kwimage
+    extra_requirements
+      - headless
+  - method: pip
     path: .
