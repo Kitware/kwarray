@@ -110,8 +110,8 @@ def parse_version(fpath):
     return visitor.version
 
 project = 'kwarray'
-copyright = '2023, Jon Crall'
-author = 'Jon Crall'
+copyright = '2023, Kitware Inc. Jon Crall'
+author = 'Kitware Inc. Jon Crall'
 modname = 'kwarray'
 
 modpath = join(dirname(dirname(dirname(__file__))), 'kwarray', '__init__.py')
@@ -311,7 +311,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'kwarray.tex', 'kwarray Documentation',
-     'Jon Crall', 'manual'),
+     'Kitware Inc. Jon Crall', 'manual'),
 ]
 
 

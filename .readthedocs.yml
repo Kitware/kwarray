@@ -16,10 +16,6 @@ sphinx:
 formats: all
 python:
   install:
-  - method: pip
-    path: kwimage
-    extra_requirements:
-    - headless
   - requirements: requirements/docs.txt
   - method: pip
     path: .
