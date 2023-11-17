@@ -5,3 +5,4 @@ kwarray.dataframe\_light module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

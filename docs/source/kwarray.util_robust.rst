@@ -5,3 +5,4 @@ kwarray.util\_robust module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

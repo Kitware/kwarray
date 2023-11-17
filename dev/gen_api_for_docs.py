@@ -1,35 +1,216 @@
+#!/usr/bin/env python
+
+import scriptconfig as scfg
 
 
-def gen_api_for_docs():
+class UsageConfig(scfg.Config):
+    default = {
+        'print_packages': False,
+        'remove_zeros': False,
+        'hardcoded_ubelt_hack': 0,
+        'extra_modnames': [],
+    }
+
+
+def count_package_usage(modname):
+    import ubelt as ub
+    import glob
+    from os.path import join
+    import re
+    config = UsageConfig(cmdline=True)
+
+    names = [
+        'xdoctest', 'netharn', 'xdev', 'xinspect', 'xcookie', 'ndsampler',
+        'kwarray', 'kwimage', 'kwplot', 'kwcoco',
+        'scriptconfig', 'vimtk',
+        'mkinit', 'futures_actors', 'graphid',
+
+        'kwutil', 'git_well', 'line_profiler', 'delayed_image', 'simple_dvc',
+        'pypogo',
+
+        'ibeis', 'plottool_ibeis', 'guitool_ibeis', 'utool', 'dtool_ibeis',
+        'vtool_ibeis', 'hesaff', 'torch_liberator', 'liberator',
+    ] + config['extra_modnames']
+
+    code_repos = [ub.Path('~/code').expand() / name for name in names]
+    repo_dpaths = code_repos + [
+        # ub.Path('~/local').expand(),
+        ub.Path('~/misc').expand(),
+    ]
+    all_fpaths = []
+    for repo_dpath in repo_dpaths:
+        name = repo_dpath.stem
+        fpaths = glob.glob(join(repo_dpath, '**', '*.py'), recursive=True)
+        for fpath in fpaths:
+            all_fpaths.append((name, fpath))
+
+    pat = re.compile(r'\bub\.(?P<attr>[a-zA-Z_][A-Za-z_0-9]*)\b')
+
+    modname = modname
+    module = ub.import_module_from_name(modname)
+    package_name = module.__name__
+    package_allvar = module.__all__
+
+    pat = re.compile(r'\b' + package_name + r'\.(?P<attr>[a-zA-Z_][A-Za-z_0-9]*)\b')
+
+    pkg_to_hist = ub.ddict(lambda: ub.ddict(int))
+    for name, fpath in ub.ProgIter(all_fpaths):
+        with open(fpath, 'r') as file:
+            text = file.read()
+        for match in pat.finditer(text):
+            attr = match.groupdict()['attr']
+            if attr in package_allvar:
+                pkg_to_hist[name][attr] += 1
+
+    hist_iter = iter(pkg_to_hist.values())
+    usage = next(hist_iter).copy()
+    for other in hist_iter:
+        for k, v in other.items():
+            usage[k] += v
+    for attr in package_allvar:
+        usage[attr] += 0
+
+    for name in pkg_to_hist.keys():
+        pkg_to_hist[name] = ub.odict(sorted(pkg_to_hist[name].items(), key=lambda t: t[1])[::-1])
+
+    usage = ub.odict(sorted(usage.items(), key=lambda t: t[1])[::-1])
+
+    if config['print_packages']:
+        print(ub.repr2(pkg_to_hist, nl=2))
+
+    if config['remove_zeros']:
+        for k, v in list(usage.items()):
+            if v == 0:
+                usage.pop(k)
+
+    if config['hardcoded_ubelt_hack']:
+        blocklist = [
+            'progiter', 'timerit', 'orderedset',
+        ]
+        for k in list(usage):
+            if k in blocklist:
+                usage.pop(k, None)
+            elif k.startswith('util_'):
+                usage.pop(k, None)
+            elif k.startswith('_util_'):
+                usage.pop(k, None)
+            # ub._util_deprecated
+            # from ubelt import _util_deprecated
+            # if k in dir(_util_deprecated):
+            #     usage.pop(k, None)
+
+    if 1:
+        # Renamed Aliases
+        try:
+            usage['urepr'] += usage.pop('repr2')
+            usage['ReprExtensions'] += usage.pop('FormatterExtensions')
+        except Exception:
+            ...
+
+    usage = ub.udict(usage).sorted_values(reverse=True)
+
+    print(ub.repr2(usage, nl=1))
+    return usage
+
+
+def gen_api_for_docs(modname):
     """
     import sys, ubelt
-    sys.path.append(ubelt.expandpath('~/code/ubelt/dev'))
+    sys.path.append(ubelt.expandpath('~/code/ubelt/dev/maintain'))
     from gen_api_for_docs import *  # NOQA
     """
-    from count_usage_freq import count_usage
-    usage = count_usage()
-
-    modname = 'kwarray'
-
-    gaurd = ('=' * 64 + ' ' + '=' * 16)
-    print(gaurd)
-    print('{:<64} {:>8}'.format(' Function name ', 'Usefulness'))
-    print(gaurd)
-    for key, value in usage.items():
-        print('{:<64} {:>16}'.format(':func:`' + modname + '.' + key + '`', value))
-    print(gaurd)
-
     import ubelt as ub
+    usage = count_package_usage(modname)
+
     module = ub.import_module_from_name(modname)
-
     attrnames = module.__all__
-
     if hasattr(module, '__protected__'):
         # Hack for lazy imports
         for subattr in module.__protected__:
             submod = ub.import_module_from_name(modname + '.' + subattr)
             setattr(module, subattr, submod)
         attrnames += module.__protected__
+
+    # Reorgnaize data to contain more information
+    rows = []
+    unseen = usage.copy()
+    for attrname in attrnames:
+        member = getattr(module, attrname)
+        submembers = getattr(member, '__all__', None)
+        # if attrname.startswith('util_'):
+        import types
+        if not submembers:
+            if isinstance(member, types.ModuleType):
+                from mkinit.static_mkinit import _extract_attributes
+                submembers = _extract_attributes(member.__file__)
+            else:
+                # hack
+                attrname = member.__module__.split('.', 1)[1]
+                submembers = [member.__name__]
+        if submembers:
+            for subname in submembers:
+                parent_module = f'{modname}.{attrname}'
+                short_name = '{modname}.{subname}'.format(**locals())
+                full_name = '{parent_module}.{subname}'.format(**locals())
+                url = 'https://{modname}.readthedocs.io/en/latest/{parent_module}.html#{full_name}'.format(**locals())
+                rst_ref = ':func:`{short_name}<{full_name}>`'.format(**locals())
+                url_ref = '`{short_name} <{url}>`__'.format(**locals())
+                rows.append({
+                    'attr': subname,
+                    'parent_module': parent_module,
+                    'usage': unseen.pop(subname, 0),
+                    'short_name': short_name,
+                    'full_name': full_name,
+                    'url': url,
+                    'rst_ref': rst_ref,
+                    'url_ref': url_ref,
+                })
+
+    attr_to_infos = ub.group_items(rows, lambda x: x['attr'])
+
+    if 'urepr' in attr_to_infos:
+        urepr2_infos = attr_to_infos['urepr']
+        cannon_urepr2_infos = [d for d in urepr2_infos if 'repr' in d['parent_module']]
+        cannon_urepr2_info = cannon_urepr2_infos[0]
+        attr_to_infos['urepr'] = [cannon_urepr2_info]
+
+    import numpy as np
+    import kwarray
+
+    if ub.argflag('--url-mode'):
+        ref_key = 'url_ref'
+    else:
+        ref_key = 'rst_ref'
+
+    if len(rows):
+        name_len = max(len(row[ref_key]) for row in rows) + 1
+    else:
+        name_len = 50
+
+    num_len = 16
+
+    gaurd = ('=' * name_len + ' ' + '=' * num_len)
+    print(gaurd)
+    column_fmt = '{:<' + str(name_len) + '} {:>' + str(num_len) + '}'
+    print(column_fmt.format(' Function name ', 'Usefulness'))
+    print(gaurd)
+    for key, value in usage.items():
+        infos = attr_to_infos[key]
+        if len(infos) == 0:
+            print(column_fmt.format(f':func:`{modname}.' + key + '`', value))
+        else:
+            if len(infos) != 1:
+                print('infos = {}'.format(ub.urepr(infos, nl=1)))
+                raise AssertionError
+            info = infos[0]
+            print(column_fmt.format(info[ref_key], value))
+    print(gaurd)
+
+    raw_scores = np.array(list(usage.values()))
+
+    print('\n.. code:: python\n')
+    print(ub.indent('usage stats = ' + ub.repr2(kwarray.stats_dict(
+        raw_scores, median=True, sum=True), nl=1)))
 
     for attrname in attrnames:
         member = getattr(module, attrname)
@@ -45,22 +226,31 @@ def gen_api_for_docs():
                 pass
 
         if submembers:
-            print('\n:mod:`{}.{}`'.format(modname, attrname))
-            print('-------------')
+            parent_module = f'{modname}.{attrname}'
+
+            title = ':mod:`{}`'.format(parent_module)
+            print('\n' + title)
+            print('-' * len(title))
             for subname in submembers:
                 if not subname.startswith('_'):
-                    print(':func:`{}.{}`'.format(modname, subname))
+                    rst_ref = (
+                        f':func:`<{modname}.{subname}><{parent_module}.{subname}>`'
+                    )
+                    print(rst_ref)
             submembers = dir(member)
 
 
 if __name__ == '__main__':
     """
     CommandLine:
-        cd ~/code/kwarray/dev
+        cd ~/code/kwarray
         python dev/gen_api_for_docs.py
         python dev/gen_api_for_docs.py --extra_modnames=bioharn,watch
+        python dev/gen_api_for_docs.py --extra_modnames=bioharn,watch --url-mode
+
+        python dev/count_usage_freq.py --extra_modnames=bioharn,watch
 
         # Paste output into
         ~/code/kwarray/docs/source/index.rst
     """
-    gen_api_for_docs()
+    gen_api_for_docs('kwarray')

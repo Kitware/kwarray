@@ -5,3 +5,4 @@ kwarray.util\_averages module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

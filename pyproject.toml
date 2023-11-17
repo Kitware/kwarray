@@ -18,6 +18,7 @@ author = "Jon Crall"
 author_email = "jon.crall@kitware.com"
 description = "The kwarray module"
 license = "Apache 2"
+render_doc_images = 1
 dev_status = "beta"
 
 [tool.pytest.ini_options]

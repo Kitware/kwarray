@@ -5,3 +5,4 @@ kwarray.util\_numpy module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

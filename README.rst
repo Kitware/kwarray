@@ -129,30 +129,59 @@ This is the frequency that I've used various components of this library with in
 my projects:
 
 
-.. code:: python
+======================================================================================================================================================== ================
+ Function name                                                                                                                                                 Usefulness
+======================================================================================================================================================== ================
+`kwarray.ensure_rng <https://kwarray.readthedocs.io/en/latest/kwarray.util_random.html#kwarray.util_random.ensure_rng>`__                                             239
+`kwarray.ArrayAPI <https://kwarray.readthedocs.io/en/latest/kwarray.arrayapi.html#kwarray.arrayapi.ArrayAPI>`__                                                       148
+`kwarray.atleast_nd <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.atleast_nd>`__                                                50
+`kwarray.DataFrameArray <https://kwarray.readthedocs.io/en/latest/kwarray.dataframe_light.html#kwarray.dataframe_light.DataFrameArray>`__                              43
+`kwarray.group_indices <https://kwarray.readthedocs.io/en/latest/kwarray.util_groups.html#kwarray.util_groups.group_indices>`__                                        40
+`kwarray.stats_dict <https://kwarray.readthedocs.io/en/latest/kwarray.util_averages.html#kwarray.util_averages.stats_dict>`__                                          34
+`kwarray.normalize <https://kwarray.readthedocs.io/en/latest/kwarray.util_robust.html#kwarray.util_robust.normalize>`__                                                28
+`kwarray.embed_slice <https://kwarray.readthedocs.io/en/latest/kwarray.util_slices.html#kwarray.util_slices.embed_slice>`__                                            21
+`kwarray.shuffle <https://kwarray.readthedocs.io/en/latest/kwarray.util_random.html#kwarray.util_random.shuffle>`__                                                    17
+`kwarray.padded_slice <https://kwarray.readthedocs.io/en/latest/kwarray.util_slices.html#kwarray.util_slices.padded_slice>`__                                          14
+`kwarray.SlidingWindow <https://kwarray.readthedocs.io/en/latest/kwarray.util_slider.html#kwarray.util_slider.SlidingWindow>`__                                        14
+`kwarray.isect_flags <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.isect_flags>`__                                              12
+`kwarray.RunningStats <https://kwarray.readthedocs.io/en/latest/kwarray.util_averages.html#kwarray.util_averages.RunningStats>`__                                      12
+`kwarray.standard_normal <https://kwarray.readthedocs.io/en/latest/kwarray.fast_rand.html#kwarray.fast_rand.standard_normal>`__                                        10
+`kwarray.setcover <https://kwarray.readthedocs.io/en/latest/kwarray.algo_setcover.html#kwarray.algo_setcover.setcover>`__                                               8
+`kwarray.robust_normalize <https://kwarray.readthedocs.io/en/latest/kwarray.util_robust.html#kwarray.util_robust.robust_normalize>`__                                   7
+`kwarray.boolmask <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.boolmask>`__                                                     7
+`kwarray.one_hot_embedding <https://kwarray.readthedocs.io/en/latest/kwarray.util_torch.html#kwarray.util_torch.one_hot_embedding>`__                                   7
+`kwarray.uniform <https://kwarray.readthedocs.io/en/latest/kwarray.fast_rand.html#kwarray.fast_rand.uniform>`__                                                         6
+`kwarray.find_robust_normalizers <https://kwarray.readthedocs.io/en/latest/kwarray.util_robust.html#kwarray.util_robust.find_robust_normalizers>`__                     6
+`kwarray.Stitcher <https://kwarray.readthedocs.io/en/latest/kwarray.util_slider.html#kwarray.util_slider.Stitcher>`__                                                   6
+`kwarray.apply_grouping <https://kwarray.readthedocs.io/en/latest/kwarray.util_groups.html#kwarray.util_groups.apply_grouping>`__                                       6
+`kwarray.group_consecutive <https://kwarray.readthedocs.io/en/latest/kwarray.util_groups.html#kwarray.util_groups.group_consecutive>`__                                 5
+`kwarray.argmaxima <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.argmaxima>`__                                                   4
+`kwarray.seed_global <https://kwarray.readthedocs.io/en/latest/kwarray.util_random.html#kwarray.util_random.seed_global>`__                                             4
+`kwarray.FlatIndexer <https://kwarray.readthedocs.io/en/latest/kwarray.util_misc.html#kwarray.util_misc.FlatIndexer>`__                                                 3
+`kwarray.group_items <https://kwarray.readthedocs.io/en/latest/kwarray.util_groups.html#kwarray.util_groups.group_items>`__                                             3
+`kwarray.arglexmax <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.arglexmax>`__                                                   2
+`kwarray.DataFrameLight <https://kwarray.readthedocs.io/en/latest/kwarray.dataframe_light.html#kwarray.dataframe_light.DataFrameLight>`__                               2
+`kwarray.group_consecutive_indices <https://kwarray.readthedocs.io/en/latest/kwarray.util_groups.html#kwarray.util_groups.group_consecutive_indices>`__                 1
+`kwarray.equal_with_nan <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.equal_with_nan>`__                                         1
+`kwarray.dtype_info <https://kwarray.readthedocs.io/en/latest/kwarray.arrayapi.html#kwarray.arrayapi.dtype_info>`__                                                     1
+`kwarray.unique_rows <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.unique_rows>`__                                               0
+`kwarray.uniform32 <https://kwarray.readthedocs.io/en/latest/kwarray.fast_rand.html#kwarray.fast_rand.uniform32>`__                                                     0
+`kwarray.standard_normal64 <https://kwarray.readthedocs.io/en/latest/kwarray.fast_rand.html#kwarray.fast_rand.standard_normal64>`__                                     0
+`kwarray.standard_normal32 <https://kwarray.readthedocs.io/en/latest/kwarray.fast_rand.html#kwarray.fast_rand.standard_normal32>`__                                     0
+`kwarray.random_product <https://kwarray.readthedocs.io/en/latest/kwarray.util_random.html#kwarray.util_random.random_product>`__                                       0
+`kwarray.random_combinations <https://kwarray.readthedocs.io/en/latest/kwarray.util_random.html#kwarray.util_random.random_combinations>`__                             0
+`kwarray.one_hot_lookup <https://kwarray.readthedocs.io/en/latest/kwarray.util_torch.html#kwarray.util_torch.one_hot_lookup>`__                                         0
+`kwarray.mindist_assignment <https://kwarray.readthedocs.io/en/latest/kwarray.algo_assignment.html#kwarray.algo_assignment.mindist_assignment>`__                       0
+`kwarray.mincost_assignment <https://kwarray.readthedocs.io/en/latest/kwarray.algo_assignment.html#kwarray.algo_assignment.mincost_assignment>`__                       0
+`kwarray.maxvalue_assignment <https://kwarray.readthedocs.io/en/latest/kwarray.algo_assignment.html#kwarray.algo_assignment.maxvalue_assignment>`__                     0
+`kwarray.iter_reduce_ufunc <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.iter_reduce_ufunc>`__                                   0
+`kwarray.generalized_logistic <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.generalized_logistic>`__                             0
+`kwarray.argminima <https://kwarray.readthedocs.io/en/latest/kwarray.util_numpy.html#kwarray.util_numpy.argminima>`__                                                   0
+`kwarray.apply_embedded_slice <https://kwarray.readthedocs.io/en/latest/kwarray.util_slices.html#kwarray.util_slices.apply_embedded_slice>`__                           0
+`kwarray.NoSupportError <https://kwarray.readthedocs.io/en/latest/kwarray.util_averages.html#kwarray.util_averages.NoSupportError>`__                                   0
+`kwarray.LocLight <https://kwarray.readthedocs.io/en/latest/kwarray.dataframe_light.html#kwarray.dataframe_light.LocLight>`__                                           0
+======================================================================================================================================================== ================
 
-    {
-        'ensure_rng': 85,
-        'ArrayAPI': 79,
-        'DataFrameArray': 21,
-        'boolmask': 17,
-        'shuffle': 16,
-        'argmaxima': 13,
-        'group_indices': 12,
-        'stats_dict': 9,
-        'maxvalue_assignment': 7,
-        'seed_global': 7,
-        'iter_reduce_ufunc': 5,
-        'isect_flags': 5,
-        'group_items': 4,
-        'one_hot_embedding': 4,
-        'atleast_nd': 4,
-        'mincost_assignment': 3,
-        'standard_normal': 3,
-        'arglexmax': 2,
-        'DataFrameLight': 1,
-        'uniform': 1,
-    }
 
 
 .. |Pypi| image:: https://img.shields.io/pypi/v/kwarray.svg
