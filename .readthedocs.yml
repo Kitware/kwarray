@@ -16,10 +16,10 @@ sphinx:
 formats: all
 python:
   install:
-  - requirements: requirements/docs.txt
   - method: pip
     path: kwimage
     extra_requirements:
-      - headless
+    - headless
+  - requirements: requirements/docs.txt
   - method: pip
     path: .
