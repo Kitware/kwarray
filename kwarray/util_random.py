@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Handle and interchange between different random number generators (numpy,
 python, torch, ...). Also defines useful random iterator functions and
@@ -340,10 +339,10 @@ def random_product(items, num=None, rng=None):
 def _npstate_to_pystate(npstate):
     """
     Convert state of a NumPy RandomState object to a state
-    that can be used by Python's Random. Derived from [1]_.
+    that can be used by Python's Random. Derived from [SO44313620]_.
 
     References:
-        .. [1] https://stackoverflow.com/questions/44313620/convert-randomstate
+        .. [SO44313620] https://stackoverflow.com/questions/44313620/convert-randomstate
 
     Example:
         >>> py_rng = random.Random(0)
@@ -364,10 +363,10 @@ def _npstate_to_pystate(npstate):
 def _pystate_to_npstate(pystate):
     """
     Convert state of a Python Random object to state usable
-    by NumPy RandomState. Derived from [2]_.
+    by NumPy RandomState. Derived from [SO44313620]_.
 
     References:
-        .. [2] https://stackoverflow.com/questions/44313620/convert-randomstate
+        .. [SO44313620] https://stackoverflow.com/questions/44313620/convert-randomstate
 
     Example:
         >>> py_rng = random.Random(0)

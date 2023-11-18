@@ -5,3 +5,4 @@ kwarray.algo\_setcover module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

@@ -5,3 +5,4 @@ kwarray.fast\_rand module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:

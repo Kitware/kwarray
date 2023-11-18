@@ -2,6 +2,10 @@
 requires = [ "setuptools>=41.0.1",]
 build-backend = "setuptools.build_meta"
 
+# TODO:
+#[project]
+
+
 [tool.mypy]
 ignore_missing_imports = true
 
@@ -10,15 +14,30 @@ tags = [ "purepy", "gitlab", "kitware",]
 mod_name = "kwarray"
 repo_name = "kwarray"
 rel_mod_parent_dpath = "."
-ci_cpython_versions = ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+#ci_cpython_versions = ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
 os = [ "osx", "all", "win", "linux",]
 min_python = 3.6
+max_python = 3.11
 version = "{mod_dpath}/__init__.py::__version__"
-author = "Jon Crall"
-author_email = "jon.crall@kitware.com"
+author = "Kitware Inc., Jon Crall"
+author_email = "kitware@kitware.com, jon.crall@kitware.com"
+url = 'https://gitlab.kitware.com/computer-vision/kwarray' 
 description = "The kwarray module"
 license = "Apache 2"
+typed = 1
+render_doc_images = 1
 dev_status = "beta"
+
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Utilities',
+    'License :: OSI Approved :: Apache Software License',
+]
 
 [tool.pytest.ini_options]
 addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py --ignore-glob=dev --ignore-glob=docs"

@@ -365,6 +365,7 @@ class Stitcher(ub.NiceRepr):
         >>> # Checks
         >>> assert np.isnan(final1).sum() == 16, 'only should contain nan where no data was stiched'
         >>> assert np.isnan(final2).sum() == 512, 'should contain nan wherever a nan was stitched'
+        >>> # xdoctest: +REQUIRES(--show)
         >>> # xdoctest: +REQUIRES(module:kwplot)
         >>> import kwplot
         >>> import kwimage
@@ -420,6 +421,7 @@ class Stitcher(ub.NiceRepr):
         >>>         'final': final,
         >>>         'params': params,
         >>>     })
+        >>> # xdoctest: +REQUIRES(--show)
         >>> # xdoctest: +REQUIRES(module:kwplot)
         >>> import kwplot
         >>> kwplot.autompl()

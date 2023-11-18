@@ -5,3 +5,4 @@ kwarray.util\_slider module
    :members:
    :undoc-members:
    :show-inheritance:
+   :private-members:
