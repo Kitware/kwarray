@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.17 - Unreleased
 
+### Added
+
+* Add `allclose` and `isclose` to ArrayAPI.
+
 
 ## Version 0.6.16 - Released 2023-11-17
 
