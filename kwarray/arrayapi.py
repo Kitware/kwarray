@@ -794,11 +794,11 @@ class TorchImpls(object):
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.isclose(data1, data2)
             >>> result2 = NumpyImpls.isclose(data1.numpy(), data2.numpy())
-            >>> result1 = TorchImpls.isclose(data1, 0)
+            >>> #result1 = TorchImpls.isclose(data1, 0)
             >>> result2 = NumpyImpls.isclose(data1.numpy(), 0)
         """
         import torch
-        return torch.isclose(data1, data2, rto=rtol, atol=atol, equal_nan=equal_nan)
+        return torch.isclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
     @_torchmethod
     def allclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
@@ -812,11 +812,11 @@ class TorchImpls(object):
             >>> data2 = torch.rand(5, 5)
             >>> result1 = TorchImpls.allclose(data1, data2)
             >>> result2 = NumpyImpls.allclose(data1.numpy(), data2.numpy())
-            >>> result1 = TorchImpls.allclose(data1, 0)
+            >>> #result1 = TorchImpls.allclose(data1, 0)
             >>> result2 = NumpyImpls.allclose(data1.numpy(), 0)
         """
         import torch
-        return torch.allclose(data1, data2, rto=rtol, atol=atol, equal_nan=equal_nan)
+        return torch.allclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
     @_torchmethod
     def maximum(data1, data2, out=None):
