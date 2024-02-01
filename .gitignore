@@ -92,3 +92,6 @@ ENV/
 .pytest_cache
 
 pip-wheel-metadata
+
+docs/source/_static
+docs/source/images
