@@ -783,6 +783,42 @@ class TorchImpls(object):
             return torch.min(data, dim=axis)
 
     @_torchmethod
+    def isclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import sys, ubelt
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = torch.rand(5, 5)
+            >>> result1 = TorchImpls.isclose(data1, data2)
+            >>> result2 = NumpyImpls.isclose(data1.numpy(), data2.numpy())
+            >>> #result1 = TorchImpls.isclose(data1, 0)
+            >>> result2 = NumpyImpls.isclose(data1.numpy(), 0)
+        """
+        import torch
+        return torch.isclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    @_torchmethod
+    def allclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:torch)
+            >>> import sys, ubelt
+            >>> from kwarray.arrayapi import *  # NOQA
+            >>> import torch
+            >>> data1 = torch.rand(5, 5)
+            >>> data2 = torch.rand(5, 5)
+            >>> result1 = TorchImpls.allclose(data1, data2)
+            >>> result2 = NumpyImpls.allclose(data1.numpy(), data2.numpy())
+            >>> #result1 = TorchImpls.allclose(data1, 0)
+            >>> result2 = NumpyImpls.allclose(data1.numpy(), 0)
+        """
+        import torch
+        return torch.allclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    @_torchmethod
     def maximum(data1, data2, out=None):
         """
         Example:
@@ -1261,6 +1297,14 @@ class NumpyImpls(object):
     @_numpymethod
     def maximum(data1, data2, out=None):
         return np.maximum(data1, data2, out=out)
+
+    @_numpymethod
+    def isclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+        return np.isclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+    @_numpymethod
+    def allclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+        return np.allclose(data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
     @_numpymethod
     def minimum(data1, data2, out=None):

@@ -247,6 +247,7 @@ if __name__ == "__main__":
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ]
     setupkw["package_data"] = {"kwarray": ["py.typed", "*.pyi"]}
     setup(**setupkw)

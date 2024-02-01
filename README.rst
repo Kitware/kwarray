@@ -27,8 +27,6 @@ interoperability between torch and numpy. It also contains a few algorithms
 like setcover and mincost_assignment.
 
 
-Read the docs here: https://kwarray.readthedocs.io/en/master/
-
 The top-level API is:
 
 .. code:: python
@@ -194,11 +192,11 @@ my projects:
     :target: https://kwarray.readthedocs.io/en/release/
 
 .. # See: https://ci.appveyor.com/project/jon.crall/kwarray/settings/badges
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/jon.crall/kwarray/branch/master
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/py3s2d6tyfjc8lm3/branch/main?svg=true
+   :target: https://ci.appveyor.com/project/jon.crall/kwarray/branch/main
 
-.. |GitlabCIPipeline| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/pipeline.svg
+.. |GitlabCIPipeline| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/main/pipeline.svg
    :target: https://gitlab.kitware.com/computer-vision/kwarray/-/jobs
 
-.. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/master/coverage.svg
-    :target: https://gitlab.kitware.com/computer-vision/kwarray/-/commits/master
+.. |GitlabCICoverage| image:: https://gitlab.kitware.com/computer-vision/kwarray/badges/main/coverage.svg
+    :target: https://gitlab.kitware.com/computer-vision/kwarray/-/commits/main

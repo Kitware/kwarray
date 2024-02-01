@@ -29,7 +29,7 @@ Welcome to kwarray's documentation!
 .. toctree::
    :maxdepth: 3
 
-   kwarray
+   auto/modules.rst
 
 
 Indices and tables
