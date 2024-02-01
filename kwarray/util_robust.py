@@ -184,6 +184,8 @@ def _tukey_quantile_fence(data, clip=False):
     When he asked Tukey, "Why 1.5?", Tukey answered, "Because 1 is too small
     and 2 is too large." [OxfordShapeSpread]_.
 
+    See Also [YTFindOutliers]_.
+
     References:
         .. [OxfordShapeSpread] http://mathcenter.oxford.emory.edu/site/math117/shapeCenterAndSpread/
         .. [YTFindOutliers] https://www.youtube.com/watch?v=zY1WFMAA-ec
@@ -535,20 +537,6 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         >>> norms['linear'] = normalize(arr, mode='linear')
         >>> # xdoctest: +REQUIRES(module:scipy)
         >>> norms['sigmoid'] = normalize(arr, mode='sigmoid')
-        >>> # xdoctest: +REQUIRES(--show)
-        >>> import kwplot
-        >>> kwplot.autompl()
-        >>> kwplot.figure(fnum=1, doclf=True)
-        >>> pnum_ = kwplot.PlotNums(nSubplots=len(norms))
-        >>> for key, img in norms.items():
-        >>>     kwplot.imshow(img, pnum=pnum_(), title=key)
-
-    Example:
-        >>> # xdoctest: +REQUIRES(module:kwimage)
-        >>> arr = np.array([np.inf])
-        >>> normalize(arr, mode='linear')
-        >>> # xdoctest: +REQUIRES(module:scipy)
-        >>> normalize(arr, mode='sigmoid')
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
