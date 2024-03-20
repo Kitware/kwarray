@@ -4,7 +4,10 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.18 - Unreleased
+## Version 0.6.19 - Unreleased
+
+
+## Version 0.6.18 - Released 2024-03-19
 
 
 ## Version 0.6.17 - Released 2024-02-01
