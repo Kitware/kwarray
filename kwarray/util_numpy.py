@@ -510,6 +510,10 @@ def unique_rows(arr, ordered=False, return_index=False):
     References:
         https://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array
 
+    Note:
+        It seems that :func:`numpy.unique` added support for this via the
+        ``axis`` argument in version 1.24. That should be used instead.
+
     Example:
         >>> import kwarray
         >>> from kwarray.util_numpy import *  # NOQA

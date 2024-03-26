@@ -170,6 +170,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if quantile:
             if quantile == 'auto':
                 quantile = [0.25, 0.50, 0.75]
+            # FIXME allow nans
             quant_values = np.quantile(nparr, quantile, axis=axis)
             quant_keys = ['q_{:0.2f}'.format(q) for q in quantile]
             for k, v in zip(quant_keys, quant_values):
