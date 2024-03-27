@@ -22,9 +22,8 @@
         - if: '$CI_PROJECT_PATH == "computer-vision/kwarray" && $CI_PIPELINE_SOURCE == "schedule"'
           when: on_success
         - if: '$CI_PROJECT_PATH == "computer-vision/kwarray"'
-          when: on_success
-          #when: delayed
-          #start_in: 5 minutes
+          when: delayed
+          start_in: 5 minutes
         - when: never
 
 .run_dependent:
