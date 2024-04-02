@@ -7,6 +7,7 @@ data. The :class:`Stitcher` can then take these results and recombine them into
 a final result that matches the larger array.
 """
 import ubelt as ub
+import os
 import numpy as np
 import itertools as it
 
@@ -375,68 +376,9 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(pat3, title='pat3', pnum=(3, 3, 3))
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (nan_policy=omit)', pnum=(3, 1, 2))
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propogate)', pnum=(3, 1, 3))
-
-    Example:
-        >>> # Example of weighted stitching
-        >>> # xdoctest: +REQUIRES(module:kwimage)
-        >>> from kwarray.util_slider import *  # NOQA
-        >>> import kwimage
-        >>> import kwarray
-        >>> import sys
-        >>> data = kwimage.Mask.demo().data.astype(np.float32)
-        >>> data_dims = data.shape
-        >>> window_dims = (8, 8)
-        >>> # We are going to slide a window over the data, do some processing
-        >>> # and then stitch it all back together. There are a few ways we
-        >>> # can do it. Lets demo the params.
-        >>> basis = {
-        >>>     # Vary the overlap of the slider
-        >>>     'overlap': (0, 0.5, .9),
-        >>>     # Vary if we are using weighted stitching or not
-        >>>     'weighted': ['none', 'gauss'],
-        >>>     'keepbound': [True, False]
-        >>> }
-        >>> results = []
-        >>> gauss_weights = kwimage.gaussian_patch(window_dims)
-        >>> gauss_weights = kwimage.normalize(gauss_weights)
-        >>> for params in ub.named_product(basis):
-        >>>     if params['weighted'] == 'none':
-        >>>         weights = None
-        >>>     elif params['weighted'] == 'gauss':
-        >>>         weights = gauss_weights
-        >>>     # Build the slider and stitcher
-        >>>     slider = kwarray.SlidingWindow(
-        >>>         data_dims, window_dims, overlap=params['overlap'],
-        >>>         allow_overshoot=True,
-        >>>         keepbound=params['keepbound'])
-        >>>     stitcher = kwarray.Stitcher(data_dims)
-        >>>     # Loop over the regions
-        >>>     for sl in list(slider):
-        >>>          chip = data[sl]
-        >>>          # This is our dummy function for thie example.
-        >>>          predicted = np.ones_like(chip) * chip.sum() / chip.size
-        >>>          stitcher.add(sl, predicted, weight=weights)
-        >>>     final = stitcher.finalize()
-        >>>     results.append({
-        >>>         'final': final,
-        >>>         'params': params,
-        >>>     })
-        >>> # xdoctest: +REQUIRES(--show)
-        >>> # xdoctest: +REQUIRES(module:kwplot)
-        >>> import kwplot
-        >>> kwplot.autompl()
-        >>> pnum_ = kwplot.PlotNums(nCols=3, nSubplots=len(results) + 2)
-        >>> kwplot.imshow(data, pnum=pnum_(), title='input image')
-        >>> kwplot.imshow(gauss_weights, pnum=pnum_(), title='Gaussian weights')
-        >>> pnum_()
-        >>> for result in results:
-        >>>     param_key = ub.urepr(result['params'], compact=1)
-        >>>     final = result['final']
-        >>>     canvas = kwarray.normalize(final)
-        >>>     canvas = kwimage.fill_nans_with_checkers(canvas)
-        >>>     kwplot.imshow(canvas, pnum=pnum_(), title=param_key)
     """
-    def __init__(self, shape, device='numpy', dtype='float32', nan_policy='propogate'):
+    def __init__(self, shape, device='numpy', dtype='float32',
+                 nan_policy='propogate', memmap=False):
         """
         Args:
             shape (tuple): dimensions of the large image that will be created from
@@ -452,23 +394,58 @@ class Stitcher(ub.NiceRepr):
             nan_policy (str):
                 if omit, check for nans and convert any to zero weight items in
                 stitching.
+
+            memmap (bool | PathLike):
+                if truthy, the stitcher will use a memory map. If this
+                pathlike, then we use this as the directory for the memmap.
+                If True, a temp directory is used.
         """
         self.nan_policy = nan_policy
         self.shape = shape
         self.device = device
-        if device == 'numpy':
-            self.sums = np.zeros(shape, dtype=dtype)
-            self.weights = np.zeros(shape, dtype=dtype)
+        self.paths = None
 
-            self.sumview = self.sums.ravel()
-            self.weightview = self.weights.ravel()
+        use_memmap = bool(memmap)
+        if use_memmap:
+            import uuid
+            uuid = uuid.uuid4()
+            if isinstance(memmap, (str, os.PathLike)):
+                memmap_dpath = ub.Path(memmap)
+            else:
+                from tempfile import mkdtemp
+                memmap_dpath = ub.Path(mkdtemp())
+                memmap_sums_fpath = memmap_dpath / f'{uuid}-sums.npy'
+                memmap_weights_fpath = memmap_dpath / f'{uuid}-weights.npy'
+                self.paths = {
+                    'sums': memmap_sums_fpath,
+                    'weights': memmap_weights_fpath,
+                }
+        else:
+            memmap_dpath = None
+            memmap_sums_fpath = None
+            memmap_weights_fpath = None
+
+        if device == 'numpy':
+
+            if use_memmap:
+                # Seems to always init to zero
+                self.sums = np.memmap(memmap_sums_fpath, dtype=dtype, mode='w+', shape=shape)
+                self.weights = np.memmap(memmap_weights_fpath, dtype=dtype, mode='w+', shape=shape)
+            else:
+                self.sums = np.zeros(shape, dtype=dtype)
+                self.weights = np.zeros(shape, dtype=dtype)
+
+            # self.sumview = self.sums.ravel()
+            # self.weightview = self.weights.ravel()
         else:
             import torch
-            self.sums = torch.zeros(shape, device=device)
-            self.weights = torch.zeros(shape, device=device)
-
-            self.sumview = self.sums.view(-1)
-            self.weightview = self.weights.view(-1)
+            if memmap:
+                raise NotImplementedError('cannot do torch memmaping')
+            else:
+                self.sums = torch.zeros(shape, device=device)
+                self.weights = torch.zeros(shape, device=device)
+            # self.sumview = self.sums.view(-1)
+            # self.weightview = self.weights.view(-1)
         if self.nan_policy in {'omit', 'raise'}:
             if device == 'numpy':
                 self._isnan = np.isnan
@@ -632,3 +609,29 @@ def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
                     break
             else:
                 break
+
+# TODO: make nicer
+# class _mkslice_cls:
+#     """
+#     Helper to make slice syntax easier to construct
+
+#     Example:
+#         >>> from delayed_image.helpers import mkslice_cls
+#         >>> from kwarray.util_slider import _mkslice_cls
+#         >>> m = mkslice_cls()
+#         >>> m[0:3]
+#         slice(0, 3, None)
+#         >>> m[0:3, 0:5]
+#         (slice(0, 3, None), slice(0, 5, None))
+#         >>> m()[0:3, 0:5]
+#         (slice(0, 3, None), slice(0, 5, None))
+#     """
+#     def __class_getitem__(self, index):
+#         # Doesnt exist in older Python versions
+#         return index
+#     def __getitem__(self, index):
+#         return index
+#     def __call__(self):
+#         return self
+
+# _mkslice = _mkslice_cls()

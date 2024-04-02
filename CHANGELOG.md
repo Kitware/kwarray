@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.18 - Released 2024-03-19
 
+### Added
+
+* Add memmap support to ``Stitcher`` in numpy mode.
+
 
 ## Version 0.6.17 - Released 2024-02-01
 
