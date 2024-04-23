@@ -23,7 +23,12 @@ def test_stitcher_grid():
     # Example of weighted stitching
     # xdoctest: +REQUIRES(module:kwimage)
     import numpy as np
-    import kwimage
+
+    try:
+        import kwimage
+    except ImportError:
+        import pytest
+        pytest.skip('requires kwimage')
     import kwarray
     import ubelt as ub
     data = kwimage.Mask.demo().data.astype(np.float32)
