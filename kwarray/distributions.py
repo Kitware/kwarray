@@ -1325,9 +1325,9 @@ class Categorical(DiscreteDistribution):
         >>> categories = [3, 5, 1]
         >>> weights = [.05, .5, .45]
         >>> self = Categorical(categories, weights, rng=0)
-        >>> self.sample()
+        >>> int(self.sample())
         5
-        >>> list(self.sample(2))
+        >>> self.sample(2).tolist()
         [1, 1]
         >>> self.sample(2, 3)
         array([[5, 5, 1],

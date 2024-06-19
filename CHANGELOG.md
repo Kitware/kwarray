@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.6.19 - Unreleased
 
+### Added
+
+* Support for numpy 2.0 on Python 3.9+
+
 
 ## Version 0.6.18 - Released 2024-03-19
 

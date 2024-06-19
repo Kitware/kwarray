@@ -115,8 +115,8 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
 
     Args:
         size (int | Tuple[int, ...]) : shape of the returned ndarray
-        mean (float, default=0): mean of the normal distribution
-        std (float, default=1): standard deviation of the normal distribution
+        mean (float): mean of the normal distribution. default=0.
+        std (float): standard deviation of the normal distribution. default=1.
         rng (numpy.random.RandomState): underlying random state
 
     Returns:
@@ -255,13 +255,13 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
     ``[low, high)`` (includes low, but excludes high).
 
     Args:
-        low (float, default=0.0):
+        low (float):
             Lower boundary of the output interval.  All values generated will
-            be greater than or equal to low.
+            be greater than or equal to low. Defaults to 0.
 
-        high (float, default=1.0):
+        high (float):
             Upper boundary of the output interval.  All values generated will
-            be less than high.
+            be less than high. Defaults to 1.
 
         size (int | Tuple[int, ...] | None):
             Output shape.  If the given shape is, e.g., ``(m, n, k)``, then
@@ -275,11 +275,11 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
 
     Example:
         >>> rng = np.random.RandomState(0)
-        >>> uniform32(low=0.0, high=1.0, size=None, rng=rng)
+        >>> float(uniform32(low=0.0, high=1.0, size=None, rng=rng))
         0.5488...
-        >>> uniform32(low=0.0, high=1.0, size=2000, rng=rng).sum()
+        >>> float(uniform32(low=0.0, high=1.0, size=2000, rng=rng).sum())
         1004.94...
-        >>> uniform32(low=-10, high=10.0, size=2000, rng=rng).sum()
+        >>> float(uniform32(low=-10, high=10.0, size=2000, rng=rng).sum())
         202.44...
 
     Benchmark:

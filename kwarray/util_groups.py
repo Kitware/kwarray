@@ -78,7 +78,7 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
         >>> items = np.array([0, 1, 2, 3, 4, 5, 6, 7, 1, 1])
         >>> keys = np.array( [2, 2, 1, 1, 0, 1, 0, 1, 1, 1])
         >>> grouped = group_items(items, keys)
-        >>> print('grouped = ' + ub.urepr(grouped, nl=1, with_dtype=False, sort=1))
+        >>> print('grouped = ' + ub.urepr(grouped, nl=1, with_dtype=False, sort=1, sk=1))
         grouped = {
             0: np.array([4, 6]),
             1: np.array([2, 3, 5, 7, 1, 1]),
@@ -199,7 +199,7 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     # FIXME: there is a bug when input is a list of integer tuples. This
     # function interprets it as .
     _idx_to_groupid_orig = idx_to_groupid
-    idx_to_groupid = np.array(idx_to_groupid, copy=False)
+    idx_to_groupid = np.asarray(idx_to_groupid)
     _n_item = idx_to_groupid.size
     _dtype = idx_to_groupid.dtype
     _kind = _dtype.kind
@@ -306,14 +306,14 @@ def group_consecutive(arr, offset=1):
     Example:
         >>> arr = np.array([1, 2, 3, 5, 6, 7, 8, 9, 10, 15, 99, 100, 101])
         >>> groups = group_consecutive(arr)
-        >>> print('groups = {}'.format(list(map(list, groups))))
+        >>> print('groups = {}'.format([g.tolist() for g in groups]))
         groups = [[1, 2, 3], [5, 6, 7, 8, 9, 10], [15], [99, 100, 101]]
         >>> arr = np.array([0, 0, 3, 0, 0, 7, 2, 3, 4, 4, 4, 1, 1])
         >>> groups = group_consecutive(arr, offset=1)
-        >>> print('groups = {}'.format(list(map(list, groups))))
+        >>> print('groups = {}'.format([g.tolist() for g in groups]))
         groups = [[0], [0], [3], [0], [0], [7], [2, 3, 4], [4], [4], [1], [1]]
         >>> groups = group_consecutive(arr, offset=0)
-        >>> print('groups = {}'.format(list(map(list, groups))))
+        >>> print('groups = {}'.format([g.tolist() for g in groups]))
         groups = [[0, 0], [3], [0, 0], [7], [2], [3], [4, 4, 4], [1, 1]]
     """
     split_indicies = np.nonzero(np.diff(arr) != offset)[0] + 1
@@ -342,18 +342,19 @@ def group_consecutive_indices(arr, offset=1):
         :func:`apply_grouping`
 
     Example:
+        >>> import kwarray
         >>> arr = np.array([1, 2, 3, 5, 6, 7, 8, 9, 10, 15, 99, 100, 101])
-        >>> groupxs = group_consecutive_indices(arr)
-        >>> print('groupxs = {}'.format(list(map(list, groupxs))))
+        >>> groupxs = kwarray.group_consecutive_indices(arr)
+        >>> print('groupxs = {}'.format([g.tolist() for g in groupxs]))
         groupxs = [[0, 1, 2], [3, 4, 5, 6, 7, 8], [9], [10, 11, 12]]
         >>> assert all(np.array_equal(a, b) for a, b in zip(group_consecutive(arr, 1), apply_grouping(arr, groupxs)))
         >>> arr = np.array([0, 0, 3, 0, 0, 7, 2, 3, 4, 4, 4, 1, 1])
         >>> groupxs = group_consecutive_indices(arr, offset=1)
-        >>> print('groupxs = {}'.format(list(map(list, groupxs))))
+        >>> print('groupxs = {}'.format([g.tolist() for g in groupxs]))
         groupxs = [[0], [1], [2], [3], [4], [5], [6, 7, 8], [9], [10], [11], [12]]
         >>> assert all(np.array_equal(a, b) for a, b in zip(group_consecutive(arr, 1), apply_grouping(arr, groupxs)))
         >>> groupxs = group_consecutive_indices(arr, offset=0)
-        >>> print('groupxs = {}'.format(list(map(list, groupxs))))
+        >>> print('groupxs = {}'.format([g.tolist() for g in groupxs]))
         groupxs = [[0, 1], [2], [3, 4], [5], [6], [7], [8, 9, 10], [11, 12]]
         >>> assert all(np.array_equal(a, b) for a, b in zip(group_consecutive(arr, 0), apply_grouping(arr, groupxs)))
     """

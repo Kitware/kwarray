@@ -70,19 +70,39 @@ try:
 except ImportError:
     from distutils.version import LooseVersion as Version
 
-
 try:
-    import importlib.metadata
-    try:
-        _TORCH_VERSION = Version(importlib.metadata.version('torch'))
-    except importlib.metadata.PackageNotFoundError:
-        _TORCH_VERSION = None
+    import importlib.metadata as importlib_metadata
 except ImportError:
     import pkg_resources
+    importlib_metadata = None
+else:
+    pkg_resources = None
+
+
+if importlib_metadata is not None:
+    try:
+        _TORCH_VERSION = Version(importlib_metadata.version('torch'))
+    except importlib_metadata.PackageNotFoundError:
+        _TORCH_VERSION = None
+    try:
+        _NUMPY_VERSION = Version(importlib_metadata.version('numpy'))
+    except importlib_metadata.PackageNotFoundError:
+        _NUMPY_VERSION = None
+else:
     try:
         _TORCH_VERSION = Version(pkg_resources.get_distribution('torch').version)
     except pkg_resources.DistributionNotFound:
         _TORCH_VERSION = None
+    try:
+        _NUMPY_VERSION = Version(pkg_resources.get_distribution('numpy').version)
+    except pkg_resources.DistributionNotFound:
+        _NUMPY_VERSION = None
+
+
+if _NUMPY_VERSION is None:
+    _NUMPY_GE_2_0_0 = None
+else:
+    _NUMPY_GE_2_0_0 = _NUMPY_VERSION >= Version('2.0')
 
 if _TORCH_VERSION is None:
     _TORCH_LT_1_7_0 = None
@@ -1696,12 +1716,15 @@ def _torch_dtype_lut():
     else:
         raise AssertionError('dont think this can happen')
 
-    if np.float_ == np.float32:
-        lut[float] = torch.float32
-    elif np.float_ == np.float64:
+    if _NUMPY_GE_2_0_0:
         lut[float] = torch.float64
     else:
-        raise AssertionError('dont think this can happen')
+        if np.float_ == np.float32:
+            lut[float] = torch.float32
+        elif np.float_ == np.float64:
+            lut[float] = torch.float64
+        else:
+            raise AssertionError('dont think this can happen')
 
     # Handle signed integers
     for k in [np.int8, 'int8']:
