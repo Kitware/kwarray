@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Algorithms to find a solution to the setcover problem
 
@@ -185,7 +184,6 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
         >>>     'e': [6, 7, 8, 9, 0],
         >>> }
         >>> greedy_soln = _setcover_greedy_new(candidate_sets_dict)
-        >>> #print(repr(greedy_soln))
         ...
         >>> print('greedy_soln = {}'.format(ub.urepr(greedy_soln, nl=0)))
         greedy_soln = {'a': [1, 2, 3, 8, 9, 0], 'c': [4, 5, 7], 'd': [5, 6, 7]}

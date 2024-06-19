@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A convinient interface to solving assignment problems with the Hungarian
 algorithm (also known as Munkres or maximum linear-sum-assignment).
