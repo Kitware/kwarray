@@ -994,6 +994,19 @@ class Uniform(ContinuousDistribution):
     def sample(self, *shape):
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
 
+    def __scipy__(self):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
+            >>> from kwarray.distributions import *  # NOQA
+            >>> self = Uniform(low=0, high=10)
+            >>> self.__scipy__().pdf([0, 1, 9, 11])
+            array([0.1, 0.1, 0.1, 0. ])
+        """
+        from scipy.stats import uniform
+        rv = uniform(self.low, self.high)
+        return rv
+
     @classmethod
     def coerce(cls, arg):
         try:
@@ -1034,6 +1047,19 @@ class Exponential(ContinuousDistribution):
     ])
     def sample(self, *shape):
         return self.rng.exponential(self.scale, size=shape)
+
+    def __scipy__(self):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
+            >>> from kwarray.distributions import *  # NOQA
+            >>> self = Exponential(scale=1)
+            >>> self.__scipy__().pdf([0, 1, 1.2]).round(2)
+            array([0.  , 1.  , 0.82])
+        """
+        from scipy.stats import expon
+        rv = expon(self.scale)
+        return rv
 
 
 class Constant(DiscreteDistribution):
@@ -1114,6 +1140,11 @@ class Normal(ContinuousDistribution):
         ('std', Value(1.0, min=1e-3)),
     ])
 
+    def __scipy__(self):
+        from scipy.stats import norm
+        rv = norm(self.mean, self.std)
+        return rv
+
     def sample(self, *shape):
         return self.rng.randn(*shape) * self.std + self.mean
 
@@ -1177,6 +1208,9 @@ class TruncNormal(ContinuousDistribution):
         super(TruncNormal, self).__init__(*args, **kwargs)
         self._update_internals()
 
+    def __scipy__(self):
+        return self.rv
+
     def _update_internals(self):
         from scipy.stats import truncnorm
         # Convert high and low values to be wrt the standard normal range
@@ -1215,6 +1249,19 @@ class Bernoulli(DiscreteDistribution):
     def sample(self, *shape):
         return self.rng.rand(*shape) < self.p
 
+    def __scipy__(self):
+        """
+        Example:
+            >>> # xdoctest: +REQUIRES(module:scipy)
+            >>> from kwarray.distributions import *  # NOQA
+            >>> self = Bernoulli(0.1)
+            >>> self.__scipy__().pmf([0, 1])
+            array([0.9, 0.1])
+        """
+        from scipy.stats import bernoulli
+        rv = bernoulli(self.p)
+        return rv
+
     @classmethod
     def coerce(cls, arg):
         try:
@@ -1235,11 +1282,23 @@ class Binomial(DiscreteDistribution):
 
     References:
         https://en.wikipedia.org/wiki/Binomial_distribution
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> from kwarray.distributions import *  # NOQA
+        >>> self = Binomial(p=0.1, n=3)
+        >>> self.__scipy__().pmf([0, 1, 2])
+        array([0.729, 0.243, 0.027])
     """
     __params__ = ub.odict([
-        ('p', Value(0.5, min=0, max=1, help='probability of success')),
-        ('n', Value(1, min=0, help='probability of success')),
+        ('p', Value(0.5, min=0, max=1, help='probability of success in each experiment')),
+        ('n', Value(1, min=0, help='number of binary experiments')),
     ])
+
+    def __scipy__(self):
+        from scipy.stats import binom
+        rv = binom(self.n, self.p)
+        return rv
 
     def sample(self, *shape):
         return self.rng.rand(*shape) > self.p
@@ -1266,9 +1325,9 @@ class Categorical(DiscreteDistribution):
         >>> categories = [3, 5, 1]
         >>> weights = [.05, .5, .45]
         >>> self = Categorical(categories, weights, rng=0)
-        >>> self.sample()
+        >>> int(self.sample())
         5
-        >>> list(self.sample(2))
+        >>> self.sample(2).tolist()
         [1, 1]
         >>> self.sample(2, 3)
         array([[5, 5, 1],

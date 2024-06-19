@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A convinient interface to solving assignment problems with the Hungarian
 algorithm (also known as Munkres or maximum linear-sum-assignment).
@@ -30,18 +29,17 @@ def mindist_assignment(vecs1, vecs2, p=2):
         Thin wrapper around mincost_assignment
 
     CommandLine:
-        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mindist_assignment
-
-    CommandLine:
-        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mindist_assignment
+        xdoctest -m kwarray.algo_assignment mindist_assignment
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Rows are detections in img1, cols are detections in img2
+        >>> import kwarray
+        >>> import numpy as np
         >>> rng = np.random.RandomState(43)
         >>> vecs1 = rng.randint(0, 10, (5, 2))
         >>> vecs2 = rng.randint(0, 10, (7, 2))
-        >>> ret = mindist_assignment(vecs1, vecs2)
+        >>> ret = kwarray.mindist_assignment(vecs1, vecs2)
         >>> print('Total error: {:.4f}'.format(ret[1]))
         Total error: 8.2361
         >>> print('Assignment: {}'.format(ret[0]))  # xdoc: +IGNORE_WANT
@@ -68,47 +66,53 @@ def mincost_assignment(cost):
             and columns, and the total cost of the assignment.
 
     CommandLine:
-        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py mincost_assignment
+        xdoctest -m kwarray.algo_assignment mincost_assignment
 
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Costs to match item i in set1 with item j in set2.
+        >>> import kwarray
         >>> cost = np.array([
         >>>     [9, 2, 1, 9],
         >>>     [4, 1, 5, 5],
         >>>     [9, 9, 2, 4],
         >>> ])
-        >>> ret = mincost_assignment(cost)
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> ret = kwarray.mincost_assignment(cost)
+        >>> assignment = [(int(a), int(b)) for a, b in ret[0]]
+        >>> print('Assignment: {}'.format(assignment))
         >>> print('Total cost: {}'.format(ret[1]))
         Assignment: [(0, 2), (1, 1), (2, 3)]
         Total cost: 6
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> import kwarray
         >>> cost = np.array([
         >>>     [0, 0, 0, 0],
         >>>     [4, 1, 5, -np.inf],
         >>>     [9, 9, np.inf, 4],
         >>>     [9, -2, np.inf, 4],
         >>> ])
-        >>> ret = mincost_assignment(cost)
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> ret = kwarray.mincost_assignment(cost)
+        >>> assignment = [(int(a), int(b)) for a, b in ret[0]]
+        >>> print('Assignment: {}'.format(assignment))
         >>> print('Total cost: {}'.format(ret[1]))
         Assignment: [(0, 2), (1, 3), (2, 0), (3, 1)]
         Total cost: -inf
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> import kwarray
         >>> cost = np.array([
         >>>     [0, 0, 0, 0],
         >>>     [4, 1, 5, -3],
         >>>     [1, 9, np.inf, 0.1],
         >>>     [np.inf, np.inf, np.inf, 100],
         >>> ])
-        >>> ret = mincost_assignment(cost)
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> ret = kwarray.mincost_assignment(cost)
+        >>> assignment = [(int(a), int(b)) for a, b in ret[0]]
+        >>> print('Assignment: {}'.format(assignment))
         >>> print('Total cost: {}'.format(ret[1]))
         Assignment: [(0, 2), (1, 1), (2, 0), (3, 3)]
         Total cost: 102.0
@@ -161,18 +165,19 @@ def maxvalue_assignment(value):
             and columns, and the total value of the assignment.
 
     CommandLine:
-        xdoctest -m ~/code/kwarray/kwarray/algo_assignment.py maxvalue_assignment
+        xdoctest -m kwarray.algo_assignment maxvalue_assignment
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
         >>> # Costs to match item i in set1 with item j in set2.
+        >>> import kwarray
         >>> value = np.array([
         >>>     [9, 2, 1, 3],
         >>>     [4, 1, 5, 5],
         >>>     [9, 9, 2, 4],
         >>>     [-1, -1, -1, -1],
         >>> ])
-        >>> ret = maxvalue_assignment(value)
+        >>> ret = kwarray.maxvalue_assignment(value)
         >>> # Note, depending on the scipy version the assignment might change
         >>> # but the value should always be the same.
         >>> print('Total value: {}'.format(ret[1]))
@@ -180,14 +185,16 @@ def maxvalue_assignment(value):
         >>> print('Assignment: {}'.format(ret[0]))  # xdoc: +IGNORE_WANT
         Assignment: [(0, 0), (1, 3), (2, 1)]
 
-        >>> ret = maxvalue_assignment(np.array([[np.inf]]))
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> ret = kwarray.maxvalue_assignment(np.array([[np.inf]]))
+        >>> assignment = [(int(a), int(b)) for a, b in ret[0]]
+        >>> print('Assignment: {}'.format(assignment))
         >>> print('Total value: {}'.format(ret[1]))
         Assignment: [(0, 0)]
         Total value: inf
 
-        >>> ret = maxvalue_assignment(np.array([[0]]))
-        >>> print('Assignment: {}'.format(ret[0]))
+        >>> ret = kwarray.maxvalue_assignment(np.array([[0]]))
+        >>> assignment = [(int(a), int(b)) for a, b in ret[0]]
+        >>> print('Assignment: {}'.format(assignment))
         >>> print('Total value: {}'.format(ret[1]))
         Assignment: []
         Total value: 0
