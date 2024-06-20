@@ -46,7 +46,7 @@ def test_stitcher_grid():
     }
     results = []
     gauss_weights = kwimage.gaussian_patch(window_dims)
-    gauss_weights = kwimage.normalize(gauss_weights)
+    gauss_weights = kwarray.normalize(gauss_weights)
     for params in ub.named_product(basis):
         if params['weighted'] == 'none':
             weights = None
