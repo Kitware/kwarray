@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Removed
 * Removed support for Python 3.6 and 3.7
 
+### Fixed
+* Now correctly respect the shape arguments in `kwarray.distributions.Mixture.sample`
+
 
 ## Version 0.6.19 - Released 2024-06-19
 
