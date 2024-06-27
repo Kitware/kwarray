@@ -588,7 +588,7 @@ class Distribution(Parameterized, _RBinOpMixin):
                 random coercable
 
         CommandLine:
-            xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
+            xdoctest -m kwarray.distributions Distribution.random --show
 
         Example:
             >>> # xdoctest: +REQUIRES(module:scipy)
@@ -1185,7 +1185,7 @@ class TruncNormal(ContinuousDistribution):
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
 
     CommandLine:
-        xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
+        xdoctest -m kwarray.distributions TruncNormal
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
