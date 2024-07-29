@@ -1013,6 +1013,7 @@ class Uniform(ContinuousDistribution):
         """
         from scipy.stats import uniform
         rv = uniform(self.low, self.high)
+        rv.random_state = self.rng
         return rv
 
     @classmethod
@@ -1068,6 +1069,7 @@ class Exponential(ContinuousDistribution):
         """
         from scipy.stats import expon
         rv = expon(self.scale)
+        rv.random_state = self.rng
         return rv
 
 
@@ -1153,6 +1155,7 @@ class Normal(ContinuousDistribution):
     def __scipy__(self):
         from scipy.stats import norm
         rv = norm(self.mean, self.std)
+        rv.random_state = self.rng
         return rv
 
     def sample(self, *shape):
@@ -1228,6 +1231,7 @@ class TruncNormal(ContinuousDistribution):
         self.a = (self.low - self.mean) / self.std
         self.b = (self.high - self.mean) / self.std
         self.rv = truncnorm(a=self.a, b=self.b, loc=self.mean, scale=self.std)
+        self.rv.random_state = self.rng
 
     @classmethod
     def random(cls, rng=None):
@@ -1270,6 +1274,7 @@ class Bernoulli(DiscreteDistribution):
         """
         from scipy.stats import bernoulli
         rv = bernoulli(self.p)
+        rv.random_state = self.rng
         return rv
 
     @classmethod
@@ -1291,7 +1296,16 @@ class Binomial(DiscreteDistribution):
     probability of success p and a probability of failure 1 - p.
 
     References:
-        https://en.wikipedia.org/wiki/Binomial_distribution
+        .. [BinomDistr] https://en.wikipedia.org/wiki/Binomial_distribution
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> from kwarray.distributions import *  # NOQA
+        >>> self = Binomial(p=0.1, n=100, rng=0)
+        >>> self.sample()
+        10
+        >>> self.sample(10)
+        array([12, 11, 10,  9, 11,  9, 14, 16,  9, 12])
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
@@ -1308,10 +1322,14 @@ class Binomial(DiscreteDistribution):
     def __scipy__(self):
         from scipy.stats import binom
         rv = binom(self.n, self.p)
+        # References:
+        # https://stackoverflow.com/questions/16016959/scipy-stats-seed
+        rv.random_state = self.rng
         return rv
 
     def sample(self, *shape):
-        return self.rng.rand(*shape) > self.p
+        rv = self.__scipy__()
+        return rv.rvs(size=shape, random_state=self.rng)
 
 
 # class Multinomial(Distribution):
