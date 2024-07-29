@@ -120,6 +120,8 @@ def test_numpy_torch_compat():
             'clip',
 
             'array_equal',
+            'isclose',
+            'allclose',
         }
 
         if arrayapi._TORCH_LT_1_7_0:
@@ -152,6 +154,7 @@ def test_numpy_torch_compat():
                     flag = True
                     if isinstance(np_result1, tuple):
                         for a, b in ub.iter_window(results, 2):
+                            # flag &= ub.IndexableWalker(a, list_cls=(np.ndarray, torch.Tensor, tuple, list)).allclose(b)
                             flag &= indexable_allclose(a, b)
                     else:
                         results = [ArrayAPI.numpy(r) for r in results]
@@ -160,3 +163,11 @@ def test_numpy_torch_compat():
 
                     if not flag:
                         errors.append(row)
+
+
+if __name__ == '__main__':
+    """
+    CommandLine:
+        python ~/code/kwarray/tests/test_arrayapi.py
+    """
+    test_numpy_torch_compat()
