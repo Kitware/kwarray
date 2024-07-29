@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 * Now correctly respect the shape arguments in `kwarray.distributions.Mixture.sample`
+* Binomial was previously broken and now returns correct values from sample.
 
 
 ## Version 0.6.19 - Released 2024-06-19
