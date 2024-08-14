@@ -17,7 +17,7 @@ Notes:
     # need to edit the conf.py
 
     cd ~/code/kwarray/docs
-    sphinx-apidoc --private --separate -f -o ~/code/kwarray/docs/source/auto ~/code/kwarray/kwarray
+    sphinx-apidoc --private --separate --force --output-dir ~/code/kwarray/docs/source/auto ~/code/kwarray/kwarray
 
     # Note: the module should importable before running this
     # (e.g. install it in developer mode or munge the PYTHONPATH)
