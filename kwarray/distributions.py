@@ -28,7 +28,6 @@ import fractions  # NOQA
 from kwarray.util_random import ensure_rng
 
 inf = float('inf')
-# __all__ =  [
 
 
 class Value(ub.NiceRepr):
@@ -589,7 +588,7 @@ class Distribution(Parameterized, _RBinOpMixin):
                 random coercable
 
         CommandLine:
-            xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py Distribution.random --show
+            xdoctest -m kwarray.distributions Distribution.random --show
 
         Example:
             >>> # xdoctest: +REQUIRES(module:scipy)
@@ -679,10 +678,12 @@ class Distribution(Parameterized, _RBinOpMixin):
         Example:
             >>> from kwarray.distributions import Normal  # NOQA
             >>> self = Normal()
+            >>> # xdoctest: +REQUIRES(module:kwplot)
             >>> # xdoctest: +REQUIRES(--show)
             >>> import kwplot
             >>> kwplot.autompl()
             >>> self.plot(n=1000)
+            >>> kwplot.show_if_requested()
         """
         import seaborn as sns
         if isinstance(n, str):
@@ -802,19 +803,24 @@ class Mixture(MixedDistribution):
         >>> # Given two normal distributions,
         >>> from kwarray.distributions import Normal  # NOQA
         >>> from kwarray.distributions import *  # NOQA
-        >>> n1 = Normal(mean=11, std=3)
-        >>> n2 = Normal(mean=53, std=5)
+        >>> n1 = Normal(mean=11, std=3, rng=0)
+        >>> n2 = Normal(mean=53, std=5, rng=0)
         >>> composed = (n1 * 0.3) + (n2 * 0.7)
-        >>> mixture = Mixture([n1, n2], [0.3, 0.7])
+        >>> mixture = Mixture([n1, n2], [0.3, 0.7], rng=0)
+        >>> sample_scalar = mixture.sample()
+        >>> sample_vector = mixture.sample(2)
+        >>> sample_matrix = mixture.sample(2, 3)
+        >>> assert sample_scalar.shape == tuple()
+        >>> assert sample_vector.shape == (2,)
+        >>> assert sample_matrix.shape == (2, 3)
         >>> # xdoctest: +REQUIRES(--show)
         >>> import kwplot
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, pnum=(2, 2, 1))
         >>> ax = kwplot.figure(pnum=(2, 1, 1), title='n1 & n2').gca()
         >>> n = 10000
-        >>> plotkw = dict(stat='density', kde=1, bins=1000)
+        >>> #plotkw = dict(stat='density', kde=1, bins=1000)
         >>> plotkw = dict(stat='count', kde=1, bins=1000)
-        >>> #plotkw = dict(stat='frequency', kde=1, bins='auto')
         >>> n1.plot(n, ax=ax, **plotkw)
         >>> n2.plot(n, ax=ax, **plotkw)
         >>> ax=kwplot.figure(pnum=(2, 2, 3), title='composed').gca()
@@ -841,7 +847,7 @@ class Mixture(MixedDistribution):
         # Choose which distributions are picked for each sample
         idxs = self._idx_choice.sample(*shape)
         idx_to_nsamples = ub.dict_hist(idxs.ravel())
-        out = np.zeros(*shape)
+        out = np.zeros(shape)
         for idx, n in idx_to_nsamples.items():
             # Sample the from the distribution we picked
             mask = (idx == idxs)
@@ -919,6 +925,7 @@ class Composed(MixedDistribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(1000, bins=100)
+        >>> kwplot.show_if_requested()
 
     Example:
         >>> # Binary operations result in composed distributions
@@ -935,6 +942,7 @@ class Composed(MixedDistribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(5000, bins=100)
+        >>> kwplot.show_if_requested()
 
     """
     __params__ = ub.odict([
@@ -1005,6 +1013,7 @@ class Uniform(ContinuousDistribution):
         """
         from scipy.stats import uniform
         rv = uniform(self.low, self.high)
+        rv.random_state = self.rng
         return rv
 
     @classmethod
@@ -1038,6 +1047,7 @@ class Exponential(ContinuousDistribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
+        >>> kwplot.show_if_requested()
 
     Args:
         scale (int) : no help given. Defaults to 1.
@@ -1059,6 +1069,7 @@ class Exponential(ContinuousDistribution):
         """
         from scipy.stats import expon
         rv = expon(self.scale)
+        rv.random_state = self.rng
         return rv
 
 
@@ -1134,6 +1145,7 @@ class Normal(ContinuousDistribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(500, bins=25)
+        >>> kwplot.show_if_requested()
     """
     __params__ = ub.odict([
         ('mean', Value(0.0)),
@@ -1143,6 +1155,7 @@ class Normal(ContinuousDistribution):
     def __scipy__(self):
         from scipy.stats import norm
         rv = norm(self.mean, self.std)
+        rv.random_state = self.rng
         return rv
 
     def sample(self, *shape):
@@ -1175,7 +1188,7 @@ class TruncNormal(ContinuousDistribution):
         https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
 
     CommandLine:
-        xdoctest -m /home/joncrall/code/kwarray/kwarray/distributions.py TruncNormal
+        xdoctest -m kwarray.distributions TruncNormal
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
@@ -1218,6 +1231,7 @@ class TruncNormal(ContinuousDistribution):
         self.a = (self.low - self.mean) / self.std
         self.b = (self.high - self.mean) / self.std
         self.rv = truncnorm(a=self.a, b=self.b, loc=self.mean, scale=self.std)
+        self.rv.random_state = self.rng
 
     @classmethod
     def random(cls, rng=None):
@@ -1260,6 +1274,7 @@ class Bernoulli(DiscreteDistribution):
         """
         from scipy.stats import bernoulli
         rv = bernoulli(self.p)
+        rv.random_state = self.rng
         return rv
 
     @classmethod
@@ -1281,7 +1296,16 @@ class Binomial(DiscreteDistribution):
     probability of success p and a probability of failure 1 - p.
 
     References:
-        https://en.wikipedia.org/wiki/Binomial_distribution
+        .. [BinomDistr] https://en.wikipedia.org/wiki/Binomial_distribution
+
+    Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> from kwarray.distributions import *  # NOQA
+        >>> self = Binomial(p=0.1, n=100, rng=0)
+        >>> self.sample()
+        10
+        >>> self.sample(10)
+        array([12, 11, 10,  9, 11,  9, 14, 16,  9, 12])
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
@@ -1298,10 +1322,14 @@ class Binomial(DiscreteDistribution):
     def __scipy__(self):
         from scipy.stats import binom
         rv = binom(self.n, self.p)
+        # References:
+        # https://stackoverflow.com/questions/16016959/scipy-stats-seed
+        rv.random_state = self.rng
         return rv
 
     def sample(self, *shape):
-        return self.rng.rand(*shape) > self.p
+        rv = self.__scipy__()
+        return rv.rvs(size=shape, random_state=self.rng)
 
 
 # class Multinomial(Distribution):
@@ -1461,6 +1489,7 @@ class PDF(Distribution):
         >>> kwplot.autompl()
         >>> kwplot.figure(fnum=1, doclf=True)
         >>> self.plot(5000, bins=50)
+        >>> kwplot.show_if_requested()
     """
     def __init__(self, x, p, rng=None):
         import scipy.interpolate as interpolate

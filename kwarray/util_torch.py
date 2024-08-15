@@ -79,6 +79,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
     """
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(labels):
+        # TODO: dtype
         in_dims = labels.ndimension()
         if dim < 0:
             dim = in_dims - dim + 1

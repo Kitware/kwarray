@@ -66,6 +66,11 @@ import ubelt as ub
 from functools import partial
 
 try:
+    from functools import cache
+except ImportError:
+    from ubelt import memoize as cache
+
+try:
     from packaging.version import parse as Version
 except ImportError:
     from distutils.version import LooseVersion as Version
@@ -150,7 +155,7 @@ Numeric = Union[Number, ArrayLike, Tensor]
 """
 
 
-class _ImplRegistry(object):
+class _ImplRegistry:
     def __init__(self):
         self.registered = {
             'torch': {},
@@ -217,6 +222,17 @@ class _ImplRegistry(object):
         """
         Checks to make sure all methods are implemented in both
         torch and numpy implementations as well as exposed in the ArrayAPI.
+
+        This is intended for developer use.
+
+        CommandLine:
+            REGEN=1 xdoctest -m kwarray.arrayapi _ImplRegistry._ensure_datamethods_names_are_registered
+
+        Example:
+            >>> # xdoctest: +REQUIRES(env:REGEN)
+            >>> import kwarray
+            >>> self = kwarray.arrayapi._REGISTERY
+            >>> self._ensure_datamethods_names_are_registered()
         """
         # Check that we didn't forget to add anything
         # api_names = {
@@ -288,7 +304,7 @@ _numpymethod = partial(_REGISTERY._implmethod, impl='numpy')
 _apimethod = _REGISTERY._apimethod
 
 
-class TorchImpls(object):
+class TorchImpls:
     """
     Torch backend for the ArrayAPI API
     """
@@ -1158,7 +1174,7 @@ class TorchImpls(object):
             return torch.softmax(data, dim=axis)
 
 
-class NumpyImpls(object):
+class NumpyImpls:
     """
     Numpy backend for the ArrayAPI API
     """
@@ -1658,6 +1674,9 @@ class ArrayAPI:
 
     array_equal = _apimethod('array_equal')
 
+    isclose = _apimethod('isclose', func_type='data_func')
+    allclose = _apimethod('allclose', func_type='data_func')
+
     log2 = _apimethod('log2', func_type='data_func')
     log = _apimethod('log', func_type='data_func')
     copy = _apimethod('copy', func_type='data_func')
@@ -1682,7 +1701,7 @@ TorchNumpyCompat = ArrayAPI  # backwards compat
 #     _REGISTERY._ensure_datamethods_names_are_registered()
 
 
-@ub.memoize
+@cache
 def _torch_dtype_lut():
     try:
         import torch

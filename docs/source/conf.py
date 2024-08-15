@@ -17,7 +17,7 @@ Notes:
     # need to edit the conf.py
 
     cd ~/code/kwarray/docs
-    sphinx-apidoc --private --separate -f -o ~/code/kwarray/docs/source/auto ~/code/kwarray/kwarray
+    sphinx-apidoc --private --separate --force --output-dir ~/code/kwarray/docs/source/auto ~/code/kwarray/kwarray
 
     # Note: the module should importable before running this
     # (e.g. install it in developer mode or munge the PYTHONPATH)
@@ -37,16 +37,16 @@ Notes:
 
         ### For gitlab
 
+        To enable the read-the-docs go to https://readthedocs.org/dashboard/ and login
+
         The user will need to enable the repo on their readthedocs account:
         https://readthedocs.org/dashboard/import/manual/?
 
-        To enable the read-the-docs go to https://readthedocs.org/dashboard/ and login
-
-        Make sure you have a .readthedocs.yml file
-
-        Click import project: (for github you can select, but gitlab you need to import manually)
+        Enter the following information:
             Set the Repository NAME: kwarray
             Set the Repository URL: https://gitlab.kitware.com/computer-vision/kwarray
+
+        Make sure you have a .readthedocs.yml file
 
         For gitlab you also need to setup an integrations. Navigate to:
 

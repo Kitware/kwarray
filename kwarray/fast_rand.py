@@ -171,7 +171,10 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     # The integer and float dtype must have the same number of bits
     dtype = np.float32
     int_dtype = np.uint32
-    MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+    try:
+        MAX_INT = np.iinfo(int_dtype).max
+    except AttributeError:
+        MAX_INT = np.core.getlimits.iinfo(int_dtype).max
 
     # Preallocate output
     out = np.empty(size, dtype=dtype)
@@ -311,7 +314,10 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
             # The cuttoff size seems to be (42 * 42).
             dtype = np.float32
             int_dtype = np.uint32
-            MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+            try:
+                MAX_INT = np.iinfo(int_dtype).max
+            except AttributeError:
+                MAX_INT = np.core.getlimits.iinfo(int_dtype).max
             # Generate uniform-01 random numbers that we will transform
             out = rng.randint(0, MAX_INT - 1, size=size, dtype=int_dtype).astype(dtype)
             if low == 0 and high == 1.0:

@@ -4,10 +4,17 @@ This changelog follows the specifications detailed in: [Keep a Changelog](https:
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html), although we have not yet reached a `1.0.0` release.
 
 
-## Version 0.6.20 - Unreleased
+## Version 0.7.0 - Unreleased
+
+### Removed
+* Removed support for Python 3.6 and 3.7
+
+### Fixed
+* Now correctly respect the shape arguments in `kwarray.distributions.Mixture.sample`
+* Binomial was previously broken and now returns correct values from sample.
 
 
-## Version 0.6.19 - Released 2024-08-14
+## Version 0.6.19 - Released 2024-06-19
 
 ### Added
 
