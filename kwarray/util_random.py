@@ -396,9 +396,14 @@ def _coerce_rng_type(rng):
         rng = rng._inst
     elif rng is np.random:
         rng = np.random.mtrand._rand
-    # elif isinstance(rng, str):
-    #     # todo convert string to rng
-    #     pass
+    elif isinstance(rng, str):
+        import hashlib
+        # Hash the string to transform raw bytes into an integer seed
+        raw_bytes = rng.encode('utf-8')
+        hasher = hashlib.md5()  # this does not need to be cryptographically secure, use md5 for speed.
+        hasher.update(raw_bytes)
+        int_seed = int(hasher.hexdigest(), 16)
+        rng = int_seed
     elif isinstance(rng, (float, np.floating)):
         rng = float(rng)
         # Coerce the float into an integer
@@ -455,6 +460,8 @@ def ensure_rng(rng=None, api='numpy'):
         684
         >>> ensure_rng(np.random.RandomState(1)).randint(0, 1000)
         37
+        >>> ensure_rng('foobar').randint(0, 1000)
+        890
 
     Example:
         >>> num = 4

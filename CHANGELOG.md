@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.7.1 - Unreleased
 
+### Changed
+* input to `ensure_rng` can now be a string.
+
 
 ## Version 0.7.0 - Released 2024-08-14
 
