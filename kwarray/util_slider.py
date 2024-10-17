@@ -94,7 +94,7 @@ class SlidingWindow(ub.NiceRepr):
     Example:
         >>> # Test shapes that dont fit
         >>> # When the window is bigger than the shape, the left-aligned slices
-        >>> # are returend.
+        >>> # are returned.
         >>> self = SlidingWindow((3, 3), (12, 12), allow_overshoot=True, keepbound=True)
         >>> print(list(self))
         [(slice(0, 12, None), slice(0, 12, None))]
@@ -357,7 +357,7 @@ class Stitcher(ub.NiceRepr):
         >>> stitcher[0:32, 16:48](pat2)
         >>> stitcher[0:32, 33:64](pat3[:, 1:])
         >>> final1 = stitcher.finalize()
-        >>> # Test without nan_policy=propogate
+        >>> # Test without nan_policy=propagate
         >>> stitcher = Stitcher(shape=(32, 64), nan_policy='propogate')
         >>> stitcher[0:32, 0:32](pat1)
         >>> stitcher[0:32, 16:48](pat2)
@@ -375,7 +375,7 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(kwimage.nodata_checkerboard(pat2, square_shape=1), title='pat2 (has nans)', pnum=(3, 3, 2))
         >>> kwplot.imshow(pat3, title='pat3', pnum=(3, 3, 3))
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (nan_policy=omit)', pnum=(3, 1, 2))
-        >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propogate)', pnum=(3, 1, 3))
+        >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propagate)', pnum=(3, 1, 3))
     """
     def __init__(self, shape, device='numpy', dtype='float32',
                  nan_policy='propogate', memmap=False):
@@ -497,7 +497,7 @@ class Stitcher(ub.NiceRepr):
 
     def __getitem__(self, indices):
         """
-        Convinience function to use slice notation directly.
+        Convenience function to use slice notation directly.
         """
         from functools import partial
         return partial(self.add, indices)

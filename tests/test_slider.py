@@ -64,7 +64,7 @@ def test_stitcher_grid():
         # Loop over the regions
         for sl in list(slider):
             chip = data[sl]
-            # This is our dummy function for thie example.
+            # This is our dummy function for the example.
             predicted = np.ones_like(chip) * chip.sum() / chip.size
             stitcher.add(sl, predicted, weight=weights)
         final = stitcher.finalize()

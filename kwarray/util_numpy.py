@@ -14,7 +14,7 @@ def boolmask(indices, shape=None):
         indices (NDArray): list of integer indices
 
         shape (int | tuple): length of the returned list. If not specified
-            the minimal possible shape to incoporate all the indices is used.
+            the minimal possible shape to incorporate all the indices is used.
             In general, it is best practice to always specify this argument.
 
     Returns:
@@ -57,7 +57,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
     """
     constant memory iteration and reduction
 
-    Applys ufunc from left to right over the input arrays
+    Applies ufunc from left to right over the input arrays
 
     Args:
         ufunc (Callable): called on each pair of consecutive ndarrays
@@ -223,7 +223,7 @@ def atleast_nd(arr, n, front=False):
 
 def argmaxima(arr, num, axis=None, ordered=True):
     """
-    Returns the top ``num`` maximum indicies.
+    Returns the top ``num`` maximum indices.
 
     This can be significantly faster than using argsort.
 
@@ -237,7 +237,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
             to using arr.ravel().
 
         ordered (bool): if False, returns the maximum elements in an arbitrary
-            order, otherwise they are in decending order. (Setting this to
+            order, otherwise they are in descending order. (Setting this to
             false is a bit faster).
 
     TODO:
@@ -343,7 +343,7 @@ def argmaxima(arr, num, axis=None, ordered=True):
 
 def argminima(arr, num, axis=None, ordered=True):
     """
-    Returns the top ``num`` minimum indicies.
+    Returns the top ``num`` minimum indices.
 
     This can be significantly faster than using argsort.
 
@@ -670,7 +670,7 @@ def generalized_logistic(x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, 
             with ``y_intercept``. Defaults to 1.
 
         growth (float):
-            the growth rate (also calle ``B`` in some texts).
+            the growth rate (also called ``B`` in some texts).
             Defaults to 1.
 
         v (float):

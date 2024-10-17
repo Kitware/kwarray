@@ -99,7 +99,7 @@ def _auto_kernel_sigma(kernel=None, sigma=None, autokernel_mode='ours'):
             # But I think this definition makes more sense because it keeps
             # sigma and the kernel in agreement more often
             """
-            # Our hueristic is computed via solving the sigma heuristic for k
+            # Our heuristic is computed via solving the sigma heuristic for k
             import sympy as sym
             s, k = sym.symbols('s, k', rational=True)
             sa = sym.Rational('3 / 10') * ((k - 1) / 2 - 1) + sym.Rational('8 / 10')

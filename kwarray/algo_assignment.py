@@ -1,5 +1,5 @@
 """
-A convinient interface to solving assignment problems with the Hungarian
+A convenient interface to solving assignment problems with the Hungarian
 algorithm (also known as Munkres or maximum linear-sum-assignment).
 
 The core implementation of munkres in in scipy. Recent versions are written in
@@ -129,7 +129,7 @@ def mincost_assignment(cost):
     is_finite = ~is_infinte
     is_positive = cost_matrix > 0
     is_negative = cost_matrix < 0
-    # Note: in scipy 1.4 input costs may be infinte, should fix for this case
+    # Note: in scipy 1.4 input costs may be infinite, should fix for this case
     # (also note, they don't allow a budgeted solution, so maybe we have to use
     # effective values)
     feasible_pos_vals = cost_matrix[(is_finite & is_positive)]

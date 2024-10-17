@@ -555,7 +555,7 @@ class Distribution(Parameterized, _RBinOpMixin):
                 if paramx < len(args):
                     val = args[paramx]
                     if key in kwargs:
-                        raise ValueError('arg pased as both positional and keyword')
+                        raise ValueError('arg passed as both positional and keyword')
                 else:
                     val = kwargs.get(key, info.default)
                 self._setparam(key, val)
@@ -585,7 +585,7 @@ class Distribution(Parameterized, _RBinOpMixin):
 
         Args:
             rng (int | float | None | numpy.random.RandomState | random.Random):
-                random coercable
+                random coercible
 
         CommandLine:
             xdoctest -m kwarray.distributions Distribution.random --show
@@ -620,7 +620,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         else:
             try:
                 # TODO:
-                # - [ ] Suport for notations like a "min" param must be smaller
+                # - [ ] Support for notations like a "min" param must be smaller
                 # than a "max" param.
                 kw = {}
                 for k, v in cls.__params__.items():
@@ -787,7 +787,7 @@ class Mixture(MixedDistribution):
         xdoctest -m kwarray.distributions Mixture:0 --show
 
     Example:
-        >>> # In this examle we create a bimodal mixture of normals
+        >>> # In this example we create a bimodal mixture of normals
         >>> from kwarray.distributions import *  # NOQA
         >>> pdfs = [Normal(mean=10, std=2), Normal(18, 2)]
         >>> self = Mixture(pdfs)
@@ -860,7 +860,7 @@ class Mixture(MixedDistribution):
         """
         Args:
             rng (int | float | None | numpy.random.RandomState | random.Random):
-                random coercable
+                random coercible
 
             n (int):
                 number of random distributions in the mixture
@@ -912,7 +912,7 @@ class Composed(MixedDistribution):
             arguments passed to operation
 
     Example:
-        >>> # In this examle you can see that the sum of two Normal random
+        >>> # In this example you can see that the sum of two Normal random
         >>> # variables is also normal
         >>> from kwarray.distributions import *  # NOQA
         >>> operands = [Normal(mean=10, std=2), Normal(15, 2)]
@@ -1034,7 +1034,7 @@ class Exponential(ContinuousDistribution):
     between events in a Poisson point process, i.e., a process in which events
     occur continuously and independently at a constant average rate [1]_.
 
-    Referencs:
+    References:
         .. [1] https://en.wikipedia.org/wiki/Exponential_distribution
 
     Example:
