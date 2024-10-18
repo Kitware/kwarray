@@ -121,7 +121,7 @@ def one_hot_lookup(data, indices):
     """
     Return value of a particular column for each row in data.
 
-    Each item in labels corresonds to a row in ``data``. Returns the index
+    Each item in labels corresponds to a row in ``data``. Returns the index
     specified at each row.
 
     Args:
@@ -312,7 +312,7 @@ def _torch_available_devices():
     """
     An attempt to determine what devices this version of torch can use
 
-    Try and check that cuda is availble AND we have a good kernel image
+    Try and check that cuda is available AND we have a good kernel image
     """
     torch = sys.modules.get('torch', None)
     available_devices = []

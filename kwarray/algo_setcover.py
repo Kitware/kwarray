@@ -22,11 +22,11 @@ def setcover(candidate_sets_dict, items=None, set_weights=None,
             a candidate cover set.
 
         items (Optional[VT]): the set of all items to be covered,
-            if not specified, it is infered from the candidate cover sets
+            if not specified, it is inferred from the candidate cover sets
 
         set_weights (Optional[Dict[KT, float]]):
             maps candidate set ids to a cost for using this candidate cover in
-            the solution. If not specified the weight of each candiate cover
+            the solution. If not specified the weight of each candidate cover
             defaults to 1.
 
         item_values (Optional[Dict[VT, float]]):
@@ -124,7 +124,7 @@ def _setcover_greedy_old(candidate_sets_dict, items=None, set_weights=None,
 
     # While we still need covers
     while get_weight(solution_cover) < max_weight and len(avail_keys) > 0:
-        # Find candiate set with the most uncovered items
+        # Find candidate set with the most uncovered items
         uncovered_values = list(map(get_value, avail_vals))
         chosen_idx = ub.argmax(uncovered_values)
         if uncovered_values[chosen_idx] <= 0:
@@ -148,7 +148,7 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
     """
     Implements Johnson's / Chvatal's greedy set-cover approximation algorithm.
 
-    The approximation gaurentees depend on specifications of set weights and
+    The approximation guarantees depend on specifications of set weights and
     item values
 
     Running time:
@@ -258,7 +258,7 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
 
     # While we still need covers
     while solution_weight < max_weight and len(avail_covers) > 0:
-        # Find candiate set with the most valuable uncovered items
+        # Find candidate set with the most valuable uncovered items
         chosen_key = ub.argmax(avail_totals)
         if avail_totals[chosen_key] <= 0:
             # needlessly adding value-less covering set
@@ -286,7 +286,7 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
             new_keys = item_to_keys[item]
             new_keys.remove(chosen_key)
             item_to_keys[item] = new_keys
-            # And mark the non-chosen reamining cover sets as modified
+            # And mark the non-chosen remaining cover sets as modified
             modified_keys.update(new_keys)
         # Then update and recompute the value of the modified sets
         for key in modified_keys:
@@ -394,7 +394,7 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         primary_objective = sum(item_values[e] * y[e] for e in item_indicies)
         # minimize the number of sets used (make sure it does not influence the chosen primary objective)
         # This is only possible when values are non-negative
-        # TODO: minimize redundency
+        # TODO: minimize redundancy
         min_influence = min(item_values.values())
         secondary_weight = min_influence / (1.1 * len(set_indices))
         secondary_objective = (sum(-x[i] for i in set_indices)) * secondary_weight

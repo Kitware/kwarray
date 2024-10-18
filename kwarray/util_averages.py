@@ -286,7 +286,7 @@ class RunningStats(ub.NiceRepr):
         Args:
             nan_policy (str): indicates how we will handle nan values
                * if "omit" - set weights of nan items to zero.
-               * if "propogate" - propogate nans.
+               * if "propagate" - propagate nans.
                * if "raise" - then raise a ValueError if nans are given.
 
            check_weights (bool):
@@ -398,7 +398,7 @@ class RunningStats(ub.NiceRepr):
 
         if has_ignore_items:
             data = data.copy()
-            # Replace the bad value with somehting sensible for each operation.
+            # Replace the bad value with something sensible for each operation.
             data[ignore_flags] = 0
 
             # Multiply data by weights
@@ -471,7 +471,7 @@ class RunningStats(ub.NiceRepr):
 
         if has_ignore_items:
             data = data.copy()
-            # Replace the bad value with somehting sensible for each operation.
+            # Replace the bad value with something sensible for each operation.
             data[ignore_flags] = 0
 
             # Multiply data by weights

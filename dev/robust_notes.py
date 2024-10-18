@@ -74,7 +74,7 @@ def m_estimator():
     import robustbase
 
     def robust_center(data, robust_function='tukey'):
-        # Maximum liklihood estimator
+        # Maximum likelihood estimator
         if robust_function == 'tukey':
             rho = tukey_bisquare
             phi = None # TODO
@@ -116,7 +116,7 @@ def m_estimator():
             # u_next = (data * w).sum() / w.sum()
             u_next = np.average(data, weights=w)
             print('u_next = {!r}'.format(u_next))
-            # Why does this oscilate?
+            # Why does this oscillate?
             if abs(u_next - uk) < 0.0001 * sig:
                 break
             uk = u_next
@@ -203,7 +203,7 @@ def tukey_biweight_loss(r, c=4.685):
 def outline_of_an_algorithm():
     """
 
-    * First procedure: Find "important" points in the data. Thes are typically
+    * First procedure: Find "important" points in the data. These are typically
       going to be centers of Gaussian distributions. We assume this is
       univariate, so we can order these once we are done. The min and max are
       also included as control points.

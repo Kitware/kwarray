@@ -79,7 +79,7 @@ def test_run_avg_with_zero_weight():
 def test_fuzzed_random_running():
     """
     We should get close to the same result as np.average in all cases where we
-    stack up our data along a new axis and compute the explict average along
+    stack up our data along a new axis and compute the explicit average along
     the chosen axis AND -1.
     """
     grid = ub.named_product({

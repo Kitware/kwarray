@@ -207,7 +207,7 @@ def group_indices(idx_to_groupid, assume_sorted=False):
         # fallback to slower algorithm for non-numeric data
         group = ub.group_items(range(_n_item), _idx_to_groupid_orig)
         try:
-            # attempt to return values in a consistant order
+            # attempt to return values in a consistent order
             sortx = ub.argsort(list(group.keys()))
             keys = list(ub.take(list(group.keys()), sortx))
             groupxs = list(ub.take(list(map(np.array, group.values())), sortx))
@@ -290,7 +290,7 @@ def group_consecutive(arr, offset=1):
         offset (float, default=1):
             any two values separated by this offset are grouped.  In the
             default case, when offset=1, this groups increasing values like: 0,
-            1, 2. When offset is 0 it groups consecutive values thta are the
+            1, 2. When offset is 0 it groups consecutive values that are the
             same, e.g.: 4, 4, 4.
 
     Returns:

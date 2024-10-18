@@ -206,7 +206,7 @@ class DataFrameLight(ub.NiceRepr):
         Convert the data frame into a dictionary.
 
         Args:
-            orient (str): Currently naitively suports orient in
+            orient (str): Currently naitively supports orient in
                 {'dict', 'list'}, otherwise we fallback to pandas conversion
                 and call its to_dict method.
 
@@ -510,13 +510,13 @@ class DataFrameLight(ub.NiceRepr):
         return self
 
     def reset_index(self, drop=False):
-        """ noop for compatability, the light version doesnt store an index """
+        """ noop for compatibility, the light version doesnt store an index """
         return self
 
     def groupby(self, by=None, *args, **kwargs):
         """
         Group rows by the value of a column. Unlike pandas this simply
-        returns a zip object. To ensure compatiability call list on the
+        returns a zip object. To ensure compatibility call list on the
         result of groupby.
 
         Args:

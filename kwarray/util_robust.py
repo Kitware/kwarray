@@ -75,7 +75,7 @@ def find_robust_normalizers(data, params='auto'):
         The defaults and methods of this function are subject to change.
 
     TODO:
-        - [ ] No (or minimal) Magic Numbers! Use first principles to deterimine defaults.
+        - [ ] No (or minimal) Magic Numbers! Use first principles to determine defaults.
         - [ ] Probably a lot of literature on the subject.
         - [ ] https://arxiv.org/pdf/1707.09752.pdf
         - [ ] https://www.tandfonline.com/doi/full/10.1080/02664763.2019.1671961
@@ -229,7 +229,7 @@ def _custom_quantile_extreme_estimator(data, params):
     (quant_low_abs, quant_low_val, quant_mid_val, quant_high_val,
      quant_high_abs) = quantile_vals
 
-    # TODO: we could implement a hueristic where we do a numerical inspection
+    # TODO: we could implement a heuristic where we do a numerical inspection
     # of the intensity distribution. We could apply a normalization that is
     # known to work for data with that sort of histogram distribution.
     # This might involve fitting several parametarized distributions to the
@@ -360,11 +360,11 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         >>> background = np.random.randint(min_val, max_val, size=(s, s), dtype=dtype)
         >>> poly1 = kwimage.Polygon.random(rng=rng).scale(s / 2)
         >>> poly2 = kwimage.Polygon.random(rng=rng).scale(s / 2).translate(s / 2)
-        >>> forground = np.zeros_like(background, dtype=np.uint8)
-        >>> forground = poly1.fill(forground, value=255)
-        >>> forground = poly2.fill(forground, value=122)
-        >>> forground = (kwimage.ensure_float01(forground) * max_val).astype(dtype)
-        >>> imdata = background + forground
+        >>> foreground = np.zeros_like(background, dtype=np.uint8)
+        >>> foreground = poly1.fill(foreground, value=255)
+        >>> foreground = poly2.fill(foreground, value=122)
+        >>> foreground = (kwimage.ensure_float01(foreground) * max_val).astype(dtype)
+        >>> imdata = background + foreground
         >>> normed, info = kwarray.robust_normalize(imdata, return_info=True)
         >>> print('info = {}'.format(ub.urepr(info, nl=1)))
         >>> # xdoctest: +REQUIRES(--show)
@@ -375,7 +375,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
     """
     if axis is not None:
         # Hack, normalize each channel individually. This could
-        # be implementd more effciently.
+        # be implemented more efficiently.
         reorg = imdata.swapaxes(0, axis)
         if return_info:
             infos_to_return = []
@@ -547,7 +547,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
 
     Benchmark:
         >>> # Our method is faster than standard in-line implementations for
-        >>> # uint8 and competative with in-line float32, in addition to being
+        >>> # uint8 and competitive with in-line float32, in addition to being
         >>> # more concise and configurable. In 3.11 all inplace variants are
         >>> # faster.
         >>> # xdoctest: +REQUIRES(module:kwimage)

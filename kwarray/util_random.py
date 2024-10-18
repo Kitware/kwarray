@@ -29,7 +29,7 @@ whatever the input is into a :func:`random.Random` or
 
 Then if this random function calls any other random function, it passes the
 coerced rng to all other subfunctions. This ensures that seeing the RNG at
-the top level produces a completely determenistic process.
+the top level produces a completely deterministic process.
 
 For a more involved example
 
@@ -96,10 +96,10 @@ _SEED_MAX = int(2 ** 32 - 1)
 
 
 __todo = """
-Make a Coercable[RandomState] type that is
+Make a Coercible[RandomState] type that is
 
-Coercable[numpy.random.RandomState] = Union[int, float, None, numpy.random.RandomState, random.Random]
-Coercable[random.Random] = Union[int, float, None, numpy.random.RandomState, random.Random]
+Coercible[numpy.random.RandomState] = Union[int, float, None, numpy.random.RandomState, random.Random]
+Coercible[random.Random] = Union[int, float, None, numpy.random.RandomState, random.Random]
 
 
 
@@ -128,7 +128,7 @@ def seed_global(seed, offset=0):
 
 def shuffle(items, rng=None):
     """
-    Shuffles a list inplace and then returns it for convinience
+    Shuffles a list inplace and then returns it for convenience
 
     Args:
         items (list | ndarray): data to shuffle
@@ -136,7 +136,7 @@ def shuffle(items, rng=None):
             seed or random number gen
 
     Returns:
-        list: this is the input, but returned for convinience
+        list: this is the input, but returned for convenience
 
     Example:
         >>> list1 = [1, 2, 3, 4, 5, 6]
@@ -232,7 +232,7 @@ def random_combinations(items, size, num=None, rng=None):
         for combo in combos[:num]:
             yield combo
     else:
-        # Otherwise yield randomly until we get something we havent seen
+        # Otherwise yield randomly until we get something we haven't seen
         items = list(items)
         combos = set()
         while len(combos) < num_:
@@ -254,7 +254,7 @@ def random_product(items, num=None, rng=None):
             (note this deviates from api of :func:`itertools.product`)
 
         num (int | None):
-            maximum number of items to generate. If None generat them all
+            maximum number of items to generate. If None generate them all
 
         rng (int | float | None | numpy.random.RandomState | random.Random):
             Seed or random number generator. Defaults to the global state
@@ -396,9 +396,14 @@ def _coerce_rng_type(rng):
         rng = rng._inst
     elif rng is np.random:
         rng = np.random.mtrand._rand
-    # elif isinstance(rng, str):
-    #     # todo convert string to rng
-    #     pass
+    elif isinstance(rng, str):
+        import hashlib
+        # Hash the string to transform raw bytes into an integer seed
+        raw_bytes = rng.encode('utf-8')
+        hasher = hashlib.md5()  # this does not need to be cryptographically secure, use md5 for speed.
+        hasher.update(raw_bytes)
+        int_seed = int(hasher.hexdigest(), 16)
+        rng = int_seed
     elif isinstance(rng, (float, np.floating)):
         rng = float(rng)
         # Coerce the float into an integer
@@ -455,6 +460,8 @@ def ensure_rng(rng=None, api='numpy'):
         684
         >>> ensure_rng(np.random.RandomState(1)).randint(0, 1000)
         37
+        >>> ensure_rng('foobar').randint(0, 1000)
+        890
 
     Example:
         >>> num = 4

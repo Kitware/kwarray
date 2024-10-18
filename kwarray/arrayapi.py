@@ -3,7 +3,7 @@ The ArrayAPI is a common API that works exactly the same on both torch.Tensors
 and numpy.ndarrays.
 
 
-The ArrayAPI is a combination of efficiency and convinience. It is convinient
+The ArrayAPI is a combination of efficiency and convenience. It is convenient
 because you can just use an operation directly, it will type check the data,
 and apply the appropriate method. But it is also efficient because it can be
 used with minimal type checking by accessing a type-specific backend.
@@ -130,7 +130,7 @@ else:
 
 # __with_typing__ = False
 # if __with_typing__:
-#     # TODO: mabye have a array typing submodule?
+#     # TODO: maybe have a array typing submodule?
 #     if torch is None:
 #         Tensor = 'Tensor'
 #     else:
@@ -553,7 +553,7 @@ class TorchImpls:
             # torch.t can only handle 2 dims
             return data.t()
         else:
-            # use permute for compatability
+            # use permute for compatibility
             axes = list(reversed(range(ndims)))
             return data.permute(*axes)
 
@@ -748,7 +748,7 @@ class TorchImpls:
         Note:
             In modern versions of torch and numpy if there are multiple maximum
             values the index of the instance is returned. This is not true in
-            older versions of torch. I'm unsure when this gaurentee was added
+            older versions of torch. I'm unsure when this guarantee was added
             to numpy.
 
         Example:
@@ -789,7 +789,7 @@ class TorchImpls:
         Note:
             In modern versions of torch and numpy if there are multiple minimum
             values the index of the instance is returned. This is not true in
-            older versions of torch. I'm unsure when this gaurentee was added
+            older versions of torch. I'm unsure when this guarantee was added
             to numpy.
 
         Example:
@@ -1480,7 +1480,7 @@ class NumpyImpls:
 
 class ArrayAPI:
     """
-    Compatability API between torch and numpy.
+    Compatibility API between torch and numpy.
 
     The API defines classmethods that work on both Tensors and ndarrays.  As
     such the user can simply use ``kwarray.ArrayAPI.<funcname>`` and it will
