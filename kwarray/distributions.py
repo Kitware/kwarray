@@ -1253,8 +1253,13 @@ class Bernoulli(DiscreteDistribution):
     random variable which takes the value 1 with probability `p` and the value
     0 with probability `q = 1 - p`.
 
+    Note:
+        The Concrete distribution is a continuous relaxation of the Bernoulli
+        distribtuion [AxrivConcrete]_.
+
     References:
-        https://en.wikipedia.org/wiki/Bernoulli_distribution
+        .. [WikiBernoulli] https://en.wikipedia.org/wiki/Bernoulli_distribution
+        .. [AxrivConcrete] https://arxiv.org/pdf/1611.00712
     """
     __params__ = ub.odict([
         ('p', Value(0.5, help='probability of success', min=0, max=1)),

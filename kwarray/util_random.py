@@ -336,6 +336,52 @@ def random_product(items, num=None, rng=None):
                 yield prod
 
 
+def random_unique_integers(low, high, size, rng=None):
+    """
+    Generate a list of random integers without duplicates.
+
+    Generated with help from ChatGPT.
+
+    Args:
+        low (int): The minimum value (inclusive).
+        high (int): The maximum value (exclusive).
+        size (int): The number of integers to generate.
+
+    Returns:
+        np.ndarray: An array of unique random integers.
+
+    Example:
+        >>> from kwarray.util_random import *  # NOQA
+        >>> # Generate non-overlapping random numbers between large ranges
+        >>> random_numbers = random_unique_integers(1, 1000000, 10, rng=0)
+        >>> print(f'random_numbers={random_numbers}')
+        >>> # Generate non-overlapping random numbers between small ranges
+        >>> random_numbers = random_unique_integers(1, 11, 10, rng=0)
+        >>> print(f'random_numbers={random_numbers}')
+    """
+    if size > (high - low):
+        raise ValueError("Size must be less than or equal to the range (high - low).")
+    rng = ensure_rng(rng, 'numpy')
+
+    result = set()
+    range_size = high - low
+
+    # Generate numbers in chunks until we have enough unique values
+    while len(result) < size:
+        remaining = size - len(result)
+        # Generate a chunk of random numbers (at most remaining or range_size)
+        chunk = rng.randint(low, high, size=min(remaining * 2, range_size))
+        result.update(chunk)
+
+    # Convert the result to a numpy array
+    result = np.array(list(result))
+    # Permute the result so numbers are not in order
+    result = rng.permutation(result)
+    # select exactly `size` elements
+    result = result[:size]
+    return result
+
+
 def _npstate_to_pystate(npstate):
     """
     Convert state of a NumPy RandomState object to a state

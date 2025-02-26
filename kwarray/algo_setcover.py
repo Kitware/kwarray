@@ -3,6 +3,7 @@ Algorithms to find a solution to the setcover problem
 
 SeeAlso:
     https://github.com/keon/algorithms
+    https://developers.google.com/optimization/introduction
 """
 import ubelt as ub
 import itertools as it

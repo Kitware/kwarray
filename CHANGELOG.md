@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Version 0.7.2 - Unreleased
 
+### Added
+* Add `random_unique_integers` to `util_random`.
+
 
 ## Version 0.7.1 - Released 2024-10-17
 
