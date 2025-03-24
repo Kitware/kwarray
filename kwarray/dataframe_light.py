@@ -37,6 +37,10 @@ class DataFrameLight(ub.NiceRepr):
         implementations for some operations.
 
     Note:
+        THe DataFrameLight has no distinction between ids and indexes (i.e. loc
+        and iloc). They are always the same.
+
+    Note:
         pandas.DataFrame is slow. DataFrameLight is faster.
         It is a tad more restrictive though.
 
@@ -301,7 +305,7 @@ class DataFrameLight(ub.NiceRepr):
                     if not isinstance(d, (list, np.ndarray)):
                         raise TypeError(type(d))
                     lens.append(len(d))
-                assert ub.allsame(lens)
+                assert ub.allsame(lens), f'Got unequal lens: {lens}'
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
         elif pd is not None and isinstance(self._raw, pd.DataFrame):
@@ -318,6 +322,55 @@ class DataFrameLight(ub.NiceRepr):
         if not ascending:
             sortx = sortx[::-1]
         return self.take(sortx, inplace=inplace)
+
+    def drop(self, labels, *, axis=0):
+        """
+        Drop specified labels from rows or columns.
+
+        Example
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight._demodata(num=7)
+            >>> labels = 'foo'
+            >>> # test drop columns
+            >>> new = self.drop(labels, axis=1)
+            >>> assert 'foo' not in new.columns
+            >>> assert 'bar' in new.columns
+            >>> # test drop rows
+            >>> new = self.drop([1, 3], axis=0)
+            >>> assert len(new) == (len(self) - 2)
+            >>> # test drop non-existing
+            >>> import pytest
+            >>> with pytest.raises(KeyError):
+            >>>     new = self.drop('not-exist', axis=1)
+            >>> with pytest.raises(KeyError):
+            >>>     new = self.drop('not-exist', axis=0)
+            >>> with pytest.raises(ValueError):
+            >>>     new = self.drop(None, axis=3)
+        """
+        if axis == 1:
+            # Drop columns
+            if not ub.iterable(labels):
+                labels = {labels}
+            else:
+                labels = set(labels)
+            columns = ub.oset(self.columns)
+            missing = labels - columns
+            if missing:
+                raise KeyError(f'{missing} not found in axis')
+            new_columns = list(columns - labels)
+            new_data = {c: self._data[c] for c in new_columns}
+            new = self.__class__(new_data)
+        elif axis == 0:
+            # Drop rows
+            keep = np.ones(len(self), dtype=bool)
+            try:
+                keep[labels] = False
+            except IndexError:
+                raise KeyError('row indexes not found in axis')
+            new = self.compress(keep)
+        else:
+            raise ValueError('axis can only be 0 or 1')
+        return new
 
     def keys(self):
         if self._data:

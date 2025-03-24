@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 * Add `random_unique_integers` to `util_random`.
+* Add `drop` to `DataFrameLight`.
 
 
 ## Version 0.7.1 - Released 2024-10-17
