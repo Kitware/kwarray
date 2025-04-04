@@ -10,6 +10,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Add `random_unique_integers` to `util_random`.
 * Add `drop` to `DataFrameLight`.
 
+### Changed
+`stats_dict` now handles quantile with nans
+
 
 ## Version 0.7.1 - Released 2024-10-17
 

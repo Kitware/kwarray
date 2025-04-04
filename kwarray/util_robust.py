@@ -695,4 +695,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
     if float_out is not out:
         final_out = float_out.astype(out.dtype)
         out.ravel()[:] = final_out.ravel()[:]
+
+    # FIXME: this might return data that is actually outside of the 0/1 range
+    # due to floating point error.
     return out

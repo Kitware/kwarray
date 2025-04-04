@@ -171,7 +171,12 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             if quantile == 'auto':
                 quantile = [0.25, 0.50, 0.75]
             # FIXME allow nans
-            quant_values = np.quantile(nparr, quantile, axis=axis)
+            if nan:
+                _quantile = nanquantile
+            else:
+                # Prefer numpy implementation if available
+                _quantile = getattr(np, 'nanquantile', nanquantile)
+            quant_values = _quantile(nparr, quantile, axis=axis)
             quant_keys = ['q_{:0.2f}'.format(q) for q in quantile]
             for k, v in zip(quant_keys, quant_values):
                 stats[k] = v
@@ -199,6 +204,103 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if shape:
             stats['shape'] = nparr.shape
     return stats
+
+
+def nanquantile(a, q, axis=None, interpolation='linear'):
+    """
+    Compute the q-th quantile of the data along the specified axis,
+    ignoring NaN values.
+
+    Args:
+        a : array_like
+            Input array or object that can be converted to an array.
+        q : float or array-like of float
+            Quantile(s) to compute, which must be between 0 and 1 inclusive.
+        axis : int or None, optional
+            Axis along which the quantiles are computed. The default is None,
+            in which case the array is flattened.
+        interpolation : {'linear', 'lower', 'higher', 'midpoint', 'nearest'}, optional
+            This optional parameter specifies the interpolation method to use when the
+            desired quantile lies between two data points `i` and `j`:
+              * 'linear': i + (j - i) * fraction, where fraction is the fractional part of the index.
+              * 'lower': i.
+              * 'higher': j.
+              * 'nearest': i or j, whichever is nearest.
+              * 'midpoint': (i + j) / 2.
+            The default is 'linear'.
+
+    Returns:
+        quantile : float or ndarray
+            If `q` is a single quantile and `axis=None`, then the result is a float.
+            Otherwise, the result is an array with the same shape as `q` (if `axis` is None)
+            or with the axis along which the quantiles were computed replaced by the shape of `q`.
+
+    References:
+        https://chatgpt.com/c/67ef1ed7-e9a0-8002-ba8e-abac0ab390b4
+
+    Example:
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> data = np.array([[1, 2, np.nan, 4],
+        >>>                  [5, np.nan, 7, 8],
+        >>>                  [9, 10, 11, 12]])
+        >>> # Compute the 50th percentile (median) ignoring NaNs, along axis=0.
+        >>> medians = nanquantile(data, 0.5, axis=0)
+        >>> print("Medians along axis 0:", medians)
+        >>> # Compute the 25th and 75th percentiles along axis=1.
+        >>> percentiles = nanquantile(data, [0.25, 0.75], axis=1)
+        >>> print("25th and 75th percentiles along axis 1:\n", percentiles)
+        >>> # Compute the median ignoring NaNs over both axes (flattened) using a tuple.
+        >>> median_all = nanquantile(data, 0.5, axis=(0, 1))
+        >>> print("Median over all elements:", median_all)
+        >>> # Test generic axes
+        >>> nanquantile(np.random.rand(5,3,2,3), 0.5, axis=(0, 1))
+    """
+    a = np.asarray(a)
+
+    # Helper function for computing quantile on a 1D array while ignoring NaNs.
+    def quantile_ignore_nan(arr):
+        valid = arr[~np.isnan(arr)]
+        if valid.size == 0:
+            if np.isscalar(q):
+                return np.nan
+            else:
+                return np.full(np.shape(q), np.nan)
+        return np.quantile(valid, q, interpolation=interpolation)
+
+    # Case 1: When axis is None, flatten the array.
+    if axis is None:
+        valid = a[~np.isnan(a)]
+        if valid.size == 0:
+            return np.nan if np.isscalar(q) else np.full(np.shape(q), np.nan)
+        return np.quantile(valid, q, interpolation=interpolation)
+
+    # Case 2: When axis is an integer.
+    if isinstance(axis, int):
+        return np.apply_along_axis(quantile_ignore_nan, axis, a)
+
+    # Case 3: When axis is a tuple.
+    # Normalize the tuple to ensure sorted order.
+    axes = tuple(sorted(axis))
+    # Determine axes that are NOT being reduced.
+    remaining_axes = tuple(i for i in range(a.ndim) if i not in axes)
+    # Move the axes to reduce to the front.
+    new_order = axes + remaining_axes
+    a_moved = np.moveaxis(a, new_order, range(a.ndim))
+
+    # Collapse the axes to be reduced into one axis.
+    n_reduce = np.prod(a_moved.shape[:len(axes)])
+    new_shape = (n_reduce,) + a_moved.shape[len(axes):]
+    a_collapsed = a_moved.reshape(new_shape)
+
+    # Apply the 1D quantile function along the first axis (which is the combined axis).
+    result = np.apply_along_axis(quantile_ignore_nan, 0, a_collapsed)
+
+    # The shape of result depends on whether q is scalar or array:
+    # - If q is scalar, result's shape is the same as the "remaining" dimensions.
+    # - If q is an array, the new axis for quantiles is prepended.
+
+    # Apply the function along the specified axis.
+    return result
 
 
 def _gmean(a, axis=0, dtype=None, clobber=False):
