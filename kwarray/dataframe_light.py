@@ -57,6 +57,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> # xdoc: +REQUIRES(--bench)
         >>> from kwarray.dataframe_light import *  # NOQA
         >>> import ubelt as ub
+        >>> import timerit
         >>> NUM = 1000
         >>> print('NUM = {!r}'.format(NUM))
         >>> # to_dict conversions
@@ -65,7 +66,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> _keys = ['list', 'dict', 'series', 'split', 'records', 'index']
         >>> results = []
         >>> df = DataFrameLight._demodata(num=NUM).pandas()
-        >>> ti = ub.Timerit(verbose=False, unit='ms')
+        >>> ti = timerit.Timerit(verbose=False, unit='ms')
         >>> for key in _keys:
         >>>     result = ti.reset(key).call(lambda: df.to_dict(orient=key))
         >>>     results.append((result.mean(), result.report()))
@@ -75,7 +76,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('\n'.join([t[1] for t in sorted(results)]))
         >>> print('==============')
         >>> print('====== DFLight Conversions =======')
-        >>> ti = ub.Timerit(verbose=True, unit='ms')
+        >>> ti = timerit.Timerit(verbose=True, unit='ms')
         >>> key = 'self.pandas'
         >>> self = DataFrameLight(df)
         >>> ti.reset(key).call(lambda: self.pandas())
@@ -85,7 +86,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> ti.reset(key).call(lambda: DataFrameLight(self._data))
         >>> print('==============')
         >>> print('====== BENCHMARK: .LOC[] =======')
-        >>> ti = ub.Timerit(num=20, bestof=4, verbose=True, unit='ms')
+        >>> ti = timerit.Timerit(num=20, bestof=4, verbose=True, unit='ms')
         >>> df_light = DataFrameLight._demodata(num=NUM)
         >>> # xdoctest: +REQUIRES(module:pandas)
         >>> df_heavy = df_light.pandas()
@@ -592,8 +593,8 @@ class DataFrameLight(ub.NiceRepr):
             >>> self['cx'] = (np.random.rand(len(self)) * 10).astype(np.int)
             >>> # As expected, our custom restricted implementation is faster
             >>> # than pandas
-            >>> ub.Timerit(100).call(lambda: dict(list(self.pandas().groupby('cx')))).print()
-            >>> ub.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
+            >>> timerit.Timerit(100).call(lambda: dict(list(self.pandas().groupby('cx')))).print()
+            >>> timerit.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
         """
         if len(args) == 0 and len(kwargs) == 0:
             # In this special case we can be fast
@@ -660,7 +661,7 @@ class DataFrameLight(ub.NiceRepr):
             >>> import ubelt as ub
             >>> df_light = DataFrameLight._demodata(num=1000)
             >>> df_heavy = df_light.pandas()
-            >>> ti = ub.Timerit(21, bestof=3, verbose=2, unit='ms')
+            >>> ti = timerit.Timerit(21, bestof=3, verbose=2, unit='ms')
             >>> ti.reset('light').call(lambda: list(df_light.iterrows()))
             >>> ti.reset('heavy').call(lambda: list(df_heavy.iterrows()))
             >>> # xdoctest: +IGNORE_WANT
