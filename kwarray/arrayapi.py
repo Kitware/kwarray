@@ -1018,6 +1018,66 @@ class TorchImpls:
         return torch.log2(data)
 
     @_torchmethod(func_type='data_func')
+    def sin(data):
+        import torch
+        return torch.sin(data)
+
+    @_torchmethod(func_type='data_func')
+    def cos(data):
+        import torch
+        return torch.cos(data)
+
+    @_torchmethod(func_type='data_func')
+    def tan(data):
+        import torch
+        return torch.tan(data)
+
+    @_torchmethod(func_type='data_func')
+    def arcsin(data):
+        import torch
+        return torch.arcsin(data)
+
+    @_torchmethod(func_type='data_func')
+    def arccos(data):
+        import torch
+        return torch.arccos(data)
+
+    @_torchmethod(func_type='data_func')
+    def arctan(data):
+        import torch
+        return torch.arctan(data)
+
+    @_torchmethod(func_type='data_func')
+    def sinh(data):
+        import torch
+        return torch.sinh(data)
+
+    @_torchmethod(func_type='data_func')
+    def cosh(data):
+        import torch
+        return torch.cosh(data)
+
+    @_torchmethod(func_type='data_func')
+    def tanh(data):
+        import torch
+        return torch.tanh(data)
+
+    @_torchmethod(func_type='data_func')
+    def arcsinh(data):
+        import torch
+        return torch.arcsinh(data)
+
+    @_torchmethod(func_type='data_func')
+    def arccosh(data):
+        import torch
+        return torch.arccosh(data)
+
+    @_torchmethod(func_type='data_func')
+    def arctanh(data):
+        import torch
+        return torch.arctanh(data)
+
+    @_torchmethod(func_type='data_func')
     def any(data):
         import torch
         return torch.any(data)
@@ -1357,6 +1417,19 @@ class NumpyImpls:
     log = _numpymethod(np.log)
     log2 = _numpymethod(np.log2)
 
+    sin = _numpymethod(np.sin)
+    cos = _numpymethod(np.cos)
+    tan = _numpymethod(np.tan)
+    arcsin = _numpymethod(np.arcsin)
+    arccos = _numpymethod(np.arccos)
+    arctan = _numpymethod(np.arctan)
+    sinh = _numpymethod(np.sinh)
+    cosh = _numpymethod(np.cosh)
+    tanh = _numpymethod(np.tanh)
+    arcsinh = _numpymethod(np.arcsinh)
+    arccosh = _numpymethod(np.arccosh)
+    arctanh = _numpymethod(np.arctanh)
+
     any = _numpymethod(np.any)
     all = _numpymethod(np.all)
 
@@ -1680,6 +1753,19 @@ class ArrayAPI:
     log2 = _apimethod('log2', func_type='data_func')
     log = _apimethod('log', func_type='data_func')
     copy = _apimethod('copy', func_type='data_func')
+
+    sin = _apimethod('sin', func_type='data_func')
+    cos = _apimethod('cos', func_type='data_func')
+    tan = _apimethod('tan', func_type='data_func')
+    arcsin = _apimethod('arcsin', func_type='data_func')
+    arccos = _apimethod('arccos', func_type='data_func')
+    arctan = _apimethod('arctan', func_type='data_func')
+    sinh = _apimethod('sinh', func_type='data_func')
+    cosh = _apimethod('cosh', func_type='data_func')
+    tanh = _apimethod('tanh', func_type='data_func')
+    arcsinh = _apimethod('arcsinh', func_type='data_func')
+    arccosh = _apimethod('arccosh', func_type='data_func')
+    arctanh = _apimethod('arctanh', func_type='data_func')
 
     iceil = _apimethod('iceil', func_type='data_func')
     ifloor = _apimethod('ifloor', func_type='data_func')
