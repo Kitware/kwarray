@@ -1078,9 +1078,9 @@ class TorchImpls:
         return torch.atanh(data)
 
     @_torchmethod
-    def arctan2(y, x):
+    def arctan2(x1, x2):
         import torch
-        return torch.atan2(y, x)
+        return torch.atan2(x1, x2)
 
     @_torchmethod(func_type='data_func')
     def any(data):
@@ -1428,13 +1428,16 @@ class NumpyImpls:
     arcsin = _numpymethod(np.arcsin)
     arccos = _numpymethod(np.arccos)
     arctan = _numpymethod(np.arctan)
-    arctan2 = _numpymethod(np.arctan2)
     sinh = _numpymethod(np.sinh)
     cosh = _numpymethod(np.cosh)
     tanh = _numpymethod(np.tanh)
     arcsinh = _numpymethod(np.arcsinh)
     arccosh = _numpymethod(np.arccosh)
     arctanh = _numpymethod(np.arctanh)
+
+    @_numpymethod
+    def arctan2(x1, x2):
+        return np.arctan2(x1, x2)
 
     any = _numpymethod(np.any)
     all = _numpymethod(np.all)
