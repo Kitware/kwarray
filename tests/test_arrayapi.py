@@ -122,6 +122,7 @@ def test_numpy_torch_compat():
             'array_equal',
             'isclose',
             'allclose',
+            'arctan2',
         }
 
         if arrayapi._TORCH_LT_1_7_0:
