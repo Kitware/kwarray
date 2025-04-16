@@ -1077,7 +1077,7 @@ class TorchImpls:
         import torch
         return torch.atanh(data)
 
-    @_torchmethod(func_type='data_func')
+    @_torchmethod
     def arctan2(y, x):
         import torch
         return torch.atan2(y, x)
