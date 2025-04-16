@@ -1035,17 +1035,17 @@ class TorchImpls:
     @_torchmethod(func_type='data_func')
     def arcsin(data):
         import torch
-        return torch.arcsin(data)
+        return torch.asin(data)
 
     @_torchmethod(func_type='data_func')
     def arccos(data):
         import torch
-        return torch.arccos(data)
+        return torch.acos(data)
 
     @_torchmethod(func_type='data_func')
     def arctan(data):
         import torch
-        return torch.arctan(data)
+        return torch.atan(data)
 
     @_torchmethod(func_type='data_func')
     def sinh(data):
@@ -1065,17 +1065,22 @@ class TorchImpls:
     @_torchmethod(func_type='data_func')
     def arcsinh(data):
         import torch
-        return torch.arcsinh(data)
+        return torch.asinh(data)
 
     @_torchmethod(func_type='data_func')
     def arccosh(data):
         import torch
-        return torch.arccosh(data)
+        return torch.acosh(data)
 
     @_torchmethod(func_type='data_func')
     def arctanh(data):
         import torch
-        return torch.arctanh(data)
+        return torch.atanh(data)
+
+    @_torchmethod(func_type='data_func')
+    def arctan2(y, x):
+        import torch
+        return torch.atan2(y, x)
 
     @_torchmethod(func_type='data_func')
     def any(data):
@@ -1423,6 +1428,7 @@ class NumpyImpls:
     arcsin = _numpymethod(np.arcsin)
     arccos = _numpymethod(np.arccos)
     arctan = _numpymethod(np.arctan)
+    arctan2 = _numpymethod(np.arctan2)
     sinh = _numpymethod(np.sinh)
     cosh = _numpymethod(np.cosh)
     tanh = _numpymethod(np.tanh)
@@ -1760,6 +1766,7 @@ class ArrayAPI:
     arcsin = _apimethod('arcsin', func_type='data_func')
     arccos = _apimethod('arccos', func_type='data_func')
     arctan = _apimethod('arctan', func_type='data_func')
+    arctan2 = _apimethod('arctan2', func_type='data_func')
     sinh = _apimethod('sinh', func_type='data_func')
     cosh = _apimethod('cosh', func_type='data_func')
     tanh = _apimethod('tanh', func_type='data_func')
