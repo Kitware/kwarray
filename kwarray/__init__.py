@@ -47,7 +47,7 @@ from .util_random import (ensure_rng, random_combinations, random_product,
                           seed_global, shuffle,)
 from .util_robust import (find_robust_normalizers, normalize,
                           robust_normalize,)
-from .util_slices import (apply_embedded_slice, embed_slice, padded_slice,)
+from .util_slices import (apply_embedded_slice, embed_slice, padded_slice, Slice)
 from .util_slider import (SlidingWindow, Stitcher,)
 from .util_torch import (one_hot_embedding, one_hot_lookup,)
 
@@ -64,4 +64,4 @@ __all__ = ['ArrayAPI', 'DataFrameArray', 'DataFrameLight', 'FlatIndexer',
            'random_combinations', 'random_product', 'robust_normalize',
            'seed_global', 'setcover', 'shuffle', 'standard_normal',
            'standard_normal32', 'standard_normal64', 'stats_dict', 'uniform',
-           'uniform32', 'unique_rows']
+           'uniform32', 'unique_rows', 'Slice']

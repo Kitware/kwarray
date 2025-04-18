@@ -315,3 +315,57 @@ def _coerce_pad(pad, ndims):
         #     pad = list(pad) + [(0, 0)] * n_trailing
         raise ValueError('pad and data_dims must have the same length')
     return pad_slice
+
+
+class _SliceMeta(type):
+    """
+    Normally you cannot inherit from slice, but we can use a metaclass to
+    overload the constructor of our Slice class to return a real slice.
+    """
+    def __call__(cls, *args):
+        # Allow for empty constructor
+        if len(args) == 0:
+            return slice(None)
+        # When the class is called (instantiated), return a real slice instead
+        return slice(*args)
+
+    def __instancecheck__(self, instance):
+        # https://peps.python.org/pep-3119/
+        return isinstance(instance, slice)
+
+
+class Slice(metaclass=_SliceMeta):
+    """
+    A "subclass" of :class:`slice` with convinience features.
+
+    Namely you can create a slice with classleve getitem syntax.
+
+    Note:
+        This is not a real subclass of slice, but by using metaclasses it
+        behaves like one in most circumstances. The instances created by using
+        the constructor or convinience methods are real slice instances (or
+        tuples of real slice instances).
+
+    Example:
+        >>> import kwarray
+        >>> kwarray.Slice[::3]
+        slice(None, None, 3)
+        >>> kwarray.Slice[0:10, 3:11]
+        (slice(0, 10, None), slice(3, 11, None))
+
+    Example:
+        >>> from kwarray.util_slices import Slice
+        >>> assert Slice() == slice(None, None, None)
+        >>> assert Slice[0:3] == slice(0, 3, None)
+        >>> assert Slice[0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice(0, 3) == (slice(0, 3, None), slice(0, 5, None))
+        >>> assert isinstance(Slice(), Slice)
+        >>> assert not issubclass(Slice, slice), 'no way to make this work AFAIK'
+    """
+    def __init__(self, *args):
+        raise AssertionError('It should not be possible to construct a real instance of this class')
+
+    def __class_getitem__(self, index):
+        # __class_getitem__ was introduced in Python 3.7
+        # https://peps.python.org/pep-0560/
+        return index

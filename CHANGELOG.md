@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Add `random_unique_integers` to `util_random`.
 * Add `drop` to `DataFrameLight`.
 * Add more trig functions to `ArrayAPI`.
+* Add `kwarray.Slice`
 
 ### Changed
 `stats_dict` now handles quantile with nans
