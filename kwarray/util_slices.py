@@ -333,18 +333,45 @@ class _SliceMeta(type):
         # https://peps.python.org/pep-3119/
         return isinstance(instance, slice)
 
+    def __getitem__(self, index):
+        # __class_getitem__ was introduced in Python 3.7
+        # https://peps.python.org/pep-0560/
+        return index
+
 
 class Slice(metaclass=_SliceMeta):
     """
     A "subclass" of :class:`slice` with convinience features.
 
-    Namely you can create a slice with classleve getitem syntax.
+    Namely you can create a slice with class getitem syntax.
+
+    The motiviation is creating explicit slice objects is cumbersome, and this
+    provides a more concise notation. Consider the example
+
+    .. code:: python
+
+        import kwarray
+
+        # This is the standard way to create multi dimensional index
+        sl = (Ellipsis, slice(0, 10), slice(0, 10), slice(None))
+        arr = arr[sl]
+
+        # And this is equivalent
+        sl = kwarray.Slice[..., 0:10, 0:10, :]
+        arr = arr[sl]
 
     Note:
         This is not a real subclass of slice, but by using metaclasses it
         behaves like one in most circumstances. The instances created by using
         the constructor or convinience methods are real slice instances (or
         tuples of real slice instances).
+
+    A similar idea has been proposed and rejected several times to core Python
+    [CPythonIssue68567]_ [PythonDiscuss30316]_.
+
+    References:
+        .. [PythonDiscuss30316] https://discuss.python.org/t/alternative-to-create-slice-and-tuple-of-slices-with-slice-class-getitem/30316/6
+        .. [CPythonIssue68567] https://github.com/python/cpython/issues/68567
 
     Example:
         >>> import kwarray
@@ -358,14 +385,10 @@ class Slice(metaclass=_SliceMeta):
         >>> assert Slice() == slice(None, None, None)
         >>> assert Slice[0:3] == slice(0, 3, None)
         >>> assert Slice[0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice[..., 0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
         >>> assert Slice(0, 3) == (slice(0, 3, None), slice(0, 5, None))
         >>> assert isinstance(Slice(), Slice)
         >>> assert not issubclass(Slice, slice), 'no way to make this work AFAIK'
     """
     def __init__(self, *args):
         raise AssertionError('It should not be possible to construct a real instance of this class')
-
-    def __class_getitem__(self, index):
-        # __class_getitem__ was introduced in Python 3.7
-        # https://peps.python.org/pep-0560/
-        return index
