@@ -385,8 +385,8 @@ class Slice(metaclass=_SliceMeta):
         >>> assert Slice() == slice(None, None, None)
         >>> assert Slice[0:3] == slice(0, 3, None)
         >>> assert Slice[0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
-        >>> assert Slice[..., 0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
-        >>> assert Slice(0, 3) == (slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice[..., 0:3, 0:5] == (Ellipsis, slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice(0, 3) == slice(0, 3, None)
         >>> assert isinstance(Slice(), Slice)
         >>> assert not issubclass(Slice, slice), 'no way to make this work AFAIK'
     """
