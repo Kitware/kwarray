@@ -942,6 +942,148 @@ def _postprocess_keepdims(original, result, axis):
     return result
 
 
+class RunningHistogram:
+    """
+    Running histogram accumulator for streaming data.
+
+    Efficiently bins incoming data into fixed bins and maintains a cumulative count.
+    Supports NaN-safe policies.
+
+    Args:
+        bin_edges (array-like): 1D array of monotonically increasing bin edges of length M+1
+            defining M bins.
+        nan_policy (str): How to handle NaN or infinite values in data:
+            - 'omit' (default): ignore NaNs/infs (they are not counted).
+            - 'propagate': if any NaN/inf in input, mark entire accumulator as NaN.
+            - 'raise': raise ValueError if NaN/inf encountered.
+
+    References:
+        https://chatgpt.com/c/681bf8a1-5f24-8002-8590-f3fd969159a4
+
+    Attributes:
+        bin_edges (ndarray): The edges provided.
+        accum (ndarray): 1D array of length M with counts per bin.
+        nan_policy (str): Policy for NaN/infinite values.
+
+    Example:
+        >>> # Basic usage
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> edges = [0, 1, 2, 3]
+        >>> rh = RunningHistogram(edges)
+        >>> rh.update([0.1, 1.5, 2.5, 0.9])
+        >>> rh.accum
+        array([2., 1., 1.])
+
+        >>> # Multiple updates accumulate
+        >>> rh.update(np.array([1.1, 2.9, 2.0]))
+        >>> rh.accum
+        array([2., 2., 3.])
+
+        >>> # NaN omission
+        >>> rh2 = RunningHistogram([0, 1, 2], nan_policy='omit')
+        >>> rh2.update([0.5, np.nan, 1.5])
+        >>> rh2.accum  # ignores nan
+        array([1., 1.])
+
+        >>> # NaN propagation
+        >>> rh3 = RunningHistogram([0, 1, 2], nan_policy='propagate')
+        >>> rh3.update([0.5, np.nan, 1.5])
+        >>> rh3.accum  # becomes all NaN
+        array([nan, nan])
+
+        >>> # Raise on NaN
+        >>> import pytest
+        >>> rh4 = RunningHistogram([0, 1, 2], nan_policy='raise')
+        >>> try:
+        ...     rh4.update([0.1, np.nan])
+        ... except ValueError:
+        ...     print('raised')
+        raised
+
+    Example:
+        >>> # Image-like ndarray of shape (32, 32, 3)
+        >>> # Create a small synthetic RGB image with values in [0, 255]
+        >>> img = np.zeros((32, 32, 3), dtype=np.uint8)
+        >>> img[..., 0] = 50   # Red channel constant 50
+        >>> img[..., 1] = 150  # Green channel constant 150
+        >>> img[..., 2] = 250  # Blue channel constant 250
+        >>> # Bin edges for intensity: [0, 100, 200, 300]
+        >>> edges = [0, 100, 200, 300]
+        >>> rh_img = RunningHistogram(edges)
+        >>> # Updating with the multi-channel image flattens all values
+        >>> rh_img.update(img)
+        >>> # There are 32*32 pixels per channel => 1024 each
+        >>> # Red=50 falls in bin 0, Green=150 in bin 1, Blue=250 in bin 2
+        >>> rh_img.accum  # counts for each bin across all channels
+        array([1024., 1024., 1024.])
+    """
+    def __init__(self, bin_edges, nan_policy='omit'):
+        self.bin_edges = np.asarray(bin_edges, dtype=float)
+        if self.bin_edges.ndim != 1 or self.bin_edges.size < 2:
+            raise ValueError("bin_edges must be a 1D array of length >=2")
+        if not np.all(np.diff(self.bin_edges) > 0):
+            raise ValueError("bin_edges must be strictly increasing")
+        self.accum = np.zeros(self.bin_edges.size - 1, dtype=float)
+        self.nan_policy = nan_policy
+        if self.nan_policy not in {'omit', 'propagate', 'raise'}:
+            raise ValueError(f"Unknown nan_policy: {nan_policy}")
+
+    def update(self, data):  # noqa: C901
+        """
+        Bin the input data and update the running histogram.
+
+        Args:
+            data (array-like): Values to bin.
+        """
+        data = np.asarray(data)
+        # Handle nan/infinite according to policy
+        if self.nan_policy == 'omit':
+            mask = np.isfinite(data)
+            data = data[mask]
+        elif self.nan_policy == 'propagate':
+            if not np.all(np.isfinite(data)):
+                # Mark entire accumulator as NaN and exit
+                self.accum[:] = np.nan
+                return
+        elif self.nan_policy == 'raise':
+            if not np.all(np.isfinite(data)):
+                raise ValueError("Non-finite data encountered with nan_policy='raise'")
+
+        # Use numpy histogram for efficient binning
+        counts, _ = np.histogram(data, bins=self.bin_edges)
+        # Accumulate counts
+        self.accum += counts
+
+    def reset(self):
+        """
+        Reset the accumulator to zero counts.
+
+        Example:
+            >>> rh = RunningHistogram([0, 1, 2, 3])
+            >>> rh.update([0.2, 1.8])
+            >>> rh.reset()
+            >>> rh.accum
+            array([0., 0., 0.])
+        """
+        self.accum.fill(0)
+
+    def finalize(self):
+        """
+        Return the bin edges and accumulated counts.
+
+        Returns:
+            tuple: (bin_edges, accum_counts)
+
+        Example:
+            >>> rh = RunningHistogram([0, 5, 10])
+            >>> rh.update([1, 6, 2, 9])
+            >>> edges, counts = rh.finalize()
+            >>> edges.tolist(), counts.tolist()
+            ([0.0, 5.0, 10.0], [2.0, 2.0])
+        """
+        return self.bin_edges, self.accum
+
+
 if __name__ == '__main__':
     """
     CommandLine:
