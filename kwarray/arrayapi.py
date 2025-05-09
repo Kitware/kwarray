@@ -1917,69 +1917,80 @@ def dtype_info(dtype):
     """
     torch = sys.modules.get('torch', None)
     if torch is not None and isinstance(dtype, torch.dtype):
-        # Using getattr on is_complex for torch 1.4
-        _probably_float = dtype.is_floating_point
-        if hasattr(dtype, 'is_complex'):
-            _probably_float |= dtype.is_complex  # for torch 1.4.0
-        else:
-            _probably_float |= dtype is torch.complex128  # for torch 1.0.0
-            _probably_float |= dtype is torch.complex64  # for torch 1.0.0
-            if hasattr(torch, 'complex32'):
-                _probably_float |= dtype is torch.complex32  # for torch 1.0.0
-        if _probably_float:
-            try:
-                info = torch.finfo(dtype)
-            except Exception:
-                # if not hasattr(dtype, 'is_complex'):
-                """
-                # Helper for dev
-                zs = [torch.complex32, torch.complex64, torch.complex128]
-                for z in zs:
-                    z = torch.finfo(z)
-                    args = [f + '=' + repr(getattr(z, f))
-                        for f in finfo_ducktype._fields]
-                    print('finfo_ducktype({})'.format(', '.join(args)))
-                """
-                # Return a ducktype for older torches without complex finfo
-                # https://github.com/pytorch/pytorch/issues/35954
-                from collections import namedtuple
-                finfo_ducktype = namedtuple('finfo_ducktype', [
-                    'bits', 'dtype', 'eps', 'max', 'min', 'resolution',
-                    'tiny'])
-                from collections import namedtuple
-                finfo_ducktype(bits=32, dtype='float32',
-                               eps=1.1920928955078125e-07,
-                               max=3.4028234663852886e+38,
-                               min=-3.4028234663852886e+38,
-                               resolution=1e-06,
-                               tiny=1.1754943508222875e-38)
-                if hasattr(torch, 'complex32') and dtype == torch.complex32:
-                    info = finfo_ducktype(bits=16, dtype='float16',
-                                          eps=0.0009765625, max=65504.0,
-                                          min=-65504.0, resolution=0.001,
-                                          tiny=6.103515625e-05)
-                elif dtype == torch.complex64:
-                    info = finfo_ducktype(bits=32, dtype='float32',
-                                          eps=1.1920928955078125e-07,
-                                          max=3.4028234663852886e+38,
-                                          min=-3.4028234663852886e+38,
-                                          resolution=1e-06,
-                                          tiny=1.1754943508222875e-38)
-                elif dtype == torch.complex128:
-                    info = finfo_ducktype(bits=64, dtype='float64',
-                                          eps=2.220446049250313e-16,
-                                          max=1.7976931348623157e+308,
-                                          min=-1.7976931348623157e+308,
-                                          resolution=1e-15,
-                                          tiny=2.2250738585072014e-308)
-                else:
-                    raise TypeError(dtype)
-        else:
-            info = torch.iinfo(dtype)
+        info = _torch_dtype_info(dtype)
     else:
-        np_dtype = np.dtype(dtype)
-        if np_dtype.kind in {'f', 'c'}:
-            info = np.finfo(np_dtype)
-        else:
-            info = np.iinfo(np_dtype)
+        info = _numpy_dtype_info(dtype)
+    return info
+
+
+def _numpy_dtype_info(dtype):
+    np_dtype = np.dtype(dtype)
+    if np_dtype.kind in {'f', 'c'}:
+        info = np.finfo(np_dtype)
+    else:
+        info = np.iinfo(np_dtype)
+    return info
+
+
+def _torch_dtype_info(dtype):
+    import torch
+    # Using getattr on is_complex for torch 1.4
+    _probably_float = dtype.is_floating_point
+    if hasattr(dtype, 'is_complex'):
+        _probably_float |= dtype.is_complex  # for torch 1.4.0
+    else:
+        _probably_float |= dtype is torch.complex128  # for torch 1.0.0
+        _probably_float |= dtype is torch.complex64  # for torch 1.0.0
+        if hasattr(torch, 'complex32'):
+            _probably_float |= dtype is torch.complex32  # for torch 1.0.0
+    if _probably_float:
+        try:
+            info = torch.finfo(dtype)
+        except Exception:
+            # if not hasattr(dtype, 'is_complex'):
+            """
+            # Helper for dev
+            zs = [torch.complex32, torch.complex64, torch.complex128]
+            for z in zs:
+                z = torch.finfo(z)
+                args = [f + '=' + repr(getattr(z, f))
+                    for f in finfo_ducktype._fields]
+                print('finfo_ducktype({})'.format(', '.join(args)))
+            """
+            # Return a ducktype for older torches without complex finfo
+            # https://github.com/pytorch/pytorch/issues/35954
+            from collections import namedtuple
+            finfo_ducktype = namedtuple('finfo_ducktype', [
+                'bits', 'dtype', 'eps', 'max', 'min', 'resolution',
+                'tiny'])
+            from collections import namedtuple
+            finfo_ducktype(bits=32, dtype='float32',
+                           eps=1.1920928955078125e-07,
+                           max=3.4028234663852886e+38,
+                           min=-3.4028234663852886e+38,
+                           resolution=1e-06,
+                           tiny=1.1754943508222875e-38)
+            if hasattr(torch, 'complex32') and dtype == torch.complex32:
+                info = finfo_ducktype(bits=16, dtype='float16',
+                                      eps=0.0009765625, max=65504.0,
+                                      min=-65504.0, resolution=0.001,
+                                      tiny=6.103515625e-05)
+            elif dtype == torch.complex64:
+                info = finfo_ducktype(bits=32, dtype='float32',
+                                      eps=1.1920928955078125e-07,
+                                      max=3.4028234663852886e+38,
+                                      min=-3.4028234663852886e+38,
+                                      resolution=1e-06,
+                                      tiny=1.1754943508222875e-38)
+            elif dtype == torch.complex128:
+                info = finfo_ducktype(bits=64, dtype='float64',
+                                      eps=2.220446049250313e-16,
+                                      max=1.7976931348623157e+308,
+                                      min=-1.7976931348623157e+308,
+                                      resolution=1e-15,
+                                      tiny=2.2250738585072014e-308)
+            else:
+                raise TypeError(dtype)
+    else:
+        info = torch.iinfo(dtype)
     return info

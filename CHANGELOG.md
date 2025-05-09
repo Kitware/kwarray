@@ -11,10 +11,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * Add `drop` to `DataFrameLight`.
 * Add more trig functions to `ArrayAPI`.
 * Add `kwarray.Slice`
-* Add `kwarray.RunningHistogram`
+* Add experimental `kwarray.RunningHistogram`
 
 ### Changed
 `stats_dict` now handles quantile with nans
+
+### Fixed
+* `RunningStats.update_many` now works with integer values when weights are given.
 
 
 ## Version 0.7.1 - Released 2024-10-17

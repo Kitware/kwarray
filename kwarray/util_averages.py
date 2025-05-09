@@ -428,6 +428,13 @@ class RunningStats(ub.NiceRepr):
     def __nice__(self):
         return '{}'.format(self.shape)
 
+    def copy(self):
+        """
+        Return a deep copy
+        """
+        from copy import deepcopy
+        return deepcopy(self)
+
     @property
     def shape(run):
         try:
@@ -482,6 +489,15 @@ class RunningStats(ub.NiceRepr):
             >>> run.update_many(1000)
             >>> print(run.current())
             >>> assert np.all(run.current()['n'] == 37)
+
+        Example:
+            >>> # Case where data are integers
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> data = rng.randint(0, 10, 32)
+            >>> weight = rng.randint(0, 10, 32)
+            >>> run.update_many(data, weight)
         """
         data = np.asarray(data)
         if run.nan_policy == 'omit':
@@ -499,6 +515,9 @@ class RunningStats(ub.NiceRepr):
             has_ignore_items = np.any(ignore_flags)
 
         if has_ignore_items:
+            from kwarray.arrayapi import _numpy_dtype_info
+            dtype_info = _numpy_dtype_info(data.dtype)
+
             data = data.copy()
             # Replace the bad value with something sensible for each operation.
             data[ignore_flags] = 0
@@ -508,9 +527,9 @@ class RunningStats(ub.NiceRepr):
 
             run.raw_total += w_data.sum(axis=0)
             run.raw_squares += (w_data ** 2).sum(axis=0)
-            data[ignore_flags] = -np.inf
+            data[ignore_flags] = dtype_info.min
             run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
-            data[ignore_flags] = +np.inf
+            data[ignore_flags] = dtype_info.max
             run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
         else:
             w_data = data * weights
@@ -698,6 +717,82 @@ class RunningStats(ub.NiceRepr):
         """
         info = run.summarize(axis=ub.NoParam)
         return info
+
+    def collapse(run, axis=None, keepdims=True):
+        """
+        Reduce the shape of the accumulator array.
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> run = kwarray.RunningStats()
+            >>> run.update(rng.rand(3, 5))
+            >>> new = run.collapse()
+        """
+        new = RunningStats(nan_policy=run.nan_policy,
+                           check_weights=run.check_weights)
+        new.raw_total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+        new.raw_squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
+        new.raw_max     = run.raw_max.max(axis=axis, keepdims=keepdims)
+        new.raw_min     = run.raw_min.min(axis=axis, keepdims=keepdims)
+        if not hasattr(run.raw_total, 'shape'):
+            new.n = run.n
+        else:
+            new.n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+        return new
+
+    def _update_other(run, other):
+        """
+        Update this RunningStats object with statistics from another one.
+
+        Args:
+            other (RunningStats): another RunningStats object to combine with.
+
+        Example:
+            >>> import kwarray
+            >>> rs1 = kwarray.RunningStats()
+            >>> rs2 = kwarray.RunningStats()
+            >>> rs1.update(np.array([1, 2, 3]))
+            >>> rs2.update(np.array([4, 5, 6]))
+            >>> rs3 = rs1.copy()
+            >>> rs3._update_other(rs2)
+            >>> rs4 = kwarray.RunningStats()
+            >>> rs4.update(np.array([1, 2, 3]))
+            >>> rs4.update(np.array([4, 5, 6]))
+            >>> summary3 = rs3.summarize()
+            >>> summary4 = rs4.summarize()
+            >>> assert summary4 == summary3
+            >>> print('mean:', np.round(summary3['mean'], 2))
+            >>> print('std:', np.round(summary3['std'], 2))
+            >>> print('n:', summary3['n'])
+            mean: [3.5]
+            std: [1.87]
+            n: [6.]
+
+        Example:
+            >>> import kwarray
+            >>> rng = kwarray.ensure_rng(0)
+            >>> rs1 = kwarray.RunningStats()
+            >>> rs2 = kwarray.RunningStats()
+            >>> rs1.update(rng.rand(3, 5))
+            >>> rs1.update(rng.rand(3, 5))
+            >>> rs2.update(rng.rand(7, 9))
+            >>> rs2.update(rng.rand(7, 9))
+            >>> rs3 = rs1.copy()
+            >>> rs3 = rs3.collapse()
+            >>> rs3._update_other(rs2)
+            >>> summary3 = rs3.summarize()
+            >>> print('mean:', np.round(summary3['mean'], 2))
+            >>> print('std:', np.round(summary3['std'], 2))
+            >>> print('n:', summary3['n'])
+        """
+        if run.shape != other.shape:
+            raise ValueError(f'could not be broadcast together with shapes {run.shape} and {other.shape}')
+        np.maximum(run.raw_max, other.raw_max, out=run.raw_max)
+        np.minimum(run.raw_min, other.raw_min, out=run.raw_min)
+        np.add(run.n, other.n, out=run.n)
+        np.add(run.raw_total, other.raw_total, out=run.raw_total)
+        np.add(run.raw_squares, other.raw_squares, out=run.raw_squares)
 
 
 def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
@@ -946,50 +1041,61 @@ class RunningHistogram:
     """
     Running histogram accumulator for streaming data.
 
+    NOTE:
+        This class is still experimental and subject to change.
+
+    TODO:
+        - [ ] We are going to combine implementations for continuous and
+              discrete cases and make them interchangeable. The continuous case
+              is more general and can subsume the discrete case, but the
+              discrete case should be more efficient and we should use that
+              implementation if we can, until we can't and then we convert to
+              continuous.
+
+        - [ ] Add a method to group bins and combine the counts within them
+              to downsample the histogram resolution.
+
+        - [ ] Dynamic binning.
+
     Efficiently bins incoming data into fixed bins and maintains a cumulative count.
     Supports NaN-safe policies.
 
     Args:
-        bin_edges (array-like): 1D array of monotonically increasing bin edges of length M+1
+        edges (array-like): 1D array of monotonically increasing bin edges of length M+1
             defining M bins.
         nan_policy (str): How to handle NaN or infinite values in data:
             - 'omit' (default): ignore NaNs/infs (they are not counted).
-            - 'propagate': if any NaN/inf in input, mark entire accumulator as NaN.
             - 'raise': raise ValueError if NaN/inf encountered.
 
     References:
         https://chatgpt.com/c/681bf8a1-5f24-8002-8590-f3fd969159a4
 
     Attributes:
-        bin_edges (ndarray): The edges provided.
+        edges (ndarray): The edges provided.
         accum (ndarray): 1D array of length M with counts per bin.
         nan_policy (str): Policy for NaN/infinite values.
 
     Example:
         >>> # Basic usage
         >>> from kwarray.util_averages import *  # NOQA
+        >>> import kwarray
         >>> edges = [0, 1, 2, 3]
-        >>> rh = RunningHistogram(edges)
-        >>> rh.update([0.1, 1.5, 2.5, 0.9])
+        >>> self = rh = kwarray.RunningHistogram(edges)
+        >>> data = np.array([0.1, 1.5, 2.5, 0.9])
+        >>> rh.update(data)
         >>> rh.accum
-        array([2., 1., 1.])
+        array([2, 1, 1])
 
         >>> # Multiple updates accumulate
         >>> rh.update(np.array([1.1, 2.9, 2.0]))
         >>> rh.accum
-        array([2., 2., 3.])
+        array([2, 2, 3])
 
         >>> # NaN omission
         >>> rh2 = RunningHistogram([0, 1, 2], nan_policy='omit')
         >>> rh2.update([0.5, np.nan, 1.5])
         >>> rh2.accum  # ignores nan
-        array([1., 1.])
-
-        >>> # NaN propagation
-        >>> rh3 = RunningHistogram([0, 1, 2], nan_policy='propagate')
-        >>> rh3.update([0.5, np.nan, 1.5])
-        >>> rh3.accum  # becomes all NaN
-        array([nan, nan])
+        array([1, 1])
 
         >>> # Raise on NaN
         >>> import pytest
@@ -1003,6 +1109,7 @@ class RunningHistogram:
     Example:
         >>> # Image-like ndarray of shape (32, 32, 3)
         >>> # Create a small synthetic RGB image with values in [0, 255]
+        >>> from kwarray.util_averages import *  # NOQA
         >>> img = np.zeros((32, 32, 3), dtype=np.uint8)
         >>> img[..., 0] = 50   # Red channel constant 50
         >>> img[..., 1] = 150  # Green channel constant 150
@@ -1015,18 +1122,23 @@ class RunningHistogram:
         >>> # There are 32*32 pixels per channel => 1024 each
         >>> # Red=50 falls in bin 0, Green=150 in bin 1, Blue=250 in bin 2
         >>> rh_img.accum  # counts for each bin across all channels
-        array([1024., 1024., 1024.])
+        array([1024, 1024, 1024])
     """
-    def __init__(self, bin_edges, nan_policy='omit'):
-        self.bin_edges = np.asarray(bin_edges, dtype=float)
-        if self.bin_edges.ndim != 1 or self.bin_edges.size < 2:
-            raise ValueError("bin_edges must be a 1D array of length >=2")
-        if not np.all(np.diff(self.bin_edges) > 0):
-            raise ValueError("bin_edges must be strictly increasing")
-        self.accum = np.zeros(self.bin_edges.size - 1, dtype=float)
+    def __init__(self, edges, nan_policy='omit'):
+        self.edges = np.asarray(edges, dtype=float)
+        if self.edges.ndim != 1 or self.edges.size < 2:
+            raise ValueError("edges must be a 1D array of length >=2")
+        if not np.all(np.diff(self.edges) > 0):
+            raise ValueError("edges must be strictly increasing")
+        self.accum = np.zeros(self.edges.size - 1, dtype=np.int64)
         self.nan_policy = nan_policy
-        if self.nan_policy not in {'omit', 'propagate', 'raise'}:
+        if self.nan_policy not in {'omit', 'raise'}:
             raise ValueError(f"Unknown nan_policy: {nan_policy}")
+        self.n_updates = 0
+        self.n_total = 0
+        self.n_underflow = 0
+        self.n_overflow = 0
+        self.n_nan = 0
 
     def update(self, data):  # noqa: C901
         """
@@ -1035,59 +1147,157 @@ class RunningHistogram:
         Args:
             data (array-like): Values to bin.
         """
-        data = np.asarray(data)
-        # Handle nan/infinite according to policy
+        arr = np.asarray(data).ravel()
+        self.n_updates += 1
+        self.n_total += arr.size
+
+        # nan/inf handling
+        mask = ~np.isnan(arr)
         if self.nan_policy == 'omit':
-            mask = np.isfinite(data)
-            data = data[mask]
-        elif self.nan_policy == 'propagate':
-            if not np.all(np.isfinite(data)):
-                # Mark entire accumulator as NaN and exit
-                self.accum[:] = np.nan
-                return
+            if not mask.all():
+                arr = arr[mask]
+                self.n_nan += int((~mask).sum())
         elif self.nan_policy == 'raise':
-            if not np.all(np.isfinite(data)):
+            if not mask.all():
                 raise ValueError("Non-finite data encountered with nan_policy='raise'")
 
-        # Use numpy histogram for efficient binning
-        counts, _ = np.histogram(data, bins=self.bin_edges)
-        # Accumulate counts
+        # TODO: make extra computation optional
+        HANDLE_OVERFLOW = True
+        if HANDLE_OVERFLOW:
+            # underflow/overflow
+            under = arr < self.edges[0]
+            over = arr >= self.edges[-1]
+            self.n_underflow += under.sum()
+            self.n_overflow += over.sum()
+            mid = arr[~(under | over)]
+        else:
+            mid = arr
+        # histogram
+        counts, _ = np.histogram(mid, bins=self.edges)
         self.accum += counts
 
-    def reset(self):
-        """
-        Reset the accumulator to zero counts.
+    def _update_other(self, other):
+        if not np.allclose(self.edges, other.edges):
+            raise ValueError("edges must match to merge")
+        if self.nan_policy != other.nan_policy:
+            raise ValueError("nan_policy must match to merge")
+        self.accum += other.counts
+        self.n_updates += other.n_updates
+        self.n_total += other.n_total
+        self.n_nan += other.n_nan
+        self.n_underflow += other.n_underflow
+        self.n_overflow += other.n_overflow
+        return self
 
-        Example:
-            >>> rh = RunningHistogram([0, 1, 2, 3])
-            >>> rh.update([0.2, 1.8])
-            >>> rh.reset()
-            >>> rh.accum
-            array([0., 0., 0.])
-        """
-        self.accum.fill(0)
-
-    def finalize(self):
-        """
-        Return the bin edges and accumulated counts.
-
-        Returns:
-            tuple: (bin_edges, accum_counts)
-
-        Example:
-            >>> rh = RunningHistogram([0, 5, 10])
-            >>> rh.update([1, 6, 2, 9])
-            >>> edges, counts = rh.finalize()
-            >>> edges.tolist(), counts.tolist()
-            ([0.0, 5.0, 10.0], [2.0, 2.0])
-        """
-        return self.bin_edges, self.accum
+    def __iadd__(self, other):
+        return self._update_other(other)
 
 
-if __name__ == '__main__':
+class RunningDiscreteHistogram:
     """
-    CommandLine:
-        python ~/code/kwarray/kwarray/util_averages.py
+    Discrete histogram using pure NumPy arrays for vectorized updates.
+
+    Users may preallocate a domain of possible values via `bins`.
+    New values not in the domain will be automatically appended.
+
+    Tracks:
+        bins (ndarray): sorted unique values seen so far
+        counts (ndarray): integer counts corresponding to each value
+        n_total (int): total items processed
+        n_nan (int): count of NaN or infinite values
+
+    Args:
+        bins (array-like, optional): initial set of values to preallocate bins.
+            Will be sorted and uniqued.
+        dtype (data-type, default=float): data type for storing values.
+
+    Methods:
+        update(data): vectorized count of new observations
+        __iadd__(other): merge two histograms (must have same dtype)
+        most_common(n=None): return top-n frequent values
+
+    Example:
+        >>> # Preallocate bins for values [0,1,2]
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> rd = RunningDiscreteHistogram([0,1,2], dtype=int)
+        >>> rd.update([0,2,2,3,1,3,3])
+        >>> rd.bins.tolist(), rd.counts.tolist()
+        ([0, 1, 2, 3], [1, 1, 2, 3])
+        >>> rd.n_total, rd.n_nan
+        (7, 0)
+
+    Example:
+        >>> from kwarray.util_averages import *  # NOQA
+        >>> # Test that new bins are added to the histogram as needed.
+        >>> self = RunningDiscreteHistogram()
+        >>> self.update([1, 2, 1, 1, 3])
+        >>> assert np.all(self.bins == [1, 2, 3])
+        >>> self.update([9])
+        >>> assert np.all(self.bins == [1, 2, 3, 9])
+        >>> self.update([9001, 7])
+        >>> assert np.all(self.bins == [1, 2, 3, 7, 9, 9001])
     """
-    import xdoctest
-    xdoctest.doctest_module(__file__)
+    def __init__(self, bins=None, dtype=float):
+        self.dtype = dtype
+        if bins is not None:
+            arr = np.asarray(bins, dtype=self.dtype)
+            uniq = np.unique(arr)
+            self.bins = uniq
+            self.counts = np.zeros(uniq.shape, dtype=int)
+        else:
+            self.bins = np.zeros((0,), dtype=self.dtype)
+            self.counts = np.zeros((0,), dtype=int)
+        self.n_total = 0
+        self.n_nan = 0
+
+    def update(self, data):
+        """
+        Vectorized update: count each unique in data and merge into bins.
+
+        Args:
+            data (array-like): numeric array of observations.
+        """
+        arr = np.asarray(data, dtype=self.dtype).ravel()
+        self.n_total += arr.size
+        mask = np.isfinite(arr)
+        self.n_nan += int((~mask).sum())
+        good = arr[mask]
+        if good.size == 0:
+            return
+        uniq, cnts = np.unique(good, return_counts=True)
+        if self.bins.size > 0:
+            # determine which uniq are existing
+            isin = np.isin(uniq, self.bins)
+            # update existing bins
+            if np.any(isin):
+                exist_vals = uniq[isin]
+                exist_cnts = cnts[isin]
+                idxs = np.searchsorted(self.bins, exist_vals)
+                self.counts[idxs] += exist_cnts
+            # append new bins
+            if not np.all(isin):
+                new_vals = uniq[~isin]
+                new_cnts = cnts[~isin]
+                pos = np.searchsorted(self.bins, new_vals)
+                self.bins = np.insert(self.bins, pos, new_vals)
+                self.counts = np.insert(self.counts, pos, new_cnts)
+        else:
+            # first data
+            self.bins = uniq
+            self.counts = cnts.astype(int)
+
+    def __iadd__(self, other):
+        """
+        Merge another histogram into this one.
+        """
+        if not isinstance(other, RunningDiscreteHistogram):
+            raise ValueError("Can only merge with another RunningDiscreteHistogram")
+        if self.dtype != other.dtype:
+            raise ValueError("dtype mismatch when merging histograms")
+        # merge other's data by updating from its values repeated by counts
+        if other.values.size:
+            # vectorized: repeat values and call update
+            self.update(np.repeat(other.bins, other.counts))
+        self.n_total += other.n_total
+        self.n_nan += other.n_nan
+        return self
