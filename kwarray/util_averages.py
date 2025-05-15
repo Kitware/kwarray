@@ -20,7 +20,7 @@ Examples:
     >>> # Basic statistics on an array
     >>> import kwarray
     >>> data = np.random.rand(100)
-    >>> stats = kwarray.stats_dict(data, quantile=True)
+    >>> stats = kwarray.stats_dict(data, quantile=[0.5])
     >>> # Running statistics over time
     >>> runner = kwarray.RunningStats()
     >>> runner.update(data[:50])
@@ -28,7 +28,7 @@ Examples:
     >>> summary = runner.summarize()
 
     >>> # Histogram accumulation
-    >>> hist = kwarray.RunningHistogram(bins=[0, 0.5, 1.0])
+    >>> hist = kwarray.RunningHistogram(edges=[0, 0.5, 1.0])
     >>> hist.update(data)
 """
 
