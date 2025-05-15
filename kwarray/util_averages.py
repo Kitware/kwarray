@@ -1,8 +1,37 @@
 """
-Currently just defines "stats_dict", which is a nice way to gather multiple
-numeric statistics (e.g. max, min, median, mode, arithmetic-mean,
-geometric-mean, standard-deviation, etc...) about data in an array.
+Utilities for computing and tracking statistical measures over arrays and
+streaming data.
+
+Note:
+    In the future this may become util_stats.
+
+This module provides:
+- `stats_dict`: A function to compute various statistics (min, max, mean, std, etc.) on array-like data.
+- `RunningStats`: A class to efficiently track statistics over time with constant memory.
+- `RunningHistogram`: A class for maintaining a running histogram of streaming data.
+- `RunningDiscreteHistogram`: A class for tracking counts of discrete values in streaming data.
+
+Key Features:
+- Supports NaN handling policies (omit, propagate, raise)
+- Efficient computation of statistics along specified axes
+- Memory-efficient accumulation of statistics over time
+
+Examples:
+    >>> # Basic statistics on an array
+    >>> import kwarray
+    >>> data = np.random.rand(100)
+    >>> stats = kwarray.stats_dict(data, quantile=True)
+    >>> # Running statistics over time
+    >>> runner = kwarray.RunningStats()
+    >>> runner.update(data[:50])
+    >>> runner.update(data[50:])
+    >>> summary = runner.summarize()
+
+    >>> # Histogram accumulation
+    >>> hist = kwarray.RunningHistogram(bins=[0, 0.5, 1.0])
+    >>> hist.update(data)
 """
+
 import warnings
 import collections
 import numpy as np
@@ -360,6 +389,18 @@ class RunningStats(ub.NiceRepr):
 
     TODO:
         - [ ] This may need a few API tweaks and good documentation
+
+        - [ ] We can improve numerical stability by following Welford's or Pébaÿ's algorithms [WikiOnlineVariance]_ [Pébaÿ]_.
+
+        - [ ] We can store information for higher order moments (e.g. skewness, kurtosis) as well.
+              We can also ask the user how many moments they will want to reduce computation.
+
+    SeeAlso:
+        https://pypi.org/project/pebaystats/
+
+    References:
+        .. [WikiOnlineVariance] https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+        .. [Pébaÿ] https://dl.acm.org/doi/abs/10.1007/s00180-015-0637-z (https://www.osti.gov/servlets/purl/1426900)
 
     Example:
         >>> import kwarray
@@ -748,6 +789,9 @@ class RunningStats(ub.NiceRepr):
         Args:
             other (RunningStats): another RunningStats object to combine with.
 
+        CommandLine:
+            xdoctest -m kwarray.util_averages RunningStats._update_other
+
         Example:
             >>> import kwarray
             >>> rs1 = kwarray.RunningStats()
@@ -778,13 +822,15 @@ class RunningStats(ub.NiceRepr):
             >>> rs1.update(rng.rand(3, 5))
             >>> rs2.update(rng.rand(7, 9))
             >>> rs2.update(rng.rand(7, 9))
-            >>> rs3 = rs1.copy()
-            >>> rs3 = rs3.collapse()
-            >>> rs3._update_other(rs2)
+            >>> rs3 = rs1.copy().collapse()
+            >>> rs3._update_other(rs2.collapse())
             >>> summary3 = rs3.summarize()
             >>> print('mean:', np.round(summary3['mean'], 2))
             >>> print('std:', np.round(summary3['std'], 2))
             >>> print('n:', summary3['n'])
+            mean: [[0.51]]
+            std: [[0.28]]
+            n: [[156.]]
         """
         if run.shape != other.shape:
             raise ValueError(f'could not be broadcast together with shapes {run.shape} and {other.shape}')
@@ -817,7 +863,8 @@ def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
         bessel (int):
             Set to 1 to enables bessel correction to unbias the combined std
             estimate.  Only disable if you have the true population means, or
-            you think you know what you are doing.
+            you think you know what you are doing. (Maybe we change this flag
+            to `unbiased`?)
 
     References:
         https://stats.stackexchange.com/questions/55999/is-it-possible-to-find-the-combined-standard-deviation
