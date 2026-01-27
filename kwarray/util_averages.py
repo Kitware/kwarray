@@ -38,6 +38,30 @@ import numpy as np
 import ubelt as ub
 import sys
 
+try:
+    from packaging.version import parse as Version
+except ImportError:
+    from distutils.version import LooseVersion as Version
+
+try:
+    import importlib.metadata as importlib_metadata
+except ImportError:
+    import pkg_resources
+    importlib_metadata = None
+else:
+    pkg_resources = None
+
+try:
+    _NUMPY_VERSION = Version(importlib_metadata.version('numpy'))
+except importlib_metadata.PackageNotFoundError:
+    _NUMPY_VERSION = None
+
+
+if _NUMPY_VERSION is None:
+    _NUMPY_LT_1_22_0 = None
+else:
+    _NUMPY_LT_1_22_0 = _NUMPY_VERSION < Version('1.22.0')
+
 
 # Maybe name or alias or use in kwarray.describe?
 def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
@@ -258,6 +282,9 @@ def nanquantile(a, q, axis=None, interpolation='linear'):
               * 'midpoint': (i + j) / 2.
             The default is 'linear'.
 
+    TODO:
+        - [ ] Agree with modern numpy signatures
+
     Returns:
         quantile : float or ndarray
             If `q` is a single quantile and `axis=None`, then the result is a float.
@@ -294,14 +321,21 @@ def nanquantile(a, q, axis=None, interpolation='linear'):
                 return np.nan
             else:
                 return np.full(np.shape(q), np.nan)
-        return np.quantile(valid, q, interpolation=interpolation)
+
+        if _NUMPY_LT_1_22_0:
+            return np.quantile(valid, q, interpolation=interpolation)
+        else:
+            return np.quantile(valid, q, method=interpolation)
 
     # Case 1: When axis is None, flatten the array.
     if axis is None:
         valid = a[~np.isnan(a)]
         if valid.size == 0:
             return np.nan if np.isscalar(q) else np.full(np.shape(q), np.nan)
-        return np.quantile(valid, q, interpolation=interpolation)
+        if _NUMPY_LT_1_22_0:
+            return np.quantile(valid, q, interpolation=interpolation)
+        else:
+            return np.quantile(valid, q, method=interpolation)
 
     # Case 2: When axis is an integer.
     if isinstance(axis, int):

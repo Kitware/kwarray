@@ -981,7 +981,7 @@ class Uniform(ContinuousDistribution):
         >>> self = Uniform(rng=0)
         >>> self.sample()
         0.548813...
-        >>> float(self.sample(1))
+        >>> float(self.sample(1).ravel()[0])
         0.7151...
 
     Benchmark:

@@ -427,6 +427,7 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
           use-case.
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> ids1 = ['a', 'a', 'b']
         >>> ids2 = ['x', 'y', 'x']
         >>> values = [5, 2, 4]
@@ -434,6 +435,7 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
         ([('a', 'y'), ('b', 'x')], 6.0)
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> ids1 = ['a', 'b', 'c', 'c']
         >>> ids2 = ['x', 'y', 'p', 'q']
         >>> values = [2, 3, 1, 10]
@@ -442,6 +444,7 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
         >>> sparse_assignment(ids2, ids1, values, maximize=False)
 
     Example:
+        >>> # xdoctest: +REQUIRES(module:scipy)
         >>> ids1 = [  1,  2,  4,  5,   6,  7]
         >>> ids2 = [  1,  2,  3,  4,   3,  5]
         >>> value = values = [ 29,  4, 12, 20,  10, 21]
