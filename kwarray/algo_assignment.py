@@ -464,7 +464,7 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
 
     id1_unique = unique(ids1)
     id2_unique = unique(ids2)
-    values = np.asarray(values, copy=None)
+    values = np.asarray(values)
 
     id1_to_idx = {k: i for i, k in enumerate(id1_unique)}
     id2_to_idx = {k: i for i, k in enumerate(id2_unique)}
