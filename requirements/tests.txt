@@ -1,6 +1,5 @@
-pytest >= 6.2.5            ; python_version < '4.0'    and python_version >= '3.11'      # Python 3.11+
-pytest >= 6.2.5            ; python_version < '3.11'   and python_version >= '3.10'      # Python 3.10
-pytest >= 4.6.0            ; python_version < '3.10.0' and python_version >= '3.7.0'   # Python 3.7-3.9
+pytest >= 8.1.1            ; python_version < '4.0'    and python_version >= '3.11'      # Python 3.11+
+pytest >= 6.2.5            ; python_version < '3.11'   and python_version >= '3.9'      # Python 3.9-11
 
 coverage>=5.2.1       ;                            python_version >= '3.6'    # Python 3.6+
 coverage>=4.4.0       ; python_version < '3.6' and python_version >= '2.7'    # Python 2.7
