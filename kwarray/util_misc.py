@@ -15,6 +15,16 @@ class FlatIndexer(ub.NiceRepr):
         lens (List[int]):
             a list of the lengths of the nested objects.
 
+    Example:
+        >>> import kwarray
+        >>> indexer = kwarray.FlatIndexer([1000, 1000, 1000, 42])
+        >>> outer, inner = indexer.unravel(2321)
+        >>> print(f'outer={outer}, inner={inner}')
+        outer=2, inner=321
+        >>> index = indexer.ravel(outer, inner)
+        >>> print(f'index={index}')
+        index=2321
+
     Doctest:
         >>> self = FlatIndexer([1, 2, 3])
         >>> len(self)

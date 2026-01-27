@@ -3,6 +3,9 @@ A faster-than-pandas pandas-like interface to column-major data, in the case
 where the data only needs to be accessed by index.
 
 For data where more complex ids are needed you must use pandas.
+
+TODO:
+    - [ ] Rename to DataFrameLite?
 """
 import ubelt as ub
 import numpy as np
@@ -17,7 +20,7 @@ except Exception:
 __version__ = '0.0.1'
 
 
-class LocLight(object):
+class LocLight:
     def __init__(self, parent):
         self.parent = parent
 
@@ -373,6 +376,12 @@ class DataFrameLight(ub.NiceRepr):
             raise ValueError('axis can only be 0 or 1')
         return new
 
+    @property
+    def shape(self):
+        n_rows = len(self)
+        n_cols = len(self._data)
+        return n_rows, n_cols
+
     def keys(self):
         if self._data:
             for key in self._data.keys():
@@ -479,6 +488,43 @@ class DataFrameLight(ub.NiceRepr):
         other._localizer = LocLight(other)
         return other
 
+    def append(self, row):
+        """
+        Append a row to this data frame.
+
+        Args:
+            other (dict[str, Any]):
+                A value for each column to add the end of this object.
+
+        Note:
+            Not part of the pandas API.
+
+        Example:
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight(columns=['foo', 'bar'])
+            >>> other = {'foo': 0, 'bar': 1}
+            >>> self.append(other)
+            >>> self.append(other)
+            >>> assert len(self) == 2
+        """
+        _data = self._data
+        # Check if the row contains new columns
+        new_keys = row.keys() - _data.keys()
+        if new_keys:
+            num_rows = len(self)
+            if num_rows == 0:
+                # If this is the first row just initialize the columns
+                for key in new_keys:
+                    _data[key] = []
+            else:
+                # If so, backfill the previous rows for the new column
+                for key in new_keys:
+                    _data[key] = [None] * num_rows
+
+        for k, vals in _data.items():
+            new_value = row.get(k, None)
+            vals.append(new_value)
+
     def extend(self, other):
         """
         Extend ``self`` inplace using another dataframe array
@@ -487,8 +533,8 @@ class DataFrameLight(ub.NiceRepr):
             other (DataFrameLight | dict[str, Sequence]):
                 values to concat to end of this object
 
-        NOTE:
-            Not part of the pandas API
+        Note:
+            Not part of the pandas API.
 
         Example:
             >>> self = DataFrameLight(columns=['foo', 'bar'])
