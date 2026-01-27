@@ -428,11 +428,13 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
+        >>> from kwarray.algo_assignment import *  # NOQA
         >>> ids1 = ['a', 'a', 'b']
         >>> ids2 = ['x', 'y', 'x']
         >>> values = [5, 2, 4]
-        >>> sparse_assignment(ids1, ids2, values, maximize=True)
-        ([('a', 'y'), ('b', 'x')], 6.0)
+        >>> result = sparse_assignment(ids1, ids2, values, maximize=True)
+        >>> print(f'result = {ub.urepr(result, nl=0)}')
+        result = ([('a', 'y'), ('b', 'x')], 6.0)
 
     Example:
         >>> # xdoctest: +REQUIRES(module:scipy)
