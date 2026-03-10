@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 The ArrayAPI is a common API that works exactly the same on both torch.Tensors
 and numpy.ndarrays.
@@ -65,6 +67,26 @@ import numpy as np
 import sys
 import ubelt as ub
 from functools import partial
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from numbers import Number
+    from typing import TypeAlias
+
+    import numpy.typing as npt
+    from torch import (
+        Tensor,
+        dtype as TorchDType,
+        finfo as TorchFinfo,
+        iinfo as TorchIinfo,
+    )
+
+    Numeric: TypeAlias = Number | npt.ArrayLike | Tensor
+    ArrayData: TypeAlias = np.ndarray | Tensor
+    AxisLike: TypeAlias = int | tuple[int, ...] | None
+    DTypeLike: TypeAlias = npt.DTypeLike | TorchDType | type | str
+    ShapeLike: TypeAlias = int | Sequence[int]
 
 try:
     from functools import cache
@@ -152,7 +174,7 @@ else:
 #         Numeric = Any
 #         ArrayLike = Any
 
-__docstubs__ = """
+__docstubs__: str = """
 from torch import Tensor
 from typing import Union
 import numpy.typing
@@ -162,7 +184,9 @@ Numeric = Union[Number, ArrayLike, Tensor]
 
 
 class _ImplRegistry:
-    def __init__(self):
+    registered: dict[str, dict[str, dict[str, object]]]
+
+    def __init__(self) -> None:
         self.registered = {
             'torch': {},
             'numpy': {},
@@ -331,11 +355,11 @@ class TorchImpls:
     Torch backend for the ArrayAPI API
     """
 
-    is_tensor = True
-    is_numpy = False
+    is_tensor: bool = True
+    is_numpy: bool = False
 
     @_torchmethod(func_type='misc')
-    def result_type(*arrays_and_dtypes):
+    def result_type(*arrays_and_dtypes: object) -> object:
         """
         Return type from promotion rules
             dtype, promote_types, min_scalar_type, can_cast
@@ -357,13 +381,13 @@ class TorchImpls:
             return result
 
     @_torchmethod(func_type='array_sequence')
-    def cat(datas, axis=-1):
+    def cat(datas: Sequence[Tensor], axis: int = -1) -> Tensor:
         import torch
 
         return torch.cat(datas, dim=axis)
 
     @_torchmethod(func_type='array_sequence')
-    def hstack(datas):
+    def hstack(datas: Sequence[Tensor]) -> Tensor:
         """
         Concatenates along axis=0 if inputs are are 1-D otherwise axis=1
 
@@ -384,7 +408,7 @@ class TorchImpls:
         return torch.cat(datas, dim=axis)
 
     @_torchmethod(func_type='array_sequence')
-    def vstack(datas):
+    def vstack(datas: Sequence[Tensor]) -> Tensor:
         """
         Ensures that inputs datas are at least 2D (prepending a dimension of 1)
         and then concats along axis=0.
@@ -404,7 +428,7 @@ class TorchImpls:
         return torch.cat(datas, dim=0)
 
     @_torchmethod(func_type='data_func')
-    def atleast_nd(arr, n, front=False):
+    def atleast_nd(arr: Tensor, n: int, front: bool = False) -> Tensor:
         ndims = len(arr.shape)
         if n is not None and ndims < n:
             # append the required number of dimensions to the front or back
@@ -416,12 +440,16 @@ class TorchImpls:
         return arr
 
     @_torchmethod(func_type='data_func')
-    def view(data, *shape):
+    def view(data: Tensor, *shape: int) -> Tensor:
         data_ = data.view(*shape)
         return data_
 
     @_torchmethod(func_type='data_func')
-    def take(data, indices, axis=None):
+    def take(
+        data: Tensor,
+        indices: Tensor | npt.ArrayLike,
+        axis: int | None = None,
+    ) -> Tensor:
         import torch
 
         if not torch.is_tensor(indices):
@@ -432,7 +460,11 @@ class TorchImpls:
             return torch.index_select(data, dim=axis, index=indices)
 
     @_torchmethod(func_type='data_func')
-    def compress(data, flags, axis=None):
+    def compress(
+        data: Tensor,
+        flags: Tensor | npt.ArrayLike,
+        axis: int | None = None,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -484,7 +516,7 @@ class TorchImpls:
             return out
 
     @_torchmethod(func_type='data_func')
-    def tile(data, reps):
+    def tile(data: Tensor, reps: Sequence[int]) -> Tensor:
         """
         Implement np.tile in torch
 
@@ -524,7 +556,11 @@ class TorchImpls:
             return data.repeat(reps)
 
     @_torchmethod(func_type='data_func')
-    def repeat(data, repeats, axis=None):
+    def repeat(
+        data: Tensor,
+        repeats: int | Sequence[int],
+        axis: int | None = None,
+    ) -> Tensor:
         """
         I'm not actually sure how to implement this efficiently
 
@@ -581,7 +617,7 @@ class TorchImpls:
         pass
 
     @_torchmethod(func_type='data_func')
-    def T(data):
+    def T(data: Tensor) -> Tensor:
         ndims = data.ndimension()
         if ndims == 2:
             # torch.t can only handle 2 dims
@@ -592,7 +628,7 @@ class TorchImpls:
             return data.permute(*axes)
 
     @_torchmethod(func_type='data_func')
-    def transpose(data, axes):
+    def transpose(data: Tensor, axes: Sequence[int]) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -606,62 +642,79 @@ class TorchImpls:
         return data.permute(axes)
 
     @_torchmethod(func_type='data_func')
-    def numel(data):
+    def numel(data: Tensor) -> int:
         return data.numel()
 
     # --- Allocators ----
 
     @_torchmethod(func_type='data_func')
-    def full_like(data, fill_value, dtype=None):
+    def full_like(
+        data: Tensor,
+        fill_value: object,
+        dtype: DTypeLike | None = None,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full_like(data, fill_value, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
-    def empty_like(data, dtype=None):
+    def empty_like(
+        data: Tensor,
+        dtype: DTypeLike | None = None,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.empty_like(data, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
-    def zeros_like(data, dtype=None):
+    def zeros_like(
+        data: Tensor,
+        dtype: DTypeLike | None = None,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.zeros_like(data, dtype=dtype)
 
     @_torchmethod(func_type='data_func')
-    def ones_like(data, dtype=None):
+    def ones_like(
+        data: Tensor,
+        dtype: DTypeLike | None = None,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.ones_like(data, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
-    def full(shape, fill_value, dtype=float):
+    def full(
+        shape: ShapeLike,
+        fill_value: object,
+        dtype: DTypeLike = float,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full(shape, fill_value, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
-    def empty(shape, dtype=float):
+    def empty(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.full(shape, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
-    def zeros(shape, dtype=float):
+    def zeros(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.zeros(shape, dtype=dtype)
 
     @_torchmethod(func_type='shape_creation')
-    def ones(shape, dtype=float):
+    def ones(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
@@ -670,19 +723,23 @@ class TorchImpls:
     # -------
 
     @_torchmethod(func_type='data_func')
-    def argmax(data, axis=None):
+    def argmax(data: Tensor, axis: int | None = None) -> Tensor:
         import torch
 
         return torch.argmax(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
-    def argmin(data, axis=None):
+    def argmin(data: Tensor, axis: int | None = None) -> Tensor:
         import torch
 
         return torch.argmin(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
-    def argsort(data, axis=-1, descending=False):
+    def argsort(
+        data: Tensor,
+        axis: int = -1,
+        descending: bool = False,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -711,7 +768,7 @@ class TorchImpls:
         return torch.argsort(data, dim=axis, descending=descending)
 
     @_torchmethod(func_type='data_func')
-    def max(data, axis=None):
+    def max(data: Tensor, axis: AxisLike = None) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -747,7 +804,7 @@ class TorchImpls:
             return torch.max(data, dim=axis)[0]
 
     @_torchmethod(func_type='data_func')
-    def min(data, axis=None):
+    def min(data: Tensor, axis: AxisLike = None) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -783,7 +840,10 @@ class TorchImpls:
             return torch.min(data, dim=axis)[0]
 
     @_torchmethod(func_type='data_func')
-    def max_argmax(data, axis=None):
+    def max_argmax(
+        data: Tensor,
+        axis: int | None = None,
+    ) -> tuple[Tensor, Tensor]:
         """
         Args:
             data (Tensor): data to perform operation on
@@ -825,7 +885,10 @@ class TorchImpls:
             return torch.max(data, dim=axis)
 
     @_torchmethod(func_type='data_func')
-    def min_argmin(data, axis=None):
+    def min_argmin(
+        data: Tensor,
+        axis: int | None = None,
+    ) -> tuple[Tensor, Tensor]:
         """
         Args:
             data (Tensor): data to perform operation on
@@ -868,7 +931,13 @@ class TorchImpls:
             return torch.min(data, dim=axis)
 
     @_torchmethod
-    def isclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+    def isclose(
+        data1: Tensor,
+        data2: object,
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        equal_nan: bool = False,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -889,7 +958,13 @@ class TorchImpls:
         )
 
     @_torchmethod
-    def allclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+    def allclose(
+        data1: Tensor,
+        data2: object,
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        equal_nan: bool = False,
+    ) -> bool:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -910,7 +985,11 @@ class TorchImpls:
         )
 
     @_torchmethod
-    def maximum(data1, data2, out=None):
+    def maximum(
+        data1: Tensor,
+        data2: object,
+        out: Tensor | None = None,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -939,7 +1018,11 @@ class TorchImpls:
         return torch.max(data1, data2, out=out)
 
     @_torchmethod
-    def minimum(data1, data2, out=None):
+    def minimum(
+        data1: Tensor,
+        data2: object,
+        out: Tensor | None = None,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -977,7 +1060,11 @@ class TorchImpls:
         return torch.min(data1, data2, out=out)
 
     @_torchmethod
-    def array_equal(data1, data2, equal_nan=False) -> bool:
+    def array_equal(
+        data1: Tensor,
+        data2: Tensor,
+        equal_nan: bool = False,
+    ) -> bool:
         """
         Returns True if all elements in the array are equal.
         This mirrors the behavior of :func:`numpy.array_equal`.
@@ -1039,7 +1126,11 @@ class TorchImpls:
                 return bool(torch.eq(data1, data2).all())
 
     @_torchmethod(func_type='data_func')
-    def matmul(data1, data2, out=None):
+    def matmul(
+        data1: Tensor,
+        data2: object,
+        out: Tensor | None = None,
+    ) -> Tensor:
         import torch
 
         return torch.matmul(data1, data2, out=out)
@@ -1048,14 +1139,14 @@ class TorchImpls:
     #     matmul = _torchmethod(torch.matmul)
 
     @_torchmethod(func_type='data_func')
-    def sum(data, axis=None):
+    def sum(data: Tensor, axis: AxisLike = None) -> Tensor:
         if axis is None:
             return data.sum()
         else:
             return data.sum(dim=axis)
 
     @_torchmethod(func_type='data_func')
-    def nan_to_num(x, copy=True):
+    def nan_to_num(x: Tensor, copy: bool = True) -> Tensor:
         import torch
 
         if copy:
@@ -1064,109 +1155,109 @@ class TorchImpls:
         return x
 
     @_torchmethod(func_type='data_func')
-    def copy(data):
+    def copy(data: Tensor) -> Tensor:
         import torch
 
         return torch.clone(data)
 
     @_torchmethod(func_type='data_func')
-    def log(data):
+    def log(data: Tensor) -> Tensor:
         import torch
 
         return torch.log(data)
 
     @_torchmethod(func_type='data_func')
-    def log2(data):
+    def log2(data: Tensor) -> Tensor:
         import torch
 
         return torch.log2(data)
 
     @_torchmethod(func_type='data_func')
-    def sin(data):
+    def sin(data: Tensor) -> Tensor:
         import torch
 
         return torch.sin(data)
 
     @_torchmethod(func_type='data_func')
-    def cos(data):
+    def cos(data: Tensor) -> Tensor:
         import torch
 
         return torch.cos(data)
 
     @_torchmethod(func_type='data_func')
-    def tan(data):
+    def tan(data: Tensor) -> Tensor:
         import torch
 
         return torch.tan(data)
 
     @_torchmethod(func_type='data_func')
-    def arcsin(data):
+    def arcsin(data: Tensor) -> Tensor:
         import torch
 
         return torch.asin(data)
 
     @_torchmethod(func_type='data_func')
-    def arccos(data):
+    def arccos(data: Tensor) -> Tensor:
         import torch
 
         return torch.acos(data)
 
     @_torchmethod(func_type='data_func')
-    def arctan(data):
+    def arctan(data: Tensor) -> Tensor:
         import torch
 
         return torch.atan(data)
 
     @_torchmethod(func_type='data_func')
-    def sinh(data):
+    def sinh(data: Tensor) -> Tensor:
         import torch
 
         return torch.sinh(data)
 
     @_torchmethod(func_type='data_func')
-    def cosh(data):
+    def cosh(data: Tensor) -> Tensor:
         import torch
 
         return torch.cosh(data)
 
     @_torchmethod(func_type='data_func')
-    def tanh(data):
+    def tanh(data: Tensor) -> Tensor:
         import torch
 
         return torch.tanh(data)
 
     @_torchmethod(func_type='data_func')
-    def arcsinh(data):
+    def arcsinh(data: Tensor) -> Tensor:
         import torch
 
         return torch.asinh(data)
 
     @_torchmethod(func_type='data_func')
-    def arccosh(data):
+    def arccosh(data: Tensor) -> Tensor:
         import torch
 
         return torch.acosh(data)
 
     @_torchmethod(func_type='data_func')
-    def arctanh(data):
+    def arctanh(data: Tensor) -> Tensor:
         import torch
 
         return torch.atanh(data)
 
     @_torchmethod
-    def arctan2(x1, x2):
+    def arctan2(x1: Tensor, x2: object) -> Tensor:
         import torch
 
         return torch.atan2(x1, x2)
 
     @_torchmethod(func_type='data_func')
-    def any(data):
+    def any(data: Tensor) -> Tensor:
         import torch
 
         return torch.any(data)
 
     @_torchmethod(func_type='data_func')
-    def all(data):
+    def all(data: Tensor) -> Tensor:
         import torch
 
         return torch.all(data)
@@ -1178,7 +1269,7 @@ class TorchImpls:
     #     all = _torchmethod(torch.all)
 
     @_torchmethod(func_type='data_func')
-    def nonzero(data):
+    def nonzero(data: Tensor) -> tuple[Tensor, ...]:
         import torch
 
         # torch returns an NxD tensor, whereas numpy returns
@@ -1186,7 +1277,7 @@ class TorchImpls:
         return tuple(torch.nonzero(data).t())
 
     @_torchmethod(func_type='data_func')
-    def astype(data, dtype, copy=True):
+    def astype(data: Tensor, dtype: DTypeLike, copy: bool = True) -> Tensor:
         dtype = _torch_dtype_lut().get(dtype, dtype)
         data = data.to(dtype)
         if copy:
@@ -1194,32 +1285,39 @@ class TorchImpls:
         return data
 
     @_torchmethod(func_type='data_func')
-    def tensor(data, device=ub.NoParam):
+    def tensor(data: Tensor, device: object = ub.NoParam) -> Tensor:
         if device is not ub.NoParam:
             data = data.to(device)
         return data
 
     @_torchmethod(func_type='data_func')
-    def numpy(data):
+    def numpy(data: Tensor) -> np.ndarray:
         return data.data.cpu().numpy()
 
     @_torchmethod(func_type='data_func')
-    def tolist(data):
+    def tolist(data: Tensor) -> list[object]:
         return data.data.cpu().numpy().tolist()
 
     @_torchmethod(func_type='data_func')
-    def contiguous(data):
+    def contiguous(data: Tensor) -> Tensor:
         return data.contiguous()
 
     @_torchmethod(func_type='data_func')
-    def pad(data, pad_width, mode='constant'):
+    def pad(
+        data: Tensor,
+        pad_width: object,
+        mode: str = 'constant',
+    ) -> Tensor:
         import torch
 
         pad = list(ub.flatten(pad_width[::-1]))
         return torch.nn.functional.pad(data, pad, mode=mode)
 
     @_torchmethod(func_type='data_func')
-    def asarray(data, dtype=None):
+    def asarray(
+        data: Tensor | npt.ArrayLike,
+        dtype: DTypeLike | None = None,
+    ) -> Tensor:
         """
         Cast data into a tensor representation
 
@@ -1245,7 +1343,7 @@ class TorchImpls:
     ensure = asarray
 
     @_torchmethod(func_type='data_func')
-    def dtype_kind(data):
+    def dtype_kind(data: Tensor) -> str:
         """returns the numpy code for the data type kind"""
         import torch
 
@@ -1257,31 +1355,35 @@ class TorchImpls:
             return 'i'
 
     @_torchmethod(func_type='data_func')
-    def floor(data, out=None):
+    def floor(data: Tensor, out: Tensor | None = None) -> Tensor:
         import torch
 
         return torch.floor(data, out=out)
 
     @_torchmethod(func_type='data_func')
-    def ceil(data, out=None):
+    def ceil(data: Tensor, out: Tensor | None = None) -> Tensor:
         import torch
 
         return torch.ceil(data, out=out)
 
     @_torchmethod(func_type='data_func')
-    def ifloor(data, out=None):
+    def ifloor(data: Tensor, out: Tensor | None = None) -> Tensor:
         import torch
 
         return torch.floor(data, out=out).int()
 
     @_torchmethod(func_type='data_func')
-    def iceil(data, out=None):
+    def iceil(data: Tensor, out: Tensor | None = None) -> Tensor:
         import torch
 
         return torch.ceil(data, out=out).int()
 
     @_torchmethod(func_type='data_func')
-    def round(data, decimals=0, out=None):
+    def round(
+        data: Tensor,
+        decimals: int = 0,
+        out: Tensor | None = None,
+    ) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -1308,20 +1410,29 @@ class TorchImpls:
             return result
 
     @_torchmethod(func_type='data_func')
-    def iround(data, out=None, dtype=int):
+    def iround(
+        data: Tensor,
+        out: Tensor | None = None,
+        dtype: DTypeLike = int,
+    ) -> Tensor:
         import torch
 
         dtype = _torch_dtype_lut().get(dtype, dtype)
         return torch.round(data, out=out).to(dtype)
 
     @_torchmethod(func_type='data_func')
-    def clip(data, a_min=None, a_max=None, out=None):
+    def clip(
+        data: Tensor,
+        a_min: object | None = None,
+        a_max: object | None = None,
+        out: Tensor | None = None,
+    ) -> Tensor:
         import torch
 
         return torch.clamp(data, a_min, a_max, out=out)
 
     @_torchmethod(func_type='data_func')
-    def softmax(data, axis=None):
+    def softmax(data: Tensor, axis: int | None = None) -> Tensor:
         import torch
 
         if axis is None:
@@ -1335,14 +1446,21 @@ class NumpyImpls:
     Numpy backend for the ArrayAPI API
     """
 
-    is_tensor = False
-    is_numpy = True
+    is_tensor: bool = False
+    is_numpy: bool = True
 
-    hstack = _numpymethod(func_type='array_sequence')(np.hstack)
-    vstack = _numpymethod(func_type='array_sequence')(np.vstack)
+    if TYPE_CHECKING:
+        @staticmethod
+        def hstack(datas: Sequence[np.ndarray]) -> np.ndarray: ...
+
+        @staticmethod
+        def vstack(datas: Sequence[np.ndarray]) -> np.ndarray: ...
+    else:
+        hstack = _numpymethod(func_type='array_sequence')(np.hstack)
+        vstack = _numpymethod(func_type='array_sequence')(np.vstack)
 
     @_numpymethod(func_type='misc')
-    def result_type(*arrays_and_dtypes):
+    def result_type(*arrays_and_dtypes: object) -> object:
         """
         Return type from promotion rules
 
@@ -1356,30 +1474,46 @@ class NumpyImpls:
         return np.result_type(*arrays_and_dtypes)
 
     @_numpymethod(func_type='array_sequence')
-    def cat(datas, axis=-1):
+    def cat(datas: Sequence[np.ndarray], axis: int = -1) -> np.ndarray:
         return np.concatenate(datas, axis=axis)
 
     @_numpymethod(func_type='data_func')
-    def atleast_nd(arr, n, front=False):
+    def atleast_nd(
+        arr: npt.ArrayLike,
+        n: int,
+        front: bool = False,
+    ) -> np.ndarray:
         import kwarray
 
         return kwarray.atleast_nd(arr, n, front)
 
     @_numpymethod(func_type='data_func')
-    def view(data, *shape):
+    def view(data: npt.ArrayLike, *shape: int) -> np.ndarray:
         data_ = data.reshape(*shape)
         return data_
 
     @_numpymethod(func_type='data_func')
-    def take(data, indices, axis=None):
+    def take(
+        data: np.ndarray,
+        indices: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> np.ndarray:
         return data.take(indices, axis=axis)
 
     @_numpymethod(func_type='data_func')
-    def compress(data, flags, axis=None):
+    def compress(
+        data: np.ndarray,
+        flags: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> np.ndarray:
         return data.compress(flags, axis=axis)
 
     @_numpymethod(func_type='data_func')
-    def repeat(data, repeats, axis=None):
+    def repeat(
+        data: np.ndarray,
+        repeats: int | Sequence[int],
+        axis: int | None = None,
+    ) -> np.ndarray:
         if not (axis is None or isinstance(repeats, int)):
             raise NotImplementedError(
                 'torch version of non-int repeats is not implemented'
@@ -1387,82 +1521,112 @@ class NumpyImpls:
         return np.repeat(data, repeats, axis=axis)
 
     @_numpymethod(func_type='data_func')
-    def tile(data, reps):
+    def tile(data: np.ndarray, reps: Sequence[int]) -> np.ndarray:
         return np.tile(data, reps)
 
     @_numpymethod(func_type='data_func')
-    def T(data):
+    def T(data: np.ndarray) -> np.ndarray:
         return data.T
 
     @_numpymethod(func_type='data_func')
-    def transpose(data, axes):
+    def transpose(data: np.ndarray, axes: Sequence[int]) -> np.ndarray:
         return np.transpose(data, axes)
 
     @_numpymethod(func_type='data_func')
-    def numel(data):
+    def numel(data: np.ndarray) -> int:
         return data.size
 
     # --- Allocators ----
 
     @_numpymethod
-    def empty_like(data, dtype=None):
+    def empty_like(
+        data: np.ndarray,
+        dtype: DTypeLike | None = None,
+    ) -> np.ndarray:
         return np.empty_like(data, dtype=dtype)
 
     @_numpymethod
-    def full_like(data, fill_value, dtype=None):
+    def full_like(
+        data: np.ndarray,
+        fill_value: object,
+        dtype: DTypeLike | None = None,
+    ) -> np.ndarray:
         return np.full_like(data, fill_value, dtype=dtype)
 
     @_numpymethod
-    def zeros_like(data, dtype=None):
+    def zeros_like(
+        data: np.ndarray,
+        dtype: DTypeLike | None = None,
+    ) -> np.ndarray:
         return np.zeros_like(data, dtype=dtype)
 
     @_numpymethod
-    def ones_like(data, dtype=None):
+    def ones_like(
+        data: np.ndarray,
+        dtype: DTypeLike | None = None,
+    ) -> np.ndarray:
         return np.ones_like(data, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def full(shape, fill_value, dtype=float):
+    def full(
+        shape: ShapeLike,
+        fill_value: object,
+        dtype: DTypeLike = float,
+    ) -> np.ndarray:
         return np.full(shape, fill_value, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def empty(shape, dtype=float):
+    def empty(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
         return np.full(shape, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def zeros(shape, dtype=float):
+    def zeros(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
         return np.zeros(shape, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def ones(shape, dtype=float):
+    def ones(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
         return np.ones(shape, dtype=dtype)
 
     # -------
 
     @_numpymethod
-    def argmax(data, axis=None):
+    def argmax(
+        data: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> np.ndarray | int:
         return np.argmax(data, axis=axis)
 
     @_numpymethod
-    def argmin(data, axis=None):
+    def argmin(
+        data: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> np.ndarray | int:
         return np.argmin(data, axis=axis)
 
     @_numpymethod
-    def argsort(data, axis=-1, descending=False):
+    def argsort(
+        data: np.ndarray,
+        axis: int = -1,
+        descending: bool = False,
+    ) -> np.ndarray:
         sortx = np.argsort(data, axis=axis)
         if descending:
             sortx = np.flip(sortx, axis=axis)
         return sortx
 
     @_numpymethod
-    def max(data, axis=None):
+    def max(data: np.ndarray, axis: AxisLike = None) -> np.ndarray | Numeric:
         return data.max(axis=axis)
 
     @_numpymethod
-    def min(data, axis=None):
+    def min(data: np.ndarray, axis: AxisLike = None) -> np.ndarray | Numeric:
         return data.min(axis=axis)
 
     @_numpymethod
-    def max_argmax(data, axis=None):
+    def max_argmax(
+        data: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> tuple[Numeric, Numeric]:
         """
         Args:
             data (ArrayLike): data to perform operation on
@@ -1474,7 +1638,10 @@ class NumpyImpls:
         return data.max(axis=axis), np.argmax(data, axis=axis)
 
     @_numpymethod
-    def min_argmin(data, axis=None):
+    def min_argmin(
+        data: npt.ArrayLike,
+        axis: int | None = None,
+    ) -> tuple[Numeric, Numeric]:
         """
         Args:
             data (ArrayLike): data to perform operation on
@@ -1486,70 +1653,159 @@ class NumpyImpls:
         return data.min(axis=axis), np.argmin(data, axis=axis)
 
     @_numpymethod
-    def sum(data, axis=None):
+    def sum(data: np.ndarray, axis: AxisLike = None) -> np.ndarray | Numeric:
         return data.sum(axis=axis)
 
     @_numpymethod
-    def maximum(data1, data2, out=None):
+    def maximum(
+        data1: np.ndarray,
+        data2: object,
+        out: np.ndarray | None = None,
+    ) -> np.ndarray:
         return np.maximum(data1, data2, out=out)
 
     @_numpymethod
-    def isclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+    def isclose(
+        data1: np.ndarray,
+        data2: object,
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        equal_nan: bool = False,
+    ) -> np.ndarray:
         return np.isclose(
             data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan
         )
 
     @_numpymethod
-    def allclose(data1, data2, rtol=1e-05, atol=1e-08, equal_nan=False):
+    def allclose(
+        data1: np.ndarray,
+        data2: object,
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        equal_nan: bool = False,
+    ) -> bool:
         return np.allclose(
             data1, data2, rtol=rtol, atol=atol, equal_nan=equal_nan
         )
 
     @_numpymethod
-    def minimum(data1, data2, out=None):
+    def minimum(
+        data1: np.ndarray,
+        data2: object,
+        out: np.ndarray | None = None,
+    ) -> np.ndarray:
         return np.minimum(data1, data2, out=out)
 
-    # @_numpymethod
-    # def matmul(data1, data2, out=None):
-    #     return np.matmul(data1, data2, out=out)
-    matmul = _numpymethod(np.matmul)
+    if TYPE_CHECKING:
+        @staticmethod
+        def matmul(
+            data1: np.ndarray,
+            data2: object,
+            out: np.ndarray | None = None,
+        ) -> np.ndarray: ...
 
-    nan_to_num = _numpymethod(np.nan_to_num)
+        @staticmethod
+        def nan_to_num(x: np.ndarray, copy: bool = True) -> np.ndarray: ...
 
-    array_equal = _numpymethod(np.array_equal)
-    log = _numpymethod(np.log)
-    log2 = _numpymethod(np.log2)
+        @staticmethod
+        def array_equal(
+            data1: np.ndarray,
+            data2: np.ndarray,
+            equal_nan: bool = False,
+        ) -> bool: ...
 
-    sin = _numpymethod(np.sin)
-    cos = _numpymethod(np.cos)
-    tan = _numpymethod(np.tan)
-    arcsin = _numpymethod(np.arcsin)
-    arccos = _numpymethod(np.arccos)
-    arctan = _numpymethod(np.arctan)
-    sinh = _numpymethod(np.sinh)
-    cosh = _numpymethod(np.cosh)
-    tanh = _numpymethod(np.tanh)
-    arcsinh = _numpymethod(np.arcsinh)
-    arccosh = _numpymethod(np.arccosh)
-    arctanh = _numpymethod(np.arctanh)
+        @staticmethod
+        def log(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def log2(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def sin(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def cos(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def tan(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arcsin(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arccos(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arctan(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def sinh(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def cosh(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def tanh(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arcsinh(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arccosh(data: np.ndarray) -> np.ndarray: ...
+
+        @staticmethod
+        def arctanh(data: np.ndarray) -> np.ndarray: ...
+    else:
+        matmul = _numpymethod(np.matmul)
+        nan_to_num = _numpymethod(np.nan_to_num)
+        array_equal = _numpymethod(np.array_equal)
+        log = _numpymethod(np.log)
+        log2 = _numpymethod(np.log2)
+        sin = _numpymethod(np.sin)
+        cos = _numpymethod(np.cos)
+        tan = _numpymethod(np.tan)
+        arcsin = _numpymethod(np.arcsin)
+        arccos = _numpymethod(np.arccos)
+        arctan = _numpymethod(np.arctan)
+        sinh = _numpymethod(np.sinh)
+        cosh = _numpymethod(np.cosh)
+        tanh = _numpymethod(np.tanh)
+        arcsinh = _numpymethod(np.arcsinh)
+        arccosh = _numpymethod(np.arccosh)
+        arctanh = _numpymethod(np.arctanh)
 
     @_numpymethod
-    def arctan2(x1, x2):
+    def arctan2(x1: np.ndarray, x2: object) -> np.ndarray:
         return np.arctan2(x1, x2)
 
-    any = _numpymethod(np.any)
-    all = _numpymethod(np.all)
+    if TYPE_CHECKING:
+        @staticmethod
+        def any(data: npt.ArrayLike) -> np.ndarray | bool: ...
 
-    copy = _numpymethod(np.copy)
+        @staticmethod
+        def all(data: npt.ArrayLike) -> np.ndarray | bool: ...
 
-    nonzero = _numpymethod(np.nonzero)
+        @staticmethod
+        def copy(data: npt.ArrayLike) -> np.ndarray: ...
+
+        @staticmethod
+        def nonzero(data: npt.ArrayLike) -> tuple[np.ndarray, ...]: ...
+    else:
+        any = _numpymethod(np.any)
+        all = _numpymethod(np.all)
+        copy = _numpymethod(np.copy)
+        nonzero = _numpymethod(np.nonzero)
 
     @_numpymethod(func_type='data_func')
-    def astype(data, dtype, copy=True):
+    def astype(
+        data: np.ndarray,
+        dtype: DTypeLike,
+        copy: bool = True,
+    ) -> np.ndarray:
         return data.astype(dtype, copy=copy)
 
     @_numpymethod(func_type='data_func')
-    def tensor(data, device=ub.NoParam):
+    def tensor(data: np.ndarray, device: object = ub.NoParam) -> Tensor:
         import torch
 
         if torch is None:
@@ -1560,23 +1816,30 @@ class NumpyImpls:
         return data
 
     @_numpymethod(func_type='data_func')
-    def numpy(data):
+    def numpy(data: np.ndarray) -> np.ndarray:
         return data
 
     @_numpymethod(func_type='data_func')
-    def tolist(data):
+    def tolist(data: np.ndarray) -> list[object]:
         return data.tolist()
 
     @_numpymethod(func_type='data_func')
-    def contiguous(data):
+    def contiguous(data: npt.ArrayLike) -> np.ndarray:
         return np.ascontiguousarray(data)
 
     @_numpymethod(func_type='data_func')
-    def pad(data, pad_width, mode='constant'):
+    def pad(
+        data: np.ndarray,
+        pad_width: object,
+        mode: str = 'constant',
+    ) -> np.ndarray:
         return np.pad(data, pad_width, mode=mode)
 
     @_numpymethod(func_type='data_func')
-    def asarray(data, dtype=None):
+    def asarray(
+        data: Tensor | npt.ArrayLike,
+        dtype: DTypeLike | None = None,
+    ) -> np.ndarray:
         """
         Cast data into a numpy representation
         """
@@ -1588,43 +1851,60 @@ class NumpyImpls:
     ensure = asarray
 
     @_numpymethod(func_type='data_func')
-    def dtype_kind(data):
+    def dtype_kind(data: np.ndarray) -> str:
         return data.dtype.kind
 
     @_numpymethod(func_type='data_func')
-    def floor(data, out=None):
+    def floor(data: np.ndarray, out: np.ndarray | None = None) -> np.ndarray:
         return np.floor(data, out=out)
 
     @_numpymethod(func_type='data_func')
-    def ceil(data, out=None):
+    def ceil(data: np.ndarray, out: np.ndarray | None = None) -> np.ndarray:
         return np.ceil(data, out=out)
 
     @_numpymethod(func_type='data_func')
-    def ifloor(data, out=None):
+    def ifloor(data: np.ndarray, out: np.ndarray | None = None) -> np.ndarray:
         return np.floor(data, out=out).astype(np.int32)
 
     @_numpymethod(func_type='data_func')
-    def iceil(data, out=None):
+    def iceil(data: np.ndarray, out: np.ndarray | None = None) -> np.ndarray:
         return np.ceil(data, out=out).astype(np.int32)
 
     @_numpymethod(func_type='data_func')
-    def round(data, decimals=0, out=None):
+    def round(
+        data: np.ndarray,
+        decimals: int = 0,
+        out: np.ndarray | None = None,
+    ) -> np.ndarray:
         return np.round(data, decimals=decimals, out=out)
 
     @_numpymethod(func_type='data_func')
-    def iround(data, out=None, dtype=int):
+    def iround(
+        data: np.ndarray,
+        out: np.ndarray | None = None,
+        dtype: DTypeLike = int,
+    ) -> np.ndarray:
         return np.round(data, out=out).astype(dtype)
 
-    clip = _numpymethod(np.clip)
+    if TYPE_CHECKING:
+        @staticmethod
+        def clip(
+            data: np.ndarray,
+            a_min: object | None = None,
+            a_max: object | None = None,
+            out: np.ndarray | None = None,
+        ) -> np.ndarray: ...
+    else:
+        clip = _numpymethod(np.clip)
 
     @_numpymethod(func_type='data_func')
-    def softmax(data, axis=None):
+    def softmax(data: np.ndarray, axis: AxisLike = None) -> np.ndarray:
         from scipy import special
 
         return special.softmax(data, axis=axis)
 
     @staticmethod
-    def kron(a, b):
+    def kron(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         """
         Outer product
 
@@ -1728,11 +2008,11 @@ class ArrayAPI:
         flat_data = array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14])
     """
 
-    _torch = TorchImpls
-    _numpy = NumpyImpls
+    _torch: type[TorchImpls] = TorchImpls
+    _numpy: type[NumpyImpls] = NumpyImpls
 
     @staticmethod
-    def impl(data):
+    def impl(data: np.ndarray | Tensor) -> type[TorchImpls] | type[NumpyImpls]:
         """
         Returns a namespace suitable for operating on the input data type
 
@@ -1747,7 +2027,9 @@ class ArrayAPI:
             return NumpyImpls
 
     @staticmethod
-    def coerce(data):
+    def coerce(
+        data: str | np.ndarray | Tensor,
+    ) -> type[TorchImpls] | type[NumpyImpls]:
         """
         Coerces some form of inputs into an array api (either numpy or torch).
         """
@@ -1764,7 +2046,7 @@ class ArrayAPI:
             return ArrayAPI.impl(data)
 
     @_apimethod(func_type='misc')
-    def result_type(*arrays_and_dtypes):
+    def result_type(*arrays_and_dtypes: object) -> object:
         """
         Return type from promotion rules
 
@@ -1785,113 +2067,412 @@ class ArrayAPI:
         # return impl.result_type(*arrays_and_dtypes)
 
     @_apimethod(func_type='array_sequence')
-    def cat(datas, *args, **kwargs):
+    def cat(
+        datas: Sequence[ArrayData],
+        *args: object,
+        **kwargs: object,
+    ) -> ArrayData:
         impl = ArrayAPI.impl(datas[0])
         return impl.cat(datas, *args, **kwargs)
 
     @_apimethod(func_type='array_sequence')
-    def hstack(datas, *args, **kwargs):
+    def hstack(
+        datas: Sequence[ArrayData],
+        *args: object,
+        **kwargs: object,
+    ) -> ArrayData:
         impl = ArrayAPI.impl(datas[0])
         return impl.hstack(datas, *args, **kwargs)
 
     @_apimethod(func_type='array_sequence')
-    def vstack(datas, *args, **kwargs):
+    def vstack(
+        datas: Sequence[ArrayData],
+        *args: object,
+        **kwargs: object,
+    ) -> ArrayData:
         impl = ArrayAPI.impl(datas[0])
         return impl.vstack(datas, *args, **kwargs)
 
-    take = _apimethod('take')
-    compress = _apimethod('compress')
+    if TYPE_CHECKING:
+        @staticmethod
+        def take(
+            data: ArrayData,
+            indices: object,
+            axis: int | None = None,
+        ) -> ArrayData: ...
 
-    repeat = _apimethod('repeat')
-    tile = _apimethod('tile')
+        @staticmethod
+        def compress(
+            data: ArrayData,
+            flags: object,
+            axis: int | None = None,
+        ) -> ArrayData: ...
 
-    view = _apimethod('view')
-    numel = _apimethod('numel')
-    atleast_nd = _apimethod('atleast_nd')
+        @staticmethod
+        def repeat(
+            data: ArrayData,
+            repeats: int | Sequence[int],
+            axis: int | None = None,
+        ) -> ArrayData: ...
 
-    full_like = _apimethod('full_like')
-    ones_like = _apimethod('ones_like')
-    zeros_like = _apimethod('zeros_like')
-    empty_like = _apimethod('empty_like')
+        @staticmethod
+        def tile(data: ArrayData, reps: Sequence[int]) -> ArrayData: ...
 
-    sum = _apimethod('sum')
-    argsort = _apimethod('argsort')
+        @staticmethod
+        def view(data: ArrayData, *shape: int) -> ArrayData: ...
 
-    argmax = _apimethod('argmax')
-    argmin = _apimethod('argmin')
-    max = _apimethod('max')
-    min = _apimethod('min')
-    max_argmax = _apimethod('max_argmax')
-    min_argmin = _apimethod('min_argmin')
-    maximum = _apimethod('maximum')
-    minimum = _apimethod('minimum')
+        @staticmethod
+        def numel(data: ArrayData) -> int: ...
 
-    matmul = _apimethod('matmul')
+        @staticmethod
+        def atleast_nd(
+            data: ArrayData,
+            n: int,
+            front: bool = False,
+        ) -> ArrayData: ...
 
-    astype = _apimethod('astype')
-    nonzero = _apimethod('nonzero')
+        @staticmethod
+        def full_like(
+            data: ArrayData,
+            fill_value: object,
+            dtype: DTypeLike | None = None,
+        ) -> ArrayData: ...
 
-    nan_to_num = _apimethod('nan_to_num')
+        @staticmethod
+        def ones_like(
+            data: ArrayData,
+            dtype: DTypeLike | None = None,
+        ) -> ArrayData: ...
 
-    tensor = _apimethod('tensor')
-    numpy = _apimethod('numpy')
-    tolist = _apimethod('tolist')
-    asarray = _apimethod('asarray')
-    asarray = _apimethod('ensure')
+        @staticmethod
+        def zeros_like(
+            data: ArrayData,
+            dtype: DTypeLike | None = None,
+        ) -> ArrayData: ...
 
-    T = _apimethod('T')
-    transpose = _apimethod('transpose')
+        @staticmethod
+        def empty_like(
+            data: ArrayData,
+            dtype: DTypeLike | None = None,
+        ) -> ArrayData: ...
 
-    contiguous = _apimethod('contiguous')
-    pad = _apimethod('pad')
+        @staticmethod
+        def sum(data: ArrayData, axis: AxisLike = None) -> ArrayData | Numeric: ...
 
-    dtype_kind = _apimethod('dtype_kind')
+        @staticmethod
+        def argsort(
+            data: ArrayData,
+            axis: int = -1,
+            descending: bool = False,
+        ) -> ArrayData: ...
 
-    # ones = _apimethod('ones', func_type='shape_creation')
-    # full = _apimethod('full', func_type='shape_creation')
-    # empty = _apimethod('empty', func_type='shape_creation')
-    # zeros = _apimethod('zeros', func_type='shape_creation')
+        @staticmethod
+        def argmax(
+            data: ArrayData,
+            axis: int | None = None,
+        ) -> ArrayData | Numeric: ...
 
-    any = _apimethod('any', func_type='data_func')
-    all = _apimethod('all', func_type='data_func')
+        @staticmethod
+        def argmin(
+            data: ArrayData,
+            axis: int | None = None,
+        ) -> ArrayData | Numeric: ...
 
-    array_equal = _apimethod('array_equal')
+        @staticmethod
+        def max(data: ArrayData, axis: AxisLike = None) -> ArrayData | Numeric: ...
 
-    isclose = _apimethod('isclose', func_type='data_func')
-    allclose = _apimethod('allclose', func_type='data_func')
+        @staticmethod
+        def min(data: ArrayData, axis: AxisLike = None) -> ArrayData | Numeric: ...
 
-    log2 = _apimethod('log2', func_type='data_func')
-    log = _apimethod('log', func_type='data_func')
-    copy = _apimethod('copy', func_type='data_func')
+        @staticmethod
+        def max_argmax(
+            data: ArrayData,
+            axis: int | None = None,
+        ) -> tuple[object, object]: ...
 
-    sin = _apimethod('sin', func_type='data_func')
-    cos = _apimethod('cos', func_type='data_func')
-    tan = _apimethod('tan', func_type='data_func')
-    arcsin = _apimethod('arcsin', func_type='data_func')
-    arccos = _apimethod('arccos', func_type='data_func')
-    arctan = _apimethod('arctan', func_type='data_func')
-    arctan2 = _apimethod('arctan2', func_type='data_func')
-    sinh = _apimethod('sinh', func_type='data_func')
-    cosh = _apimethod('cosh', func_type='data_func')
-    tanh = _apimethod('tanh', func_type='data_func')
-    arcsinh = _apimethod('arcsinh', func_type='data_func')
-    arccosh = _apimethod('arccosh', func_type='data_func')
-    arctanh = _apimethod('arctanh', func_type='data_func')
+        @staticmethod
+        def min_argmin(
+            data: ArrayData,
+            axis: int | None = None,
+        ) -> tuple[object, object]: ...
 
-    iceil = _apimethod('iceil', func_type='data_func')
-    ifloor = _apimethod('ifloor', func_type='data_func')
-    floor = _apimethod('floor', func_type='data_func')
-    ceil = _apimethod('ceil', func_type='data_func')
+        @staticmethod
+        def maximum(
+            data1: ArrayData,
+            data2: object,
+            out: ArrayData | None = None,
+        ) -> ArrayData: ...
 
-    round = _apimethod('round', func_type='data_func')
-    iround = _apimethod('iround', func_type='data_func')
+        @staticmethod
+        def minimum(
+            data1: ArrayData,
+            data2: object,
+            out: ArrayData | None = None,
+        ) -> ArrayData: ...
 
-    clip = _apimethod('clip', func_type='data_func')
+        @staticmethod
+        def matmul(
+            data1: ArrayData,
+            data2: object,
+            out: ArrayData | None = None,
+        ) -> ArrayData: ...
 
-    softmax = _apimethod('softmax', func_type='data_func')
+        @staticmethod
+        def astype(
+            data: ArrayData,
+            dtype: DTypeLike,
+            copy: bool = True,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def nonzero(data: ArrayData) -> tuple[np.ndarray, ...] | tuple[Tensor, ...]: ...
+
+        @staticmethod
+        def nan_to_num(data: ArrayData, copy: bool = True) -> ArrayData: ...
+
+        @staticmethod
+        def tensor(data: ArrayData, device: object = ub.NoParam) -> Tensor: ...
+
+        @staticmethod
+        def numpy(data: ArrayData) -> np.ndarray: ...
+
+        @staticmethod
+        def tolist(data: ArrayData) -> list[object]: ...
+
+        @staticmethod
+        def asarray(
+            data: ArrayData | npt.ArrayLike,
+            dtype: DTypeLike | None = None,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def T(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def transpose(data: ArrayData, axes: Sequence[int]) -> ArrayData: ...
+
+        @staticmethod
+        def contiguous(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def pad(
+            data: ArrayData,
+            pad_width: object,
+            mode: str = 'constant',
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def dtype_kind(data: ArrayData) -> str: ...
+
+        @staticmethod
+        def any(data: ArrayData) -> ArrayData | bool: ...
+
+        @staticmethod
+        def all(data: ArrayData) -> ArrayData | bool: ...
+
+        @staticmethod
+        def array_equal(
+            data1: ArrayData,
+            data2: ArrayData,
+            equal_nan: bool = False,
+        ) -> bool: ...
+
+        @staticmethod
+        def isclose(
+            data1: ArrayData,
+            data2: object,
+            rtol: float = 1e-05,
+            atol: float = 1e-08,
+            equal_nan: bool = False,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def allclose(
+            data1: ArrayData,
+            data2: object,
+            rtol: float = 1e-05,
+            atol: float = 1e-08,
+            equal_nan: bool = False,
+        ) -> bool: ...
+
+        @staticmethod
+        def log2(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def log(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def copy(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def sin(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def cos(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def tan(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arcsin(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arccos(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arctan(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arctan2(data1: ArrayData, data2: object) -> ArrayData: ...
+
+        @staticmethod
+        def sinh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def cosh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def tanh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arcsinh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arccosh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def arctanh(data: ArrayData) -> ArrayData: ...
+
+        @staticmethod
+        def iceil(data: ArrayData, out: ArrayData | None = None) -> ArrayData: ...
+
+        @staticmethod
+        def ifloor(data: ArrayData, out: ArrayData | None = None) -> ArrayData: ...
+
+        @staticmethod
+        def floor(data: ArrayData, out: ArrayData | None = None) -> ArrayData: ...
+
+        @staticmethod
+        def ceil(data: ArrayData, out: ArrayData | None = None) -> ArrayData: ...
+
+        @staticmethod
+        def round(
+            data: ArrayData,
+            decimals: int = 0,
+            out: ArrayData | None = None,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def iround(
+            data: ArrayData,
+            out: ArrayData | None = None,
+            dtype: DTypeLike = int,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def clip(
+            data: ArrayData,
+            a_min: object | None = None,
+            a_max: object | None = None,
+            out: ArrayData | None = None,
+        ) -> ArrayData: ...
+
+        @staticmethod
+        def softmax(data: ArrayData, axis: AxisLike = None) -> ArrayData: ...
+    else:
+        take = _apimethod('take')
+        compress = _apimethod('compress')
+
+        repeat = _apimethod('repeat')
+        tile = _apimethod('tile')
+
+        view = _apimethod('view')
+        numel = _apimethod('numel')
+        atleast_nd = _apimethod('atleast_nd')
+
+        full_like = _apimethod('full_like')
+        ones_like = _apimethod('ones_like')
+        zeros_like = _apimethod('zeros_like')
+        empty_like = _apimethod('empty_like')
+
+        sum = _apimethod('sum')
+        argsort = _apimethod('argsort')
+
+        argmax = _apimethod('argmax')
+        argmin = _apimethod('argmin')
+        max = _apimethod('max')
+        min = _apimethod('min')
+        max_argmax = _apimethod('max_argmax')
+        min_argmin = _apimethod('min_argmin')
+        maximum = _apimethod('maximum')
+        minimum = _apimethod('minimum')
+
+        matmul = _apimethod('matmul')
+
+        astype = _apimethod('astype')
+        nonzero = _apimethod('nonzero')
+
+        nan_to_num = _apimethod('nan_to_num')
+
+        tensor = _apimethod('tensor')
+        numpy = _apimethod('numpy')
+        tolist = _apimethod('tolist')
+        asarray = _apimethod('asarray')
+        asarray = _apimethod('ensure')
+
+        T = _apimethod('T')
+        transpose = _apimethod('transpose')
+
+        contiguous = _apimethod('contiguous')
+        pad = _apimethod('pad')
+
+        dtype_kind = _apimethod('dtype_kind')
+
+        # ones = _apimethod('ones', func_type='shape_creation')
+        # full = _apimethod('full', func_type='shape_creation')
+        # empty = _apimethod('empty', func_type='shape_creation')
+        # zeros = _apimethod('zeros', func_type='shape_creation')
+
+        any = _apimethod('any', func_type='data_func')
+        all = _apimethod('all', func_type='data_func')
+
+        array_equal = _apimethod('array_equal')
+
+        isclose = _apimethod('isclose', func_type='data_func')
+        allclose = _apimethod('allclose', func_type='data_func')
+
+        log2 = _apimethod('log2', func_type='data_func')
+        log = _apimethod('log', func_type='data_func')
+        copy = _apimethod('copy', func_type='data_func')
+
+        sin = _apimethod('sin', func_type='data_func')
+        cos = _apimethod('cos', func_type='data_func')
+        tan = _apimethod('tan', func_type='data_func')
+        arcsin = _apimethod('arcsin', func_type='data_func')
+        arccos = _apimethod('arccos', func_type='data_func')
+        arctan = _apimethod('arctan', func_type='data_func')
+        arctan2 = _apimethod('arctan2', func_type='data_func')
+        sinh = _apimethod('sinh', func_type='data_func')
+        cosh = _apimethod('cosh', func_type='data_func')
+        tanh = _apimethod('tanh', func_type='data_func')
+        arcsinh = _apimethod('arcsinh', func_type='data_func')
+        arccosh = _apimethod('arccosh', func_type='data_func')
+        arctanh = _apimethod('arctanh', func_type='data_func')
+
+        iceil = _apimethod('iceil', func_type='data_func')
+        ifloor = _apimethod('ifloor', func_type='data_func')
+        floor = _apimethod('floor', func_type='data_func')
+        ceil = _apimethod('ceil', func_type='data_func')
+
+        round = _apimethod('round', func_type='data_func')
+        iround = _apimethod('iround', func_type='data_func')
+
+        clip = _apimethod('clip', func_type='data_func')
+
+        softmax = _apimethod('softmax', func_type='data_func')
 
 
-TorchNumpyCompat = ArrayAPI  # backwards compat
+TorchNumpyCompat: type[ArrayAPI] = ArrayAPI  # backwards compat
 
 
 # if __debug__ and torch is not None:
@@ -1978,7 +2559,9 @@ def _torch_dtype_lut():
     return lut
 
 
-def dtype_info(dtype):
+def dtype_info(
+    dtype: type,
+) -> np.iinfo | np.finfo | TorchIinfo | TorchFinfo:
     """
     Lookup datatype information
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Handle and interchange between different random number generators (numpy,
 python, torch, ...). Also defines useful random iterator functions and
@@ -92,11 +94,29 @@ This results in:
 import numpy as np
 import random
 import itertools as it
+from typing import TYPE_CHECKING, overload
 
-_SEED_MAX = int(2**32 - 1)
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+    from types import ModuleType
+    from typing import Literal, TypeVar
+
+    _T = TypeVar('_T')
+
+    RNGInput = (
+        int
+        | float
+        | str
+        | None
+        | np.random.RandomState
+        | random.Random
+        | ModuleType
+    )
+
+_SEED_MAX: int = int(2**32 - 1)
 
 
-__todo = """
+__todo: str = """
 Make a Coercible[RandomState] type that is
 
 Coercible[numpy.random.RandomState] = Union[int, float, None, numpy.random.RandomState, random.Random]
@@ -107,7 +127,7 @@ Coercible[random.Random] = Union[int, float, None, numpy.random.RandomState, ran
 """
 
 
-def seed_global(seed, offset=0):
+def seed_global(seed: int, offset: int = 0) -> None:
     """
     Seeds the python, numpy, and torch global random states
 
@@ -127,7 +147,20 @@ def seed_global(seed, offset=0):
         torch.cuda.manual_seed_all((seed + 3 * offset) % _SEED_MAX)
 
 
-def shuffle(items, rng=None):
+@overload
+def shuffle(items: list[_T], rng: RNGInput = None) -> list[_T]:
+    ...
+
+
+@overload
+def shuffle(items: np.ndarray, rng: RNGInput = None) -> np.ndarray:
+    ...
+
+
+def shuffle(
+    items: list[_T] | np.ndarray,
+    rng: RNGInput = None,
+) -> list[_T] | np.ndarray:
     """
     Shuffles a list inplace and then returns it for convenience
 
@@ -152,7 +185,12 @@ def shuffle(items, rng=None):
     return items
 
 
-def random_combinations(items, size, num=None, rng=None):
+def random_combinations(
+    items: Sequence[object],
+    size: int,
+    num: int | None = None,
+    rng: RNGInput = None,
+) -> Generator[tuple[object, ...], None, None]:
     """
     Yields ``num`` combinations of length ``size`` from items in random order
 
@@ -249,7 +287,11 @@ def random_combinations(items, size, num=None, rng=None):
                 yield combo
 
 
-def random_product(items, num=None, rng=None):
+def random_product(
+    items: Sequence[Sequence[object]],
+    num: int | None = None,
+    rng: RNGInput = None,
+) -> Generator[tuple[object, ...], None, None]:
     """
     Yields ``num`` items from the cartesian product of items in a random order.
 
@@ -341,7 +383,12 @@ def random_product(items, num=None, rng=None):
                 yield prod
 
 
-def random_unique_integers(low, high, size, rng=None):
+def random_unique_integers(
+    low: int,
+    high: int,
+    size: int,
+    rng: RNGInput = None,
+) -> np.ndarray:
     """
     Generate a list of random integers without duplicates.
 
@@ -476,7 +523,26 @@ def _coerce_rng_type(rng):
     return rng
 
 
-def ensure_rng(rng=None, api='numpy'):
+@overload
+def ensure_rng(
+    rng: RNGInput = None,
+    api: Literal['numpy'] = 'numpy',
+) -> np.random.RandomState:
+    ...
+
+
+@overload
+def ensure_rng(
+    rng: RNGInput = None,
+    api: Literal['python'] = 'python',
+) -> random.Random:
+    ...
+
+
+def ensure_rng(
+    rng: RNGInput = None,
+    api: Literal['numpy', 'python'] = 'numpy',
+) -> np.random.RandomState | random.Random:
     """
     Coerces input into a random number generator.
 

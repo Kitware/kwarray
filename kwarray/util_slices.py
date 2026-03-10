@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Utilities related to slicing
 
@@ -12,9 +14,42 @@ TODO:
 
 import ubelt as ub
 import numpy as np
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Any, Literal
 
 
-def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
+@overload
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: Literal[False] = False,
+) -> Any:
+    ...
+
+
+@overload
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: Literal[True] = True,
+) -> tuple[Any, dict[str, Any]]:
+    ...
+
+
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: bool = False,
+) -> Any | tuple[Any, dict[str, Any]]:
     """
     Allows slices with out-of-bound coordinates. Any out of bounds coordinate
     will be sampled via padding.
@@ -129,7 +164,12 @@ __TODO__ = """
 """
 
 
-def apply_embedded_slice(data, data_slice, extra_padding, **padkw):
+def apply_embedded_slice(
+    data: np.ndarray,
+    data_slice: tuple[slice, ...],
+    extra_padding: list[tuple[int, int]],
+    **padkw: Any,
+) -> np.ndarray:
     """
     Apply a precomputed embedded slice.
 
@@ -150,7 +190,11 @@ def apply_embedded_slice(data, data_slice, extra_padding, **padkw):
     return data_sliced
 
 
-def _apply_padding(array, pad_width, **padkw):
+def _apply_padding(
+    array: np.ndarray,
+    pad_width: list[tuple[int, int]],
+    **padkw: Any,
+) -> np.ndarray:
     """
     Alternative to numpy pad with different short-cut semantics for
     the "pad_width" argument.
@@ -173,7 +217,11 @@ def _apply_padding(array, pad_width, **padkw):
     return padded
 
 
-def embed_slice(slices, data_dims, pad=None):
+def embed_slice(
+    slices: Sequence[slice],
+    data_dims: Sequence[int],
+    pad: int | list[int | tuple[int, int]] | None = None,
+) -> tuple[tuple[slice, ...], list[tuple[int, int]]]:
     """
     Embeds a "padded-slice" inside known data dimension.
 
@@ -301,7 +349,10 @@ def embed_slice(slices, data_dims, pad=None):
     return data_slice, extra_padding
 
 
-def _coerce_pad(pad, ndims):
+def _coerce_pad(
+    pad: int | Sequence[int | tuple[int, int]] | None,
+    ndims: int,
+):
     if pad is None:
         pad_slice = [(0, 0)] * ndims
     elif isinstance(pad, int):

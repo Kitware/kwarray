@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 A convenient interface to solving assignment problems with the Hungarian
 algorithm (also known as Munkres or maximum linear-sum-assignment).
@@ -14,7 +16,11 @@ import numpy as np
 from typing import List, Dict, Tuple, Any, Optional, Union  # NOQA
 
 
-def mindist_assignment(vecs1, vecs2, p=2):
+def mindist_assignment(
+    vecs1: np.ndarray,
+    vecs2: np.ndarray,
+    p: float = 2,
+) -> tuple[list[tuple[int, int]], float]:
     """
     Finds minimum cost assignment between two sets of D dimensional vectors.
 
@@ -54,7 +60,7 @@ def mindist_assignment(vecs1, vecs2, p=2):
     return assignment, dist_tot
 
 
-def mincost_assignment(cost):
+def mincost_assignment(cost: np.ndarray) -> tuple[list[tuple[int, int]], float]:
     """
     Finds the minimum cost assignment based on a NxM cost matrix, subject to
     the constraint that each row can match at most one column and each column
@@ -157,7 +163,7 @@ def mincost_assignment(cost):
     return assignment, cost_tot
 
 
-def maxvalue_assignment(value):
+def maxvalue_assignment(value: np.ndarray) -> tuple[list[tuple[int, int]], float]:
     """
     Finds the maximum value assignment based on a NxM value matrix. Any pair
     with a non-positive value will not be assigned.

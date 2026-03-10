@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Algorithms to find a solution to the setcover problem
 
@@ -9,16 +11,24 @@ SeeAlso:
 import ubelt as ub
 import itertools as it
 from collections import OrderedDict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
+    from typing import TypeVar
+
+    KT = TypeVar('KT')
+    VT = TypeVar('VT')
 
 
 def setcover(
-    candidate_sets_dict,
-    items=None,
-    set_weights=None,
-    item_values=None,
-    max_weight=None,
-    algo='approx',
-):
+    candidate_sets_dict: Mapping[KT, Sequence[VT]],
+    items: Iterable[VT] | None = None,
+    set_weights: Mapping[KT, float] | None = None,
+    item_values: Mapping[VT, float] | None = None,
+    max_weight: float | None = None,
+    algo: str = 'approx',
+) -> dict[KT, Sequence[VT]]:
     """
     Finds a feasible solution to the minimum weight maximum value set cover.
     The quality and runtime of the solution will depend on the backend

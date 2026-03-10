@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 """
 Torch specific extensions
 """
 
 import numpy as np
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from torch import Tensor
 
 
-def _is_in_onnx_export():
+def _is_in_onnx_export() -> bool:
     torch = sys.modules.get('torch', None)
     if torch is None:
         return False
@@ -17,7 +23,11 @@ def _is_in_onnx_export():
         return False
 
 
-def one_hot_embedding(labels, num_classes, dim=1):
+def one_hot_embedding(
+    labels: Tensor | np.ndarray,
+    num_classes: int,
+    dim: int = 1,
+) -> Tensor | np.ndarray:
     """
     Embedding labels to one-hot form.
 
@@ -118,7 +128,10 @@ def one_hot_embedding(labels, num_classes, dim=1):
     return y_onehot
 
 
-def one_hot_lookup(data, indices):
+def one_hot_lookup(
+    data: Tensor | np.ndarray,
+    indices: Tensor | np.ndarray,
+) -> Tensor | np.ndarray:
     """
     Return value of a particular column for each row in data.
 

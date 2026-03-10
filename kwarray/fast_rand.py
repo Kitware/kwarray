@@ -1,12 +1,26 @@
+from __future__ import annotations
+
 """
 Fast 32-bit random functions for numpy as of 2018. (More recent versions of
 numpy may have these natively supported).
 """
 
 import numpy as np
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    RNGBackend = np.random.RandomState | ModuleType
 
 
-def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] | None = None,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Draws float32 samples from a uniform distribution.
 
@@ -62,7 +76,13 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
         raise ValueError('dtype = {!r}'.format(dtype))
 
 
-def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
+def standard_normal(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    dtype: type = float,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Draw samples from a standard Normal distribution with a specified mean and
     standard deviation.
@@ -102,7 +122,12 @@ def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
         raise ValueError('dtype = {!r}'.format(dtype))
 
 
-def standard_normal32(size, mean=0, std=1, rng=np.random):
+def standard_normal32(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Fast normally distributed random variables.
 
@@ -217,7 +242,12 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     return out
 
 
-def standard_normal64(size, mean=0, std=1, rng=np.random):
+def standard_normal64(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Simple wrapper around rng.standard_normal to make an API compatible with
     :func:`standard_normal32`.
@@ -251,7 +281,12 @@ def standard_normal64(size, mean=0, std=1, rng=np.random):
     return out
 
 
-def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] | None = None,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Draws float32 samples from a uniform distribution.
 

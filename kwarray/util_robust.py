@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Functions relating to robust statistical methods for normalizing data.
 """
@@ -5,6 +7,10 @@ Functions relating to robust statistical methods for normalizing data.
 import numpy as np
 import ubelt as ub
 import math  # NOQA
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from typing import Any, Literal
 
 try:
     from math import isclose
@@ -12,7 +18,10 @@ except Exception:
     from numpy import isclose
 
 
-def find_robust_normalizers(data, params='auto'):
+def find_robust_normalizers(
+    data: np.ndarray,
+    params: str | dict = 'auto',
+) -> dict[str, str | float | None]:
     """
     Finds robust normalization statistics a set of scalar observations.
 
@@ -269,15 +278,41 @@ def _custom_quantile_extreme_estimator(data, params):
     return (min_val, mid_val, max_val)
 
 
+@overload
 def robust_normalize(
-    imdata,
-    return_info=False,
-    nodata=None,
-    axis=None,
-    dtype=np.float32,
-    params='auto',
-    mask=None,
-):
+    imdata: np.ndarray,
+    return_info: Literal[False] = False,
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def robust_normalize(
+    imdata: np.ndarray,
+    return_info: Literal[True],
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> tuple[np.ndarray, Any]:
+    ...
+
+
+def robust_normalize(
+    imdata: np.ndarray,
+    return_info: bool = False,
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> np.ndarray | tuple[np.ndarray, Any]:
     """
     Normalize data intensities using heuristics to help put sensor data with
     extremely high or low contrast into a visible range.
@@ -502,14 +537,14 @@ def _apply_robust_normalizer(
 
 
 def normalize(
-    arr,
-    mode='linear',
-    alpha=None,
-    beta=None,
-    out=None,
-    min_val=None,
-    max_val=None,
-):
+    arr: np.ndarray,
+    mode: str = 'linear',
+    alpha: float | None = None,
+    beta: float | None = None,
+    out: np.ndarray | None = None,
+    min_val: object | None = None,
+    max_val: object | None = None,
+) -> np.ndarray:
     """
     Normalizes input values based on a specified scheme.
 

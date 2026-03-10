@@ -1,11 +1,23 @@
+from __future__ import annotations
+
 """
 Numpy specific extensions
 """
 
 import numpy as np
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator
+    from typing import Literal
+
+    from numpy.typing import ArrayLike
 
 
-def boolmask(indices, shape=None):
+def boolmask(
+    indices: np.ndarray,
+    shape: int | tuple[int, ...] | None = None,
+) -> np.ndarray:
     """
     Constructs an array of booleans where an item is True if its position is in
     ``indices`` otherwise it is False. This can be viewed as the inverse of
@@ -54,7 +66,12 @@ def boolmask(indices, shape=None):
     return mask
 
 
-def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
+def iter_reduce_ufunc(
+    ufunc: Callable[..., np.ndarray],
+    arrs: Iterator[np.ndarray],
+    out: np.ndarray | None = None,
+    default: object | None = None,
+) -> np.ndarray | object | None:
     """
     constant memory iteration and reduction
 
@@ -117,7 +134,7 @@ def iter_reduce_ufunc(ufunc, arrs, out=None, default=None):
     return out
 
 
-def isect_flags(arr, other):
+def isect_flags(arr: np.ndarray, other: Iterable[object]) -> np.ndarray:
     """
     Check which items in an array intersect with another set of items
 
@@ -148,7 +165,7 @@ def isect_flags(arr, other):
     return flags
 
 
-def atleast_nd(arr, n, front=False):
+def atleast_nd(arr: ArrayLike, n: int, front: bool = False) -> np.ndarray:
     r"""
     View inputs as arrays with at least n dimensions.
 
@@ -222,7 +239,12 @@ def atleast_nd(arr, n, front=False):
     return arr_
 
 
-def argmaxima(arr, num, axis=None, ordered=True):
+def argmaxima(
+    arr: np.ndarray,
+    num: int,
+    axis: int | None = None,
+    ordered: bool = True,
+) -> np.ndarray:
     """
     Returns the top ``num`` maximum indices.
 
@@ -342,7 +364,12 @@ def argmaxima(arr, num, axis=None, ordered=True):
     return idxs
 
 
-def argminima(arr, num, axis=None, ordered=True):
+def argminima(
+    arr: np.ndarray,
+    num: int,
+    axis: int | None = None,
+    ordered: bool = True,
+) -> np.ndarray:
     """
     Returns the top ``num`` minimum indices.
 
@@ -501,7 +528,29 @@ def argminima(arr, num, axis=None, ordered=True):
 #     # )
 
 
-def unique_rows(arr, ordered=False, return_index=False):
+@overload
+def unique_rows(
+    arr: np.ndarray,
+    ordered: bool = False,
+    return_index: Literal[False] = False,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def unique_rows(
+    arr: np.ndarray,
+    ordered: bool = False,
+    return_index: Literal[True] = True,
+) -> tuple[np.ndarray, np.ndarray]:
+    ...
+
+
+def unique_rows(
+    arr: np.ndarray,
+    ordered: bool = False,
+    return_index: bool = False,
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     """
     Like unique, but works on rows
 
@@ -557,7 +606,23 @@ def unique_rows(arr, ordered=False, return_index=False):
         return arr_unique
 
 
-def arglexmax(keys, multi=False):
+@overload
+def arglexmax(keys: tuple[np.ndarray, ...], multi: Literal[False] = False) -> int:
+    ...
+
+
+@overload
+def arglexmax(
+    keys: tuple[np.ndarray, ...],
+    multi: Literal[True],
+) -> np.ndarray:
+    ...
+
+
+def arglexmax(
+    keys: tuple[np.ndarray, ...],
+    multi: bool = False,
+) -> int | np.ndarray:
     """
     Find the index of the maximum element in a sequence of keys.
 
@@ -641,8 +706,15 @@ def arglexmax(keys, multi=False):
 
 
 def generalized_logistic(
-    x, floor=0, capacity=1, C=1, y_intercept=None, Q=None, growth=1, v=1
-):
+    x: np.ndarray,
+    floor: float = 0,
+    capacity: float = 1,
+    C: float = 1,
+    y_intercept: float | None = None,
+    Q: float | None = None,
+    growth: float = 1,
+    v: float = 1,
+) -> np.ndarray:
     """
     A generalization of the logistic / sigmoid functions that allows for
     flexible specification of S-shaped curve.
@@ -740,7 +812,7 @@ def generalized_logistic(
     return y
 
 
-def equal_with_nan(a1, a2):
+def equal_with_nan(a1: ArrayLike, a2: ArrayLike) -> np.ndarray:
     """
     Numpy has array_equal with ``equal_nan=True``, but this is elementwise
 

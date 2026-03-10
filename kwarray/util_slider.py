@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Defines the :class:`SlidingWindow` and :class:`Sticher` classes.
 
@@ -11,6 +13,12 @@ import ubelt as ub
 import os
 import numpy as np
 import itertools as it
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterator, Sequence
+
+    from torch import Tensor, device as TorchDevice
 
 
 class SlidingWindow(ub.NiceRepr):
@@ -105,15 +113,24 @@ class SlidingWindow(ub.NiceRepr):
         [(slice(0, 3, None), slice(0, 2, None)), (slice(0, 3, None), slice(1, 3, None))]
     """
 
+    stride: list[int]
+    overlap: list[float]
+    window: Sequence[int]
+    input_shape: Sequence[int]
+    undershot_shape: list[int]
+    basis_slices: list[list[slice]]
+    basis_shape: list[int]
+    n_total: int
+
     def __init__(
         self,
-        shape,
-        window,
-        overlap=None,
-        stride=None,
-        keepbound=False,
-        allow_overshoot=False,
-    ):
+        shape: Sequence[int],
+        window: Sequence[int] | None,
+        overlap: float | Sequence[float] | None = None,
+        stride: int | Sequence[int] | None = None,
+        keepbound: bool = False,
+        allow_overshoot: bool = False,
+    ) -> None:
 
         stride, overlap, window = self._compute_stride(
             overlap, stride, shape, window
@@ -164,7 +181,7 @@ class SlidingWindow(ub.NiceRepr):
         self.basis_shape = [len(b) for b in self.basis_slices]
         self.n_total = np.prod(self.basis_shape)
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return 'bshape={}, shape={}, window={}, stride={}'.format(
             tuple(self.basis_shape),
             tuple(self.input_shape),
@@ -230,7 +247,7 @@ class SlidingWindow(ub.NiceRepr):
             )
         return stride, overlap, window
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_total
 
     def _iter_basis_frac(self):
@@ -238,11 +255,11 @@ class SlidingWindow(ub.NiceRepr):
             frac = [sl.start / D for sl, D in zip(slices, self.source.shape)]
             yield frac
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[slice, ...]]:
         for slices in it.product(*self.basis_slices):
             yield slices
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> tuple[slice, ...]:
         """
         Get a specific item by its flat (raveled) index
 
@@ -269,7 +286,7 @@ class SlidingWindow(ub.NiceRepr):
         return slices
 
     @property
-    def grid(self):
+    def grid(self) -> Generator[tuple[int, ...], None, None]:
         """
         Generate indices into the "basis" slice for each dimension.
         This enumerates the nd indices of the grid.
@@ -284,7 +301,7 @@ class SlidingWindow(ub.NiceRepr):
             yield basis_idxs
 
     @property
-    def slices(self):
+    def slices(self) -> Iterator[tuple[slice, ...]]:
         """
         Generate slices for each window (equivalent to iter(self))
 
@@ -303,7 +320,7 @@ class SlidingWindow(ub.NiceRepr):
         return iter(self)
 
     @property
-    def centers(self):
+    def centers(self) -> Generator[tuple[float, ...], None, None]:
         """
         Generate centers of each window
 
@@ -405,14 +422,22 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propagate)', pnum=(3, 1, 3))
     """
 
+    nan_policy: str
+    shape: tuple[int, ...]
+    device: str | int | TorchDevice
+    sums: np.ndarray | Tensor
+    weights: np.ndarray | Tensor
+    sumview: np.ndarray | Tensor
+    weightview: np.ndarray | Tensor
+
     def __init__(
         self,
-        shape,
-        device='numpy',
-        dtype='float32',
-        nan_policy='propogate',
-        memmap=False,
-    ):
+        shape: tuple[int, ...],
+        device: str | int | TorchDevice = 'numpy',
+        dtype: str = 'float32',
+        nan_policy: str = 'propogate',
+        memmap: bool | os.PathLike[str] = False,
+    ) -> None:
         """
         Args:
             shape (tuple): dimensions of the large image that will be created from
@@ -496,10 +521,15 @@ class Stitcher(ub.NiceRepr):
         elif self.nan_policy != 'propogate':
             raise ValueError(self.nan_policy)
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return str(self.sums.shape)
 
-    def add(self, indices, patch, weight=None):
+    def add(
+        self,
+        indices: slice | tuple | None,
+        patch: np.ndarray | Tensor,
+        weight: float | np.ndarray | Tensor | None = None,
+    ) -> None:
         """
         Incorporate a new (possibly overlapping) patch or pixel using a
         weighted sum.
@@ -535,7 +565,7 @@ class Stitcher(ub.NiceRepr):
             self.sums[indices] += patch * weight
             self.weights[indices] += weight
 
-    def __getitem__(self, indices):
+    def __getitem__(self, indices: slice | tuple | None) -> Callable[..., None]:
         """
         Convenience function to use slice notation directly.
         """
@@ -543,7 +573,7 @@ class Stitcher(ub.NiceRepr):
 
         return partial(self.add, indices)
 
-    def average(self):
+    def average(self) -> np.ndarray | Tensor:
         """
         Averages out contributions from overlapping adds using weighted average
 
@@ -553,7 +583,10 @@ class Stitcher(ub.NiceRepr):
         out = self.sums / self.weights
         return out
 
-    def finalize(self, indices=None):
+    def finalize(
+        self,
+        indices: slice | tuple | None = None,
+    ) -> np.ndarray | Tensor:
         """
         Averages out contributions from overlapping adds
 
@@ -571,7 +604,14 @@ class Stitcher(ub.NiceRepr):
         return final
 
 
-def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
+def _slices1d(
+    margin: int,
+    stop: int,
+    step: int | None = None,
+    start: int = 0,
+    keepbound: bool = False,
+    check: bool = True,
+) -> Iterator[slice]:
     """
     Helper to generates slices in a single dimension.
 

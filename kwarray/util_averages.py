@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Utilities for computing and tracking statistical measures over arrays and
 streaming data.
@@ -37,6 +39,13 @@ import collections
 import numpy as np
 import ubelt as ub
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from numpy.typing import ArrayLike
+    from ubelt.util_const import NoParamType
 
 try:
     from packaging.version import parse as Version
@@ -66,17 +75,17 @@ else:
 
 # Maybe name or alias or use in kwarray.describe?
 def stats_dict(
-    inputs,
-    axis=None,
-    nan=False,
-    sum=False,
-    extreme=True,
-    n_extreme=False,
-    median=False,
-    shape=True,
-    size=False,
-    quantile='auto',
-):
+    inputs: ArrayLike,
+    axis: int | tuple[int, ...] | None = None,
+    nan: bool = False,
+    sum: bool = False,
+    extreme: bool = True,
+    n_extreme: bool = False,
+    median: bool = False,
+    shape: bool = True,
+    size: bool = False,
+    quantile: str | bool | list[float] = 'auto',
+) -> collections.OrderedDict[str, object]:
     """
     Describe statistics about an input array
 
@@ -269,7 +278,12 @@ def stats_dict(
     return stats
 
 
-def nanquantile(a, q, axis=None, interpolation='linear'):
+def nanquantile(
+    a: ArrayLike,
+    q: float | Sequence[float],
+    axis: int | tuple[int, ...] | None = None,
+    interpolation: str = 'linear',
+) -> float | np.ndarray:
     """
     Compute the q-th quantile of the data along the specified axis,
     ignoring NaN values.
@@ -467,7 +481,15 @@ class RunningStats(ub.NiceRepr):
         >>> print('alldim-ave(k=0) = ' + ub.urepr(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
     """
 
-    def __init__(run, nan_policy='omit', check_weights=True, **kwargs):
+    nan_policy: str
+    check_weights: bool
+
+    def __init__(
+        run,
+        nan_policy: str = 'omit',
+        check_weights: bool = True,
+        **kwargs: object,
+    ) -> None:
         """
         Args:
             nan_policy (str): indicates how we will handle nan values
@@ -516,10 +538,10 @@ class RunningStats(ub.NiceRepr):
                     )
             raise KeyError(run.nan_policy)
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return '{}'.format(self.shape)
 
-    def copy(self):
+    def copy(self) -> RunningStats:
         """
         Return a deep copy
         """
@@ -528,7 +550,7 @@ class RunningStats(ub.NiceRepr):
         return deepcopy(self)
 
     @property
-    def shape(run):
+    def shape(run) -> tuple[int, ...] | None:
         try:
             return run.raw_total.shape
         except Exception:
@@ -544,7 +566,11 @@ class RunningStats(ub.NiceRepr):
         run.raw_squares = run.raw_squares + other.raw_squares
         run.n = run.n + other.n
 
-    def update_many(run, data, weights=1):
+    def update_many(
+        run,
+        data: ArrayLike,
+        weights: int | ArrayLike = 1,
+    ) -> None:
         """
         Assumes first data axis represents multiple observations
 
@@ -632,7 +658,11 @@ class RunningStats(ub.NiceRepr):
             run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
         run.n += weights.sum(axis=0)
 
-    def update(run, data, weights=1):
+    def update(
+        run,
+        data: ArrayLike,
+        weights: int | ArrayLike = 1,
+    ) -> None:
         """
         Updates statistics across all data dimensions on a per-element basis
 
@@ -718,7 +748,11 @@ class RunningStats(ub.NiceRepr):
         std = np.sqrt(numer / denom)
         return std
 
-    def summarize(run, axis=None, keepdims=True):
+    def summarize(
+        run,
+        axis: int | list[int] | tuple[int, ...] | None | NoParamType = None,
+        keepdims: bool = True,
+    ) -> dict[str, object]:
         """
         Compute summary statistics across a one or more dimension
 
@@ -817,7 +851,7 @@ class RunningStats(ub.NiceRepr):
                     )
                     return info
 
-    def current(run):
+    def current(run) -> dict[str, object]:
         """
         Returns current staticis on a per-element basis
         (not summarized over any axis)
@@ -825,7 +859,11 @@ class RunningStats(ub.NiceRepr):
         info = run.summarize(axis=ub.NoParam)
         return info
 
-    def collapse(run, axis=None, keepdims=True):
+    def collapse(
+        run,
+        axis: int | tuple[int, ...] | None = None,
+        keepdims: bool = True,
+    ) -> RunningStats:
         """
         Reduce the shape of the accumulator array.
 
@@ -1248,7 +1286,16 @@ class RunningHistogram:
         array([1024, 1024, 1024])
     """
 
-    def __init__(self, edges, nan_policy='omit'):
+    edges: np.ndarray
+    accum: np.ndarray
+    nan_policy: str
+    n_updates: int
+    n_total: int
+    n_underflow: int
+    n_overflow: int
+    n_nan: int
+
+    def __init__(self, edges: ArrayLike, nan_policy: str = 'omit') -> None:
         self.edges = np.asarray(edges, dtype=float)
         if self.edges.ndim != 1 or self.edges.size < 2:
             raise ValueError('edges must be a 1D array of length >=2')
@@ -1264,7 +1311,7 @@ class RunningHistogram:
         self.n_overflow = 0
         self.n_nan = 0
 
-    def update(self, data):  # noqa: C901
+    def update(self, data: ArrayLike) -> None:  # noqa: C901
         """
         Bin the input data and update the running histogram.
 
@@ -1315,7 +1362,7 @@ class RunningHistogram:
         self.n_overflow += other.n_overflow
         return self
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: RunningHistogram) -> RunningHistogram:
         return self._update_other(other)
 
 
@@ -1364,7 +1411,13 @@ class RunningDiscreteHistogram:
         >>> assert np.all(self.bins == [1, 2, 3, 7, 9, 9001])
     """
 
-    def __init__(self, bins=None, dtype=float):
+    dtype: type
+    bins: np.ndarray
+    counts: np.ndarray
+    n_total: int
+    n_nan: int
+
+    def __init__(self, bins: ArrayLike | None = None, dtype: type = float):
         self.dtype = dtype
         if bins is not None:
             arr = np.asarray(bins, dtype=self.dtype)
@@ -1377,7 +1430,7 @@ class RunningDiscreteHistogram:
         self.n_total = 0
         self.n_nan = 0
 
-    def update(self, data):
+    def update(self, data: ArrayLike) -> None:
         """
         Vectorized update: count each unique in data and merge into bins.
 
@@ -1413,7 +1466,10 @@ class RunningDiscreteHistogram:
             self.bins = uniq
             self.counts = cnts.astype(int)
 
-    def __iadd__(self, other):
+    def __iadd__(
+        self,
+        other: RunningDiscreteHistogram,
+    ) -> RunningDiscreteHistogram:
         """
         Merge another histogram into this one.
         """
