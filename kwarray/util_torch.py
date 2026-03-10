@@ -1,6 +1,7 @@
 """
 Torch specific extensions
 """
+
 import numpy as np
 import sys
 
@@ -100,7 +101,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
     else:
         if dim < 0:
             dim = labels.ndim - dim + 1
-        flag = (dim != 1 or labels.ndim == 2)
+        flag = dim != 1 or labels.ndim == 2
         if flag:
             orig_shape = labels.shape
             labels = labels.reshape(-1)
@@ -108,7 +109,7 @@ def one_hot_embedding(labels, num_classes, dim=1):
         y = np.eye(int(num_classes))
         y_onehot = y[labels]
         if flag:
-            new_shape =  list(orig_shape) + [num_classes]
+            new_shape = list(orig_shape) + [num_classes]
             y_onehot = y_onehot.reshape(*new_shape)
             old_axes = list(range(len(orig_shape)))
             new_axes = old_axes
@@ -257,7 +258,6 @@ def one_hot_lookup(data, indices):
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(indices):
         if _is_in_onnx_export():
-
             # Don't use eye for ONNX
             ASSUME_OPTSET = 10
 
@@ -282,7 +282,11 @@ def one_hot_lookup(data, indices):
                 flat_idxs = torch.arange(n * n)
                 # Broadcast and check if these flat indexes are equal to the
                 # target indexes, then sum over the broadcast dimension
-                flat_eye = (flat_idxs[:, None] == eye_idxs[None, :]).to(data.dtype).sum(dim=1)
+                flat_eye = (
+                    (flat_idxs[:, None] == eye_idxs[None, :])
+                    .to(data.dtype)
+                    .sum(dim=1)
+                )
             else:
                 raise AssertionError('ASSUME_OPTSET = {}'.format(ASSUME_OPTSET))
 
@@ -298,7 +302,9 @@ def one_hot_lookup(data, indices):
             # Have to use multiply trick to satisfy onnx
             out = (data * ohe).sum(dim=1)
         else:
-            ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
+            ohe = torch.eye(
+                data.shape[1], dtype=torch.bool, device=indices.device
+            )[indices]
             out = data[ohe]
     else:
         # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(bool)
@@ -341,4 +347,5 @@ if __name__ == '__main__':
         python -m kwarray.util_torch all
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)

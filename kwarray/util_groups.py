@@ -1,6 +1,7 @@
 """
 Functions for partitioning numpy arrays into groups.
 """
+
 import numpy as np
 import ubelt as ub
 from packaging.version import parse as Version
@@ -369,4 +370,5 @@ if __name__ == '__main__':
         xdoctest -m kwarray.util_groups
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)

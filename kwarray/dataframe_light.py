@@ -7,6 +7,7 @@ For data where more complex ids are needed you must use pandas.
 TODO:
     - [ ] Rename to DataFrameLite?
 """
+
 import ubelt as ub
 import numpy as np
 import copy
@@ -160,6 +161,7 @@ class DataFrameLight(ub.NiceRepr):
         Timed best=0.760 ms, mean=0.776 ± 0.0 ms for DF-Light._getrow
 
     """
+
     def __init__(self, data=None, columns=None):
         if columns is not None:
             if data is None:
@@ -233,8 +235,10 @@ class DataFrameLight(ub.NiceRepr):
             out = into(self.iterrows())
         elif orient == 'list':
             import kwarray
-            out = into((k, kwarray.ArrayAPI.tolist(v))
-                        for k, v in self._data.items())
+
+            out = into(
+                (k, kwarray.ArrayAPI.tolist(v)) for k, v in self._data.items()
+            )
         else:
             out = self.pandas().to_dict(orient=orient, into=into)
         return out
@@ -258,7 +262,7 @@ class DataFrameLight(ub.NiceRepr):
         return pd.DataFrame(self._data)
 
     def _pandas(self):
-        """ Deprecated, use self.pandas instead """
+        """Deprecated, use self.pandas instead"""
         return self.pandas()
 
     @classmethod
@@ -610,7 +614,7 @@ class DataFrameLight(ub.NiceRepr):
         return self
 
     def reset_index(self, drop=False):
-        """ noop for compatibility, the light version doesnt store an index """
+        """noop for compatibility, the light version doesnt store an index"""
         return self
 
     def groupby(self, by=None, *args, **kwargs):
@@ -645,6 +649,7 @@ class DataFrameLight(ub.NiceRepr):
         if len(args) == 0 and len(kwargs) == 0:
             # In this special case we can be fast
             import kwarray
+
             unique, groupxs = kwarray.group_indices(self[by])
             groups = [self.take(idxs) for idxs in groupxs]
             return zip(unique, groups)
@@ -671,7 +676,9 @@ class DataFrameLight(ub.NiceRepr):
         """
         if columns is not None:
             if axis is not None:
-                raise TypeError("Cannot specify both 'axis' and any of 'index' or 'columns'")
+                raise TypeError(
+                    "Cannot specify both 'axis' and any of 'index' or 'columns'"
+                )
         else:
             if axis != 1:
                 raise NotImplementedError('only axis=1 is supported')
@@ -745,13 +752,16 @@ class DataFrameArray(DataFrameLight):
                     lens.append(len(d))
                 assert ub.allsame(lens), (
                     'lens are not all same {} for columns {}'.format(
-                        lens,
-                        list(self._data.keys()))
+                        lens, list(self._data.keys())
+                    )
                 )
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
         elif pd is not None and isinstance(self._raw, pd.DataFrame):
-            self._data = {k: v.values for k, v in self._raw.to_dict(orient='series').items()}
+            self._data = {
+                k: v.values
+                for k, v in self._raw.to_dict(orient='series').items()
+            }
         else:
             raise TypeError('Unknown _raw type')
         # self._data = ub.map_vals(np.asarray, self._data)  # does this break anything?

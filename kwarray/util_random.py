@@ -88,11 +88,12 @@ This results in:
     8  5.161900  6.902354  4.869275
     9  2.810358  6.902354  4.869275
 """
+
 import numpy as np
 import random
 import itertools as it
 
-_SEED_MAX = int(2 ** 32 - 1)
+_SEED_MAX = int(2**32 - 1)
 
 
 __todo = """
@@ -207,19 +208,23 @@ def random_combinations(items, size, num=None, rng=None):
 
     """
     import sys
+
     rng = ensure_rng(rng, api='python')
     num_ = np.inf if num is None else num
     # Ensure we dont request more than is possible
     if sys.version_info[0:2] >= (3, 8):
         import math
+
         n_max = math.comb(len(items), size)
     else:
         try:
             import scipy.special
+
             n_max = int(scipy.special.comb(len(items), size))
         except ImportError:
             # https://stackoverflow.com/questions/26560726/python-binomial-coefficient
             from math import factorial as fac
+
             a = len(items)
             b = size
             n_max = int(fac(a) // fac(b) // fac(a - b))
@@ -306,7 +311,6 @@ def random_product(items, num=None, rng=None):
 
     # TODO: make this more efficient when num is large
     if max_num > 100 and num > max_num // 2:
-
         rng = ensure_rng(rng, 'python')
 
         for prod in shuffle(list(it.product(*items)), rng=rng):
@@ -322,9 +326,10 @@ def random_product(items, num=None, rng=None):
 
         seen = set()
         while len(seen) < num:
-
             if True:  # NUMPY_RNG
-                idxs = rng.randint(0, card_lcm, size=ndims, dtype=idx_cards.dtype)
+                idxs = rng.randint(
+                    0, card_lcm, size=ndims, dtype=idx_cards.dtype
+                )
                 idxs %= idx_cards
                 idxs = tuple(idxs.tolist())
             else:
@@ -360,7 +365,9 @@ def random_unique_integers(low, high, size, rng=None):
         >>> print(f'random_numbers={random_numbers}')
     """
     if size > (high - low):
-        raise ValueError("Size must be less than or equal to the range (high - low).")
+        raise ValueError(
+            'Size must be less than or equal to the range (high - low).'
+        )
     rng = ensure_rng(rng, 'numpy')
 
     result = set()
@@ -444,6 +451,7 @@ def _coerce_rng_type(rng):
         rng = np.random.mtrand._rand
     elif isinstance(rng, str):
         import hashlib
+
         # Hash the string to transform raw bytes into an integer seed
         raw_bytes = rng.encode('utf-8')
         hasher = hashlib.md5()  # this does not need to be cryptographically secure, use md5 for speed.
@@ -463,7 +471,8 @@ def _coerce_rng_type(rng):
         rng = int(rng)
     else:
         raise TypeError(
-            'Cannot coerce {!r} to a random object'.format(type(rng)))
+            'Cannot coerce {!r} to a random object'.format(type(rng))
+        )
     return rng
 
 
@@ -595,4 +604,5 @@ if __name__ == '__main__':
         xdoctest -m kwarray.util_random
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)

@@ -9,6 +9,7 @@ TODO:
           functionality. Also having a top-level call to apply an embedded slice
           would be good.
 """
+
 import ubelt as ub
 import numpy as np
 
@@ -92,13 +93,12 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
     data_sliced = apply_embedded_slice(data, data_slice, extra_padding, **padkw)
 
     if return_info:
-        st_dims = [(sl.start - pad_[0], sl.stop + pad_[1])
-                   for sl, pad_ in zip(data_slice, extra_padding)]
+        st_dims = [
+            (sl.start - pad_[0], sl.stop + pad_[1])
+            for sl, pad_ in zip(data_slice, extra_padding)
+        ]
         # TODO: return a better transform back to the original space
-        transform = {
-            'st_dims': st_dims,
-            'st_offset': [d[0] for d in st_dims]
-        }
+        transform = {'st_dims': st_dims, 'st_offset': [d[0] for d in st_dims]}
         return data_sliced, transform
     else:
         return data_sliced
@@ -270,7 +270,9 @@ def embed_slice(slices, data_dims, pad=None):
     extra_padding = []
 
     # Determine the real part of the image that can be sliced out
-    for D_img, d_low, d_high, d_pad in zip(data_dims, low_dims, high_dims, pad_slice):
+    for D_img, d_low, d_high, d_pad in zip(
+        data_dims, low_dims, high_dims, pad_slice
+    ):
         if d_low is None:
             d_low = 0
         if d_high is None:
@@ -322,6 +324,7 @@ class _SliceMeta(type):
     Normally you cannot inherit from slice, but we can use a metaclass to
     overload the constructor of our Slice class to return a real slice.
     """
+
     def __call__(cls, *args):
         # Allow for empty constructor
         if len(args) == 0:
@@ -390,5 +393,8 @@ class Slice(metaclass=_SliceMeta):
         >>> assert isinstance(Slice(), Slice)
         >>> assert not issubclass(Slice, slice), 'no way to make this work AFAIK'
     """
+
     def __init__(self, *args):
-        raise AssertionError('It should not be possible to construct a real instance of this class')
+        raise AssertionError(
+            'It should not be possible to construct a real instance of this class'
+        )

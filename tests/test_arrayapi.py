@@ -1,5 +1,6 @@
-
-def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False):
+def indexable_allclose(
+    dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False
+):
     """
     PORT FROM UBELT WITH SUPPORT FOR NDARRAYS
 
@@ -10,6 +11,7 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
     import numpy as np
     from math import isclose
     from functools import partial
+
     try:
         import torch
     except ImportError:
@@ -21,19 +23,21 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
     walker1 = ub.IndexableWalker(dct1)
     walker2 = ub.IndexableWalker(dct2)
     flat_items1 = [
-        (path, value) for path, value in walker1
-        if not isinstance(value, walker1.indexable_cls) or len(value) == 0]
+        (path, value)
+        for path, value in walker1
+        if not isinstance(value, walker1.indexable_cls) or len(value) == 0
+    ]
     flat_items2 = [
-        (path, value) for path, value in walker2
-        if not isinstance(value, walker1.indexable_cls) or len(value) == 0]
+        (path, value)
+        for path, value in walker2
+        if not isinstance(value, walker1.indexable_cls) or len(value) == 0
+    ]
 
     flat_items1 = sorted(flat_items1)
     flat_items2 = sorted(flat_items2)
 
     if len(flat_items1) != len(flat_items2):
-        info = {
-            'faillist': ['length mismatch']
-        }
+        info = {'faillist': ['length mismatch']}
         final_flag = False
     else:
         passlist = []
@@ -52,9 +56,13 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
             if isinstance(v1, np.ndarray) or isinstance(v2, np.ndarray):
                 flag = np.all(np_isclose_(v1, v2))
             else:
-                flag = (v1 == v2)
+                flag = v1 == v2
                 if not flag:
-                    if isinstance(v1, float) and isinstance(v2, float) and isclose_(v1, v2):
+                    if (
+                        isinstance(v1, float)
+                        and isinstance(v2, float)
+                        and isclose_(v1, v2)
+                    ):
                         flag = True
             if flag:
                 passlist.append(p1)
@@ -68,10 +76,12 @@ def indexable_allclose(dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False)
         }
 
     if return_info:
-        info.update({
-            'walker1': walker1,
-            'walker2': walker2,
-        })
+        info.update(
+            {
+                'walker1': walker1,
+                'walker2': walker2,
+            }
+        )
         return final_flag, info
     else:
         return final_flag
@@ -83,6 +93,7 @@ def test_numpy_torch_compat():
     import numpy as np
     import kwarray
     from kwarray import arrayapi
+
     try:
         import torch
     except ImportError:
@@ -109,16 +120,25 @@ def test_numpy_torch_compat():
         pt_data1 = ArrayAPI.tensor(np_data1)
 
         blocklist = {
-            'take', 'compress', 'repeat', 'tile', 'reshape', 'view',
-            'numel', 'atleast_nd', 'full_like',
+            'take',
+            'compress',
+            'repeat',
+            'tile',
+            'reshape',
+            'view',
+            'numel',
+            'atleast_nd',
+            'full_like',
             #
-            'maximum', 'minimum', 'matmul',
-            'astype', 'ensure',
+            'maximum',
+            'minimum',
+            'matmul',
+            'astype',
+            'ensure',
             'transpose',
             'pad',
             'dtype_kind',
             'clip',
-
             'array_equal',
             'isclose',
             'allclose',
@@ -127,7 +147,7 @@ def test_numpy_torch_compat():
 
         if arrayapi._TORCH_LT_1_7_0:
             # Hack for old torch, works on new torch
-            blocklist.update({'all',  'any'})
+            blocklist.update({'all', 'any'})
 
         errors = []
         for func_type, group in groups.items():

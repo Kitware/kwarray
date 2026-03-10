@@ -141,7 +141,7 @@ def add_fast(stitcher, batch_idxs, values, weight=None, assume_order=True):
         t_base_multi_idxs = batch_idxs[[0, end]]
 
         # we dont need a trailing 1 because we arent padding extra zeros
-        cumprod = stitcher._cumprod[None :]
+        cumprod = stitcher._cumprod[None:]
         ravel_idxs_range = (t_base_multi_idxs * cumprod).sum(dim=1)
         first = ravel_idxs_range[0]
         last = ravel_idxs_range[-1] + n_classes
@@ -165,7 +165,9 @@ def add_fast(stitcher, batch_idxs, values, weight=None, assume_order=True):
             # Add extra dimension for output classes
             extra_multi_idxs = np.zeros(2, dtype=np.int)
             multi_idxs_range = base_multi_idxs + (extra_multi_idxs,)
-            ravel_idxs_range = np.ravel_multi_index(multi_idxs_range, dims=shape)
+            ravel_idxs_range = np.ravel_multi_index(
+                multi_idxs_range, dims=shape
+            )
             first = ravel_idxs_range[0]
             last = ravel_idxs_range[-1] + n_classes
             ravel_sl = slice(first, last)
@@ -175,7 +177,9 @@ def add_fast(stitcher, batch_idxs, values, weight=None, assume_order=True):
             extra_multi_idxs = np.zeros(len(batch_idxs), dtype=np.int)
             # The indices for the 0-th class (which should be the last dimension)
             multi_idxs_first = base_multi_idxs + (extra_multi_idxs,)
-            ravel_idxs_first = np.ravel_multi_index(multi_idxs_first, dims=shape)
+            ravel_idxs_first = np.ravel_multi_index(
+                multi_idxs_first, dims=shape
+            )
 
             # The indices for the next classes should be sequentially after
             all_ravel_idxs = [ravel_idxs_first[None, :]]

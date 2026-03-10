@@ -47,6 +47,7 @@ try:
     import importlib.metadata as importlib_metadata
 except ImportError:
     import pkg_resources
+
     importlib_metadata = None
 else:
     pkg_resources = None
@@ -64,9 +65,18 @@ else:
 
 
 # Maybe name or alias or use in kwarray.describe?
-def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
-               n_extreme=False, median=False, shape=True, size=False,
-               quantile='auto'):
+def stats_dict(
+    inputs,
+    axis=None,
+    nan=False,
+    sum=False,
+    extreme=True,
+    n_extreme=False,
+    median=False,
+    shape=True,
+    size=False,
+    quantile='auto',
+):
     """
     Describe statistics about an input array
 
@@ -182,7 +192,7 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
         if size:
             stats['size'] = 0
     else:
-        keepdims = (axis is not None)
+        keepdims = axis is not None
         if nan:
             # invalid_mask = np.isnan(nparr)
             # valid_mask = ~invalid_mask
@@ -190,12 +200,12 @@ def stats_dict(inputs, axis=None, nan=False, sum=False, extreme=True,
             min_val = np.nanmin(nparr, axis=axis, keepdims=keepdims)
             max_val = np.nanmax(nparr, axis=axis, keepdims=keepdims)
             mean_ = np.nanmean(nparr, axis=axis, keepdims=keepdims)
-            std_  = np.nanstd(nparr, axis=axis, keepdims=keepdims)
+            std_ = np.nanstd(nparr, axis=axis, keepdims=keepdims)
         else:
             min_val = nparr.min(axis=axis, keepdims=keepdims)
             max_val = nparr.max(axis=axis, keepdims=keepdims)
             mean_ = nparr.mean(axis=axis, keepdims=keepdims)
-            std_  = nparr.std(axis=axis, keepdims=keepdims)
+            std_ = nparr.std(axis=axis, keepdims=keepdims)
 
         # Note:
         # the first central moment is 0
@@ -351,8 +361,8 @@ def nanquantile(a, q, axis=None, interpolation='linear'):
     a_moved = np.moveaxis(a, new_order, range(a.ndim))
 
     # Collapse the axes to be reduced into one axis.
-    n_reduce = np.prod(a_moved.shape[:len(axes)])
-    new_shape = (n_reduce,) + a_moved.shape[len(axes):]
+    n_reduce = np.prod(a_moved.shape[: len(axes)])
+    new_shape = (n_reduce,) + a_moved.shape[len(axes) :]
     a_collapsed = a_moved.reshape(new_shape)
 
     # Apply the 1D quantile function along the first axis (which is the combined axis).
@@ -410,8 +420,7 @@ def _gmean(a, axis=0, dtype=None, clobber=False):
     return result
 
 
-class NoSupportError(RuntimeError):
-    ...
+class NoSupportError(RuntimeError): ...
 
 
 class RunningStats(ub.NiceRepr):
@@ -456,7 +465,7 @@ class RunningStats(ub.NiceRepr):
         >>> # Average over all dims
         >>> print('alldim-ave(k=1) = ' + ub.urepr(run.summarize(axis=None), nl=2, precision=3))
         >>> print('alldim-ave(k=0) = ' + ub.urepr(run.summarize(axis=None, keepdims=0), nl=2, precision=3))
-        """
+    """
 
     def __init__(run, nan_policy='omit', check_weights=True, **kwargs):
         """
@@ -479,10 +488,17 @@ class RunningStats(ub.NiceRepr):
                     nan_behavior = 'omit'
                 nan_policy = nan_behavior
                 ub.schedule_deprecation(
-                    'kwarray', 'nan_policy', 'use nan_policy instead',
-                    deprecate='0.6.10', error='0.7.0', remove='0.8.0')
+                    'kwarray',
+                    'nan_policy',
+                    'use nan_policy instead',
+                    deprecate='0.6.10',
+                    error='0.7.0',
+                    remove='0.8.0',
+                )
             if len(kwargs):
-                raise ValueError(f'Unsupported arguments: {list(kwargs.keys())}')
+                raise ValueError(
+                    f'Unsupported arguments: {list(kwargs.keys())}'
+                )
 
         run.raw_max = -np.inf
         run.raw_min = np.inf
@@ -508,6 +524,7 @@ class RunningStats(ub.NiceRepr):
         Return a deep copy
         """
         from copy import deepcopy
+
         return deepcopy(self)
 
     @property
@@ -586,11 +603,12 @@ class RunningStats(ub.NiceRepr):
             raise AssertionError('should not be here')
         has_ignore_items = False
         if ub.iterable(weights):
-            ignore_flags = (weights == 0)
+            ignore_flags = weights == 0
             has_ignore_items = np.any(ignore_flags)
 
         if has_ignore_items:
             from kwarray.arrayapi import _numpy_dtype_info
+
             dtype_info = _numpy_dtype_info(data.dtype)
 
             data = data.copy()
@@ -601,7 +619,7 @@ class RunningStats(ub.NiceRepr):
             w_data = data * weights
 
             run.raw_total += w_data.sum(axis=0)
-            run.raw_squares += (w_data ** 2).sum(axis=0)
+            run.raw_squares += (w_data**2).sum(axis=0)
             data[ignore_flags] = dtype_info.min
             run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
             data[ignore_flags] = dtype_info.max
@@ -609,7 +627,7 @@ class RunningStats(ub.NiceRepr):
         else:
             w_data = data * weights
             run.raw_total += w_data.sum(axis=0)
-            run.raw_squares += (w_data ** 2).sum(axis=0)
+            run.raw_squares += (w_data**2).sum(axis=0)
             run.raw_max = np.maximum(run.raw_max, data.max(axis=0))
             run.raw_min = np.minimum(run.raw_min, data.min(axis=0))
         run.n += weights.sum(axis=0)
@@ -662,7 +680,7 @@ class RunningStats(ub.NiceRepr):
 
         has_ignore_items = False
         if ub.iterable(weights):
-            ignore_flags = (weights == 0)
+            ignore_flags = weights == 0
             has_ignore_items = np.any(ignore_flags)
 
         if has_ignore_items:
@@ -674,7 +692,7 @@ class RunningStats(ub.NiceRepr):
             w_data = data * weights
 
             run.raw_total += w_data
-            run.raw_squares += w_data ** 2
+            run.raw_squares += w_data**2
             data[ignore_flags] = -np.inf
             run.raw_max = np.maximum(run.raw_max, data)
             data[ignore_flags] = +np.inf
@@ -682,7 +700,7 @@ class RunningStats(ub.NiceRepr):
         else:
             w_data = data * weights
             run.raw_total += w_data
-            run.raw_squares += w_data ** 2
+            run.raw_squares += w_data**2
             run.raw_max = np.maximum(run.raw_max, data)
             run.raw_min = np.minimum(run.raw_min, data)
         run.n += weights
@@ -691,12 +709,12 @@ class RunningStats(ub.NiceRepr):
         """
         Sum of squares method to compute standard deviation
         """
-        numer = (n * squares - total ** 2)
+        numer = n * squares - total**2
         # FIXME: this isn't exactly correct when we have fractional weights.
         # Integer weights should be ok. I suppose it really is
         # what "type" of weights they are (see numpy weighted quantile
         # discussion)
-        denom = (n * (n - 1.0))
+        denom = n * (n - 1.0)
         std = np.sqrt(numer / denom)
         return std
 
@@ -743,46 +761,60 @@ class RunningStats(ub.NiceRepr):
         """
         with np.errstate(divide='ignore'):
             with warnings.catch_warnings():
-                warnings.filterwarnings('ignore', 'invalid value encountered', category=RuntimeWarning)
+                warnings.filterwarnings(
+                    'ignore',
+                    'invalid value encountered',
+                    category=RuntimeWarning,
+                )
                 if axis is ub.NoParam:
                     total = run.raw_total
                     squares = run.raw_squares
                     maxi = run.raw_max
                     mini = run.raw_min
                     n = run.n
-                    info = ub.odict([
-                        ('n', n),
-                        ('max', maxi),
-                        ('min', mini),
-                        ('total', total),
-                        ('squares', squares),
-                        ('mean', total / n),
-                        ('std', run._sumsq_std(total, squares, n)),
-                    ])
+                    info = ub.odict(
+                        [
+                            ('n', n),
+                            ('max', maxi),
+                            ('min', mini),
+                            ('total', total),
+                            ('squares', squares),
+                            ('mean', total / n),
+                            ('std', run._sumsq_std(total, squares, n)),
+                        ]
+                    )
                     return info
                 else:
                     if np.all(run.n <= 0):
-                        raise NoSupportError('No statistics have been accumulated')
-                    total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+                        raise NoSupportError(
+                            'No statistics have been accumulated'
+                        )
+                    total = run.raw_total.sum(axis=axis, keepdims=keepdims)
                     squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
-                    maxi    = run.raw_max.max(axis=axis, keepdims=keepdims)
-                    mini    = run.raw_min.min(axis=axis, keepdims=keepdims)
+                    maxi = run.raw_max.max(axis=axis, keepdims=keepdims)
+                    mini = run.raw_min.min(axis=axis, keepdims=keepdims)
                     if not hasattr(run.raw_total, 'shape'):
                         n = run.n
                     elif axis is None:
-                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        n = (run.n * np.ones_like(run.raw_total)).sum(
+                            axis=axis, keepdims=keepdims
+                        )
                     else:
-                        n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+                        n = (run.n * np.ones_like(run.raw_total)).sum(
+                            axis=axis, keepdims=keepdims
+                        )
 
-                    info = ub.odict([
-                        ('n', n),
-                        ('max', maxi),
-                        ('min', mini),
-                        ('total', total),
-                        ('squares', squares),
-                        ('mean', total / n),
-                        ('std', run._sumsq_std(total, squares, n)),
-                    ])
+                    info = ub.odict(
+                        [
+                            ('n', n),
+                            ('max', maxi),
+                            ('min', mini),
+                            ('total', total),
+                            ('squares', squares),
+                            ('mean', total / n),
+                            ('std', run._sumsq_std(total, squares, n)),
+                        ]
+                    )
                     return info
 
     def current(run):
@@ -804,16 +836,19 @@ class RunningStats(ub.NiceRepr):
             >>> run.update(rng.rand(3, 5))
             >>> new = run.collapse()
         """
-        new = RunningStats(nan_policy=run.nan_policy,
-                           check_weights=run.check_weights)
-        new.raw_total   = run.raw_total.sum(axis=axis, keepdims=keepdims)
+        new = RunningStats(
+            nan_policy=run.nan_policy, check_weights=run.check_weights
+        )
+        new.raw_total = run.raw_total.sum(axis=axis, keepdims=keepdims)
         new.raw_squares = run.raw_squares.sum(axis=axis, keepdims=keepdims)
-        new.raw_max     = run.raw_max.max(axis=axis, keepdims=keepdims)
-        new.raw_min     = run.raw_min.min(axis=axis, keepdims=keepdims)
+        new.raw_max = run.raw_max.max(axis=axis, keepdims=keepdims)
+        new.raw_min = run.raw_min.min(axis=axis, keepdims=keepdims)
         if not hasattr(run.raw_total, 'shape'):
             new.n = run.n
         else:
-            new.n = (run.n * np.ones_like(run.raw_total)).sum(axis=axis, keepdims=keepdims)
+            new.n = (run.n * np.ones_like(run.raw_total)).sum(
+                axis=axis, keepdims=keepdims
+            )
         return new
 
     def _update_other(run, other):
@@ -867,7 +902,9 @@ class RunningStats(ub.NiceRepr):
             n: [[156.]]
         """
         if run.shape != other.shape:
-            raise ValueError(f'could not be broadcast together with shapes {run.shape} and {other.shape}')
+            raise ValueError(
+                f'could not be broadcast together with shapes {run.shape} and {other.shape}'
+            )
         np.maximum(run.raw_max, other.raw_max, out=run.raw_max)
         np.minimum(run.raw_min, other.raw_min, out=run.raw_min)
         np.add(run.n, other.n, out=run.n)
@@ -875,8 +912,9 @@ class RunningStats(ub.NiceRepr):
         np.add(run.raw_squares, other.raw_squares, out=run.raw_squares)
 
 
-def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
-                       bessel=True):
+def _combine_mean_stds(
+    means, stds, nums=None, axis=None, keepdims=False, bessel=True
+):
     r"""
     Args:
         means (array): means[i] is the mean of the ith entry to combine
@@ -1055,7 +1093,7 @@ def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
         combo_mean = np.average(means, weights=None, axis=axis)
         combo_mean = _postprocess_keepdims(means, combo_mean, axis)
         numer_p1 = stds.sum(axis=axis, keepdims=1)
-        numer_p2 = (((means - combo_mean) ** 2)).sum(axis=axis, keepdims=1)
+        numer_p2 = ((means - combo_mean) ** 2).sum(axis=axis, keepdims=1)
         numer = numer_p1 + numer_p2
         denom = len(stds)
         combo_std = np.sqrt(numer / denom)
@@ -1064,8 +1102,12 @@ def _combine_mean_stds(means, stds, nums=None, axis=None, keepdims=False,
         weights = nums / combo_num
         combo_mean = np.average(means, weights=weights, axis=axis)
         combo_mean = _postprocess_keepdims(means, combo_mean, axis)
-        numer_p1 = (np.maximum(nums - bessel, 0) * stds).sum(axis=axis, keepdims=1)
-        numer_p2 = (nums * ((means - combo_mean) ** 2)).sum(axis=axis, keepdims=1)
+        numer_p1 = (np.maximum(nums - bessel, 0) * stds).sum(
+            axis=axis, keepdims=1
+        )
+        numer_p2 = (nums * ((means - combo_mean) ** 2)).sum(
+            axis=axis, keepdims=1
+        )
         numer = numer_p1 + numer_p2
         denom = np.maximum(combo_num - bessel, 0)
         combo_std = np.sqrt(numer / denom)
@@ -1205,16 +1247,17 @@ class RunningHistogram:
         >>> rh_img.accum  # counts for each bin across all channels
         array([1024, 1024, 1024])
     """
+
     def __init__(self, edges, nan_policy='omit'):
         self.edges = np.asarray(edges, dtype=float)
         if self.edges.ndim != 1 or self.edges.size < 2:
-            raise ValueError("edges must be a 1D array of length >=2")
+            raise ValueError('edges must be a 1D array of length >=2')
         if not np.all(np.diff(self.edges) > 0):
-            raise ValueError("edges must be strictly increasing")
+            raise ValueError('edges must be strictly increasing')
         self.accum = np.zeros(self.edges.size - 1, dtype=np.int64)
         self.nan_policy = nan_policy
         if self.nan_policy not in {'omit', 'raise'}:
-            raise ValueError(f"Unknown nan_policy: {nan_policy}")
+            raise ValueError(f'Unknown nan_policy: {nan_policy}')
         self.n_updates = 0
         self.n_total = 0
         self.n_underflow = 0
@@ -1240,7 +1283,9 @@ class RunningHistogram:
                 self.n_nan += int((~mask).sum())
         elif self.nan_policy == 'raise':
             if not mask.all():
-                raise ValueError("Non-finite data encountered with nan_policy='raise'")
+                raise ValueError(
+                    "Non-finite data encountered with nan_policy='raise'"
+                )
 
         # TODO: make extra computation optional
         HANDLE_OVERFLOW = True
@@ -1259,9 +1304,9 @@ class RunningHistogram:
 
     def _update_other(self, other):
         if not np.allclose(self.edges, other.edges):
-            raise ValueError("edges must match to merge")
+            raise ValueError('edges must match to merge')
         if self.nan_policy != other.nan_policy:
-            raise ValueError("nan_policy must match to merge")
+            raise ValueError('nan_policy must match to merge')
         self.accum += other.counts
         self.n_updates += other.n_updates
         self.n_total += other.n_total
@@ -1318,6 +1363,7 @@ class RunningDiscreteHistogram:
         >>> self.update([9001, 7])
         >>> assert np.all(self.bins == [1, 2, 3, 7, 9, 9001])
     """
+
     def __init__(self, bins=None, dtype=float):
         self.dtype = dtype
         if bins is not None:
@@ -1372,9 +1418,11 @@ class RunningDiscreteHistogram:
         Merge another histogram into this one.
         """
         if not isinstance(other, RunningDiscreteHistogram):
-            raise ValueError("Can only merge with another RunningDiscreteHistogram")
+            raise ValueError(
+                'Can only merge with another RunningDiscreteHistogram'
+            )
         if self.dtype != other.dtype:
-            raise ValueError("dtype mismatch when merging histograms")
+            raise ValueError('dtype mismatch when merging histograms')
         # merge other's data by updating from its values repeated by counts
         if other.values.size:
             # vectorized: repeat values and call update

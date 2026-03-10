@@ -5,13 +5,20 @@ SeeAlso:
     https://github.com/keon/algorithms
     https://developers.google.com/optimization/introduction
 """
+
 import ubelt as ub
 import itertools as it
 from collections import OrderedDict
 
 
-def setcover(candidate_sets_dict, items=None, set_weights=None,
-             item_values=None, max_weight=None, algo='approx'):
+def setcover(
+    candidate_sets_dict,
+    items=None,
+    set_weights=None,
+    item_values=None,
+    max_weight=None,
+    algo='approx',
+):
     """
     Finds a feasible solution to the minimum weight maximum value set cover.
     The quality and runtime of the solution will depend on the backend
@@ -63,20 +70,32 @@ def setcover(candidate_sets_dict, items=None, set_weights=None,
         exact_soln = {'b': [1, 2, 3, 4, 5], 'e': [6, 7, 8, 9, 0]}
     """
     if algo in ['approx', 'greedy']:
-        return _setcover_greedy_old(candidate_sets_dict, items=items,
-                                    set_weights=set_weights,
-                                    item_values=item_values,
-                                    max_weight=max_weight)
+        return _setcover_greedy_old(
+            candidate_sets_dict,
+            items=items,
+            set_weights=set_weights,
+            item_values=item_values,
+            max_weight=max_weight,
+        )
     elif algo in ['exact', 'ilp']:
-        return _setcover_ilp(candidate_sets_dict, items=items,
-                             set_weights=set_weights, item_values=item_values,
-                             max_weight=max_weight)
+        return _setcover_ilp(
+            candidate_sets_dict,
+            items=items,
+            set_weights=set_weights,
+            item_values=item_values,
+            max_weight=max_weight,
+        )
     else:
         raise KeyError(algo)
 
 
-def _setcover_greedy_old(candidate_sets_dict, items=None, set_weights=None,
-                         item_values=None, max_weight=None):
+def _setcover_greedy_old(
+    candidate_sets_dict,
+    items=None,
+    set_weights=None,
+    item_values=None,
+    max_weight=None,
+):
     """
     Benchmark:
         items = np.arange(10000)
@@ -108,13 +127,17 @@ def _setcover_greedy_old(candidate_sets_dict, items=None, set_weights=None,
     if set_weights is None:
         get_weight = len
     else:
+
         def get_weight(solution_cover):
             return sum(set_weights[key] for key in solution_cover.keys())
+
     if item_values is None:
         get_value = len
     else:
+
         def get_value(vals):
             return sum(item_values[v] for v in vals)
+
     if max_weight is None:
         max_weight = get_weight(candidate_sets_dict)
 
@@ -144,8 +167,13 @@ def _setcover_greedy_old(candidate_sets_dict, items=None, set_weights=None,
     return solution_cover
 
 
-def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
-                         item_values=None, max_weight=None):
+def _setcover_greedy_new(
+    candidate_sets_dict,
+    items=None,
+    set_weights=None,
+    item_values=None,
+    max_weight=None,
+):
     """
     Implements Johnson's / Chvatal's greedy set-cover approximation algorithm.
 
@@ -225,9 +253,11 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
     # Inverted index
     item_to_keys = {item: set() for item in items}
     # This is actually a fair bit faster than the non-comprehension version
-    [item_to_keys[item].add(key)
-     for key, vals in candidate_sets_dict.items()
-     for item in vals]
+    [
+        item_to_keys[item].add(key)
+        for key, vals in candidate_sets_dict.items()
+        for item in vals
+    ]
 
     # If set_weights or item_values not given use the length as defaults
     if set_weights is None:
@@ -240,19 +270,19 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
     if item_values is None:
         get_value = len
     else:
+
         def get_value(vals):
             return sum(item_values[v] for v in vals)
+
     if max_weight is None:
         max_weight = get_weight(candidate_sets_dict)
 
-    avail_covers = OrderedDict([
-        (key, set(vals))
-        for key, vals in sorted(candidate_sets_dict.items())
-    ])
-    avail_totals = OrderedDict([
-        (key, get_value(vals))
-        for key, vals in avail_covers.items()
-    ])
+    avail_covers = OrderedDict(
+        [(key, set(vals)) for key, vals in sorted(candidate_sets_dict.items())]
+    )
+    avail_totals = OrderedDict(
+        [(key, get_value(vals)) for key, vals in avail_covers.items()]
+    )
 
     print('avail_covers = {}'.format(ub.urepr(avail_covers, nl=1)))
     print('avail_totals = {}'.format(ub.urepr(avail_totals, nl=1)))
@@ -273,7 +303,7 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
         solution_cover[chosen_key] = candidate_sets_dict[chosen_key]
 
         # Update the solution weight
-        chosen_weight = (1 if set_weights is None else set_weights[chosen_key])
+        chosen_weight = 1 if set_weights is None else set_weights[chosen_key]
         solution_weight += chosen_weight
 
         # Remove chosen covering set from available options
@@ -302,8 +332,14 @@ def _setcover_greedy_new(candidate_sets_dict, items=None, set_weights=None,
     return solution_cover
 
 
-def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
-                  item_values=None, max_weight=None, verbose=False):
+def _setcover_ilp(
+    candidate_sets_dict,
+    items=None,
+    set_weights=None,
+    item_values=None,
+    max_weight=None,
+    verbose=False,
+):
     """
     Set cover / Weighted Maximum Cover exact algorithm using an integer linear
     program.
@@ -351,20 +387,27 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
     if item_values is None and set_weights is None and max_weight is None:
         # This is the most basic set cover problem
         # Formulate integer program
-        prob = pulp.LpProblem("Set Cover", pulp.LpMinimize)
+        prob = pulp.LpProblem('Set Cover', pulp.LpMinimize)
         # Solution variable indicates if set it chosen or not
         set_indices = candidate_sets_dict.keys()
-        x = pulp.LpVariable.dicts(name='x', indexs=set_indices,
-                                  lowBound=0, upBound=1, cat=pulp.LpInteger)
+        x = pulp.LpVariable.dicts(
+            name='x',
+            indexs=set_indices,
+            lowBound=0,
+            upBound=1,
+            cat=pulp.LpInteger,
+        )
         # minimize the number of sets
         prob.objective = sum(x[i] for i in set_indices)
         # subject to
         for e in items:
             # each element is covered
-            containing_sets = [i for i in set_indices if e in candidate_sets_dict[i]]
+            containing_sets = [
+                i for i in set_indices if e in candidate_sets_dict[i]
+            ]
             prob.add(sum(x[i] for i in containing_sets) >= 1)
         # Solve using with solver like CPLEX, GLPK, or SCIP.
-        #pulp.CPLEX().solve(prob)
+        # pulp.CPLEX().solve(prob)
         pulp.PULP_CBC_CMD().solve(prob)
         # Read solution
         solution_keys = [i for i in set_indices if x[i].varValue]
@@ -373,7 +416,14 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         if verbose:
             print(prob)
             print('OPT:')
-            print('\n'.join(['    %s = %s' % (x[i].name, x[i].varValue) for i in set_indices]))
+            print(
+                '\n'.join(
+                    [
+                        '    %s = %s' % (x[i].name, x[i].varValue)
+                        for i in set_indices
+                    ]
+                )
+            )
             print('solution_cover = %r' % (solution_cover,))
     else:
         if set_weights is None:
@@ -382,14 +432,24 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
             item_values = {e: 1 for e in items}
         if max_weight is None:
             max_weight = sum(set_weights[i] for i in candidate_sets_dict.keys())
-        prob = pulp.LpProblem("Maximum Cover", pulp.LpMaximize)
+        prob = pulp.LpProblem('Maximum Cover', pulp.LpMaximize)
         # Solution variable indicates if set it chosen or not
         item_indicies = items
         set_indices = candidate_sets_dict.keys()
-        x = pulp.LpVariable.dicts(name='x', indexs=set_indices,
-                                  lowBound=0, upBound=1, cat=pulp.LpInteger)
-        y = pulp.LpVariable.dicts(name='y', indexs=item_indicies,
-                                  lowBound=0, upBound=1, cat=pulp.LpInteger)
+        x = pulp.LpVariable.dicts(
+            name='x',
+            indexs=set_indices,
+            lowBound=0,
+            upBound=1,
+            cat=pulp.LpInteger,
+        )
+        y = pulp.LpVariable.dicts(
+            name='y',
+            indexs=item_indicies,
+            lowBound=0,
+            upBound=1,
+            cat=pulp.LpInteger,
+        )
         r = pulp.LpVariable.dicts(name='r', indexs=item_indicies)
         # maximize the value of the covered items
         primary_objective = sum(item_values[e] * y[e] for e in item_indicies)
@@ -398,7 +458,9 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         # TODO: minimize redundancy
         min_influence = min(item_values.values())
         secondary_weight = min_influence / (1.1 * len(set_indices))
-        secondary_objective = (sum(-x[i] for i in set_indices)) * secondary_weight
+        secondary_objective = (
+            sum(-x[i] for i in set_indices)
+        ) * secondary_weight
         #
         prob.objective = primary_objective + secondary_objective
         # subject to
@@ -406,13 +468,15 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         prob.add(sum(x[i] * set_weights[i] for i in set_indices) <= max_weight)
         # If an item is chosen than at least one set containing it is chosen
         for e in item_indicies:
-            containing_sets = [i for i in set_indices if e in candidate_sets_dict[i]]
+            containing_sets = [
+                i for i in set_indices if e in candidate_sets_dict[i]
+            ]
             if len(containing_sets) > 0:
                 prob.add(sum(x[i] for i in containing_sets) >= y[e])
                 # record number of times each item is covered
                 prob.add(sum(x[i] for i in containing_sets) == r[e])
         # Solve using with solver like CPLEX, GLPK, or SCIP.
-        #pulp.CPLEX().solve(prob)
+        # pulp.CPLEX().solve(prob)
         pulp.PULP_CBC_CMD().solve(prob)
         # Read solution
         solution_keys = [i for i in set_indices if x[i].varValue]
@@ -421,7 +485,21 @@ def _setcover_ilp(candidate_sets_dict, items=None, set_weights=None,
         if verbose:
             print(prob)
             print('OPT:')
-            print('\n'.join(['    %s = %s' % (x[i].name, x[i].varValue) for i in set_indices]))
-            print('\n'.join(['    %s = %s' % (y[i].name, y[i].varValue) for i in item_indicies]))
+            print(
+                '\n'.join(
+                    [
+                        '    %s = %s' % (x[i].name, x[i].varValue)
+                        for i in set_indices
+                    ]
+                )
+            )
+            print(
+                '\n'.join(
+                    [
+                        '    %s = %s' % (y[i].name, y[i].varValue)
+                        for i in item_indicies
+                    ]
+                )
+            )
             print('solution_cover = %r' % (solution_cover,))
     return solution_cover

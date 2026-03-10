@@ -1,4 +1,3 @@
-
 def main():
     import kwarray
     import torch
@@ -31,6 +30,7 @@ def main():
         m2_base = torch.rand(1000, 1000)
 
         import netharn as nh
+
         xpu = nh.XPU(device)
         m1_base = xpu.move(m1_base)
         m2_base = xpu.move(m2_base)
@@ -88,6 +88,7 @@ def main():
     print(ub.urepr(ti.measures, precision=6))
 
     import pandas as pd
+
     print(pd.DataFrame(ti.measures))
 
 

@@ -1,6 +1,7 @@
 """
 Functions relating to robust statistical methods for normalizing data.
 """
+
 import numpy as np
 import ubelt as ub
 import math  # NOQA
@@ -226,8 +227,13 @@ def _custom_quantile_extreme_estimator(data, params):
     qvals = [0, quant_low, quant_mid, quant_high, 1]
     quantile_vals = np.quantile(data, qvals)
 
-    (quant_low_abs, quant_low_val, quant_mid_val, quant_high_val,
-     quant_high_abs) = quantile_vals
+    (
+        quant_low_abs,
+        quant_low_val,
+        quant_mid_val,
+        quant_high_val,
+        quant_high_abs,
+    ) = quantile_vals
 
     # TODO: we could implement a heuristic where we do a numerical inspection
     # of the intensity distribution. We could apply a normalization that is
@@ -241,9 +247,9 @@ def _custom_quantile_extreme_estimator(data, params):
     # upper_lower_range = quant_mid_val - quant_low_val
 
     # Compute amount of weight in each quantile
-    quant_mid_amount = (quant_high_val - quant_low_val)
-    quant_low_amount = (quant_mid_val - quant_low_val)
-    quant_high_amount = (quant_high_val - quant_mid_val)
+    quant_mid_amount = quant_high_val - quant_low_val
+    quant_low_amount = quant_mid_val - quant_low_val
+    quant_high_amount = quant_high_val - quant_mid_val
 
     if isclose(quant_mid_amount, 0):
         high_weight = 0.5
@@ -252,8 +258,8 @@ def _custom_quantile_extreme_estimator(data, params):
         high_weight = quant_high_amount / quant_mid_amount
         low_weight = quant_low_amount / quant_mid_amount
 
-    quant_high_residual = (1.0 - quant_high)
-    quant_low_residual = (quant_low - 0.0)
+    quant_high_residual = 1.0 - quant_high
+    quant_low_residual = quant_low - 0.0
     # todo: verify, having slight head fog, not 100% sure
     low_pad_val = quant_low_residual * (low_weight * quant_mid_amount)
     high_pad_val = quant_high_residual * (high_weight * quant_mid_amount)
@@ -263,8 +269,15 @@ def _custom_quantile_extreme_estimator(data, params):
     return (min_val, mid_val, max_val)
 
 
-def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
-                     dtype=np.float32, params='auto', mask=None):
+def robust_normalize(
+    imdata,
+    return_info=False,
+    nodata=None,
+    axis=None,
+    dtype=np.float32,
+    params='auto',
+    mask=None,
+):
     """
     Normalize data intensities using heuristics to help put sensor data with
     extremely high or low contrast into a visible range.
@@ -383,9 +396,14 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         if mask is None:
             parts = []
             for item in reorg:
-                part = robust_normalize(item, nodata=nodata, params=params,
-                                        dtype=dtype, axis=None,
-                                        return_info=return_info)
+                part = robust_normalize(
+                    item,
+                    nodata=nodata,
+                    params=params,
+                    dtype=dtype,
+                    axis=None,
+                    return_info=return_info,
+                )
                 if return_info:
                     infos_to_return.append(part[1])
                     part = part[0]
@@ -394,9 +412,15 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
             reorg_mask = mask.swapaxes(0, axis)
             parts = []
             for item, item_mask in zip(reorg, reorg_mask):
-                part = robust_normalize(item, nodata=nodata, params=params,
-                                        dtype=dtype, axis=None, mask=item_mask,
-                                        return_info=return_info)
+                part = robust_normalize(
+                    item,
+                    nodata=nodata,
+                    params=params,
+                    dtype=dtype,
+                    axis=None,
+                    mask=item_mask,
+                    return_info=return_info,
+                )
                 if return_info:
                     infos_to_return.append(part[1])
                     part = part[0]
@@ -427,8 +451,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
 
     assert not np.any(np.isnan(imdata_valid))
     normalizer = find_robust_normalizers(imdata_valid, params=params)
-    imdata_normalized = _apply_robust_normalizer(normalizer, imdata,
-                                                 imdata_valid, mask, dtype)
+    imdata_normalized = _apply_robust_normalizer(
+        normalizer, imdata, imdata_valid, mask, dtype
+    )
 
     if mask is not None:
         result = np.where(mask, imdata_normalized, imdata)
@@ -444,20 +469,25 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         return result
 
 
-def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy=True):
+def _apply_robust_normalizer(
+    normalizer, imdata, imdata_valid, mask, dtype, copy=True
+):
     """
     TODO:
         abstract into a scikit-learn-style Normalizer class which can
         fit/predict different types of normalizers.
     """
     import kwarray
+
     if normalizer['type'] is None:
         imdata_normalized = imdata.astype(dtype, copy=copy)
     elif normalizer['type'] == 'normalize':
         # Note: we are using kwarray normalize, the one in kwimage is deprecated
         imdata_valid_normalized = kwarray.normalize(
-            imdata_valid.astype(dtype, copy=copy), mode=normalizer['mode'],
-            beta=normalizer['beta'], alpha=normalizer['alpha'],
+            imdata_valid.astype(dtype, copy=copy),
+            mode=normalizer['mode'],
+            beta=normalizer['beta'],
+            alpha=normalizer['alpha'],
             min_val=normalizer.get('min_val', None),
             max_val=normalizer.get('max_val', None),
         )
@@ -471,8 +501,15 @@ def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy
     return imdata_normalized
 
 
-def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
-              min_val=None, max_val=None):
+def normalize(
+    arr,
+    mode='linear',
+    alpha=None,
+    beta=None,
+    out=None,
+    min_val=None,
+    max_val=None,
+):
     """
     Normalizes input values based on a specified scheme.
 
@@ -658,6 +695,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         # nonlinear case
         # out = new_span * sigmoid((arr - beta) / alpha) + new_min
         from scipy.special import expit as sigmoid
+
         if beta is None:
             # should center the desired distribution to visualize on zero
             beta = old_max - old_min

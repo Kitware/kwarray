@@ -1,4 +1,3 @@
-
 def benchmark_atleast_nd():
     # Hmm, mine is actually faster
     # %timeit atleast_nd(arr, 3)
@@ -12,11 +11,11 @@ def benchmark_atleast_nd():
 
     for n in [0, 1, 8, 16, 32]:
         data_basis['shape'] += [
-                tuple(),
-                (n,),
-                (n, n),
-                (n, n, n),
-                (n, n, n, n),
+            tuple(),
+            (n,),
+            (n, n),
+            (n, n, n),
+            (n, n, n, n),
         ]
 
     data_grid = list(ub.named_product(data_basis))
@@ -25,21 +24,24 @@ def benchmark_atleast_nd():
         'atleast_1d': (np.atleast_1d, {}),
         'atleast_2d': (np.atleast_2d, {}),
         'atleast_3d': (np.atleast_3d, {}),
-
         'atleast_nd-1b': (kwarray.atleast_nd, {'n': 1, 'front': False}),
         'atleast_nd-2b': (kwarray.atleast_nd, {'n': 2, 'front': False}),
         'atleast_nd-3b': (kwarray.atleast_nd, {'n': 3, 'front': False}),
-
         # 'atleast_nd-1f': (kwarray.atleast_nd, {'n': 1, 'front': True}),
         # 'atleast_nd-2f': (kwarray.atleast_nd, {'n': 2, 'front': True}),
         # 'atleast_nd-3f': (kwarray.atleast_nd, {'n': 3, 'front': True}),
     }
 
-    method_grid = list(ub.named_product({
-        'method': list(method_lut.keys()),
-    }))
+    method_grid = list(
+        ub.named_product(
+            {
+                'method': list(method_lut.keys()),
+            }
+        )
+    )
 
     import timerit
+
     ti = timerit.Timerit(10000, bestof=10, verbose=2)
 
     rows = []
@@ -78,6 +80,7 @@ def benchmark_atleast_nd():
             rows.append(row)
 
     import pandas as pd
+
     df = pd.DataFrame(rows).sort_values('min')
     print(df)
 
@@ -91,13 +94,30 @@ def benchmark_atleast_nd():
     print('numpy_ave_min    = {!r}'.format(numpy_ave_min))
 
     import kwplot
+
     sns = kwplot.autosns()
     # sns.lineplot(data=df, x='dims', y='min', hue='method')
 
-    longform = df.melt(['dims', 'method', 'numel', 'package'], value_vars=['min', 'mean'])
+    longform = df.melt(
+        ['dims', 'method', 'numel', 'package'], value_vars=['min', 'mean']
+    )
     kwplot.figure(fnum=1, doclf=True)
-    ax = sns.lineplot(data=longform, x='dims', y='value', hue='package', size='variable', style='method')
+    ax = sns.lineplot(
+        data=longform,
+        x='dims',
+        y='value',
+        hue='package',
+        size='variable',
+        style='method',
+    )
     ax.set_yscale('log')
 
     kwplot.figure(fnum=2)
-    sns.lineplot(data=longform, x='numel', y='value', hue='package', size='variable', style='method')
+    sns.lineplot(
+        data=longform,
+        x='numel',
+        y='value',
+        hue='package',
+        size='variable',
+        style='method',
+    )

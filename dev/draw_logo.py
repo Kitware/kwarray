@@ -1,7 +1,8 @@
-"""
-"""
+""" """
+
 import kwplot
 import kwimage
+
 # import numpy as np
 plt = kwplot.autoplt()
 kwplot.autompl()

@@ -41,12 +41,12 @@ def test_run_avg_cases():
             s1N = ub.map_vals(np.ravel, s1N)
             s2N = ub.map_vals(np.ravel, s2N)
             assert np.allclose(s1N['mean'], s2N['mean'], rtol=0.0, atol=0.0)
-            assert np.allclose(s1N['mean'], np.array([1. , 1. , 0. , 0.5]))
+            assert np.allclose(s1N['mean'], np.array([1.0, 1.0, 0.0, 0.5]))
 
 
 def test_run_avg_with_zero_weight():
-    data    = np.array([1, 1, 1, 0, 0, 0, 1, 1.]).reshape(4, 2)
-    weights = np.array([1, 0, 0, 1, 0, 1, 1, 1.]).reshape(data.shape)
+    data = np.array([1, 1, 1, 0, 0, 0, 1, 1.0]).reshape(4, 2)
+    weights = np.array([1, 0, 0, 1, 0, 1, 1, 1.0]).reshape(data.shape)
     run = kwarray.RunningStats()
     stacked_data = []
     stacked_weights = []
@@ -82,11 +82,13 @@ def test_fuzzed_random_running():
     stack up our data along a new axis and compute the explicit average along
     the chosen axis AND -1.
     """
-    grid = ub.named_product({
-        'shape': [(2, 3, 5), (5,)],
-        'use_weights': [0, 1],
-        'keepdims': [False, True],
-    })
+    grid = ub.named_product(
+        {
+            'shape': [(2, 3, 5), (5,)],
+            'use_weights': [0, 1],
+            'keepdims': [False, True],
+        }
+    )
 
     rng = kwarray.ensure_rng()
 
@@ -160,6 +162,7 @@ def test_fuzzed_random_running():
 
 def test_with_nan_case():
     import kwarray
+
     run = kwarray.RunningStats(nan_policy='omit')
     n = float('nan')
     im1 = np.array([[[0, 0, 1], [1, 0, 1]], [[1, 2, 3], [4, 5, 6]]])
@@ -193,34 +196,55 @@ def combine_mean_std_zero_nums():
     the numerator to be negative.
     """
     from kwarray.util_averages import _combine_mean_stds
-    means = np.array([[0.154509, 0.192753, 0.182485],
-                      [0.      , 0.      , 0.      ],
-                      [0.122889, 0.170761, 0.15622 ],
-                      [0.202546, 0.24321 , 0.282333]], dtype=np.float64)
-    stds = np.array([[1.26812e-01, 1.33810e-01, 1.30416e-01],
-                     [1.00000e+08, 1.00000e+08, 1.00000e+08],
-                     [1.31318e-01, 1.38126e-01, 1.28543e-01],
-                     [9.27550e-02, 8.76810e-02, 1.21056e-01]], dtype=np.float64)
-    nums = np.array([[200704., 200704., 200704.],
-                     [     0.,      0.,      0.],
-                     [200704., 200704., 200704.],
-                     [150528., 150528., 150528.]], dtype=np.float64)
+
+    means = np.array(
+        [
+            [0.154509, 0.192753, 0.182485],
+            [0.0, 0.0, 0.0],
+            [0.122889, 0.170761, 0.15622],
+            [0.202546, 0.24321, 0.282333],
+        ],
+        dtype=np.float64,
+    )
+    stds = np.array(
+        [
+            [1.26812e-01, 1.33810e-01, 1.30416e-01],
+            [1.00000e08, 1.00000e08, 1.00000e08],
+            [1.31318e-01, 1.38126e-01, 1.28543e-01],
+            [9.27550e-02, 8.76810e-02, 1.21056e-01],
+        ],
+        dtype=np.float64,
+    )
+    nums = np.array(
+        [
+            [200704.0, 200704.0, 200704.0],
+            [0.0, 0.0, 0.0],
+            [200704.0, 200704.0, 200704.0],
+            [150528.0, 150528.0, 150528.0],
+        ],
+        dtype=np.float64,
+    )
 
     cm1, cs1, _ = _combine_mean_stds(means, stds, nums, axis=0)
     assert not np.any(np.isnan(cs1))
 
-    means = np.array([[0.1, 0.1, 0.1],
-                      [  0, 0.,   0.],
-                      [0.1, 0.1, 0.1],
-                      [0.2, 0.2, 0.2]], dtype=np.float64)
-    stds = np.array([[1.2, 1.3, 1.3],
-                     [1e8, 3.0, 1e1],
-                     [1.3, 1.3, 1.2],
-                     [9.2, 8.7, 1.2]], dtype=np.float64)
-    nums = np.array([[20., 20., 20.],
-                     [ 0.,  0., 0.],
-                     [20., 20., 20.],
-                     [15., 15., 15.]], dtype=np.float64)
+    means = np.array(
+        [[0.1, 0.1, 0.1], [0, 0.0, 0.0], [0.1, 0.1, 0.1], [0.2, 0.2, 0.2]],
+        dtype=np.float64,
+    )
+    stds = np.array(
+        [[1.2, 1.3, 1.3], [1e8, 3.0, 1e1], [1.3, 1.3, 1.2], [9.2, 8.7, 1.2]],
+        dtype=np.float64,
+    )
+    nums = np.array(
+        [
+            [20.0, 20.0, 20.0],
+            [0.0, 0.0, 0.0],
+            [20.0, 20.0, 20.0],
+            [15.0, 15.0, 15.0],
+        ],
+        dtype=np.float64,
+    )
 
     cm1, cs1, _ = _combine_mean_stds(means, stds, nums, axis=0, bessel=False)
     assert not np.any(np.isnan(cs1))

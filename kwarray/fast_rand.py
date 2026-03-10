@@ -2,6 +2,7 @@
 Fast 32-bit random functions for numpy as of 2018. (More recent versions of
 numpy may have these natively supported).
 """
+
 import numpy as np
 
 
@@ -198,7 +199,7 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     #   flat_out[0:n] = R * np.cos(Theta) + mean
     #   flat_out[-n:] = R * np.sin(Theta) + mean
     np.log(u1, out=u1)
-    np.multiply(-2 * (std ** 2), u1, out=u1)
+    np.multiply(-2 * (std**2), u1, out=u1)
     R = np.sqrt(u1, out=u1)
 
     Theta = np.multiply(2 * np.pi, u2, out=u2)
@@ -319,7 +320,9 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
             except AttributeError:
                 MAX_INT = np.core.getlimits.iinfo(int_dtype).max
             # Generate uniform-01 random numbers that we will transform
-            out = rng.randint(0, MAX_INT - 1, size=size, dtype=int_dtype).astype(dtype)
+            out = rng.randint(
+                0, MAX_INT - 1, size=size, dtype=int_dtype
+            ).astype(dtype)
             if low == 0 and high == 1.0:
                 np.divide(out, dtype(MAX_INT), out=out)
             else:

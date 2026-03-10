@@ -1,5 +1,6 @@
 def _benchmark_distinguish_tensor_ndarray():
     import timerit
+
     ti = timerit.Timerit(10000, bestof=1000, verbose=1)
 
     array = np.arange(100)
@@ -22,4 +23,3 @@ def _benchmark_distinguish_tensor_ndarray():
             with timer:
                 isinstance(data, torch.Tensor)
         totals[ti.label] += ti.mean()
-

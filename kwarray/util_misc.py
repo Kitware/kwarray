@@ -1,6 +1,7 @@
 """
 Misc tools that should find a better home
 """
+
 import numpy as np
 import ubelt as ub
 import numbers
@@ -31,6 +32,7 @@ class FlatIndexer(ub.NiceRepr):
         >>> self.unravel(4)
         >>> self.ravel(2, 1)
     """
+
     def __init__(self, lens):
         self.lens = np.asarray(lens)
         self.cums = np.cumsum(lens)
