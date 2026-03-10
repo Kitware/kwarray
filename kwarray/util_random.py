@@ -181,7 +181,7 @@ def shuffle(
         [3, 2, 5, 1, 4, 6]
     """
     rng = ensure_rng(rng)
-    rng.shuffle(items)
+    rng.shuffle(items)  # ty: ignore[invalid-argument-type]
     return items
 
 

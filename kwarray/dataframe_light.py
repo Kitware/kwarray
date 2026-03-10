@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 try:
     import pandas as pd
 except Exception:
-    pd = None
+    pd = None  # ty: ignore[invalid-assignment]
 
 
 __version__ = '0.0.1'
@@ -207,7 +207,7 @@ class DataFrameLight(ub.NiceRepr):
     def loc(self) -> LocLight:
         return self._localizer
 
-    def __eq__(self, other: object) -> np.ndarray:
+    def __eq__(self, other: object) -> np.ndarray:  # ty: ignore[invalid-method-override]
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:pandas)

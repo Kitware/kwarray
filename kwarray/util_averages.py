@@ -57,7 +57,7 @@ try:
 except ImportError:
     import pkg_resources
 
-    importlib_metadata = None
+    importlib_metadata = None  # ty: ignore[invalid-assignment]
 else:
     pkg_resources = None
 

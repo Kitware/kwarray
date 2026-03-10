@@ -6,12 +6,34 @@ numpy may have these natively supported).
 """
 
 import numpy as np
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING:
     from types import ModuleType
 
     RNGBackend = np.random.RandomState | ModuleType
+
+
+@overload
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: None = None,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> float | np.float32:
+    ...
+
+
+@overload
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] = ...,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
+    ...
 
 
 def uniform(
@@ -20,7 +42,7 @@ def uniform(
     size: int | tuple[int, ...] | None = None,
     dtype: type = np.float32,
     rng: RNGBackend = np.random,
-) -> np.ndarray:
+) -> np.ndarray | float | np.float32:
     """
     Draws float32 samples from a uniform distribution.
 
@@ -200,7 +222,9 @@ def standard_normal32(
     try:
         MAX_INT = np.iinfo(int_dtype).max
     except AttributeError:
-        MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+        from numpy.core import getlimits as _getlimits
+
+        MAX_INT = _getlimits.iinfo(int_dtype).max
 
     # Preallocate output
     out = np.empty(size, dtype=dtype)
@@ -281,12 +305,32 @@ def standard_normal64(
     return out
 
 
+@overload
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: None = None,
+    rng: RNGBackend = np.random,
+) -> np.float32:
+    ...
+
+
+@overload
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] = ...,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
+    ...
+
+
 def uniform32(
     low: float = 0.0,
     high: float = 1.0,
     size: int | tuple[int, ...] | None = None,
     rng: RNGBackend = np.random,
-) -> np.ndarray:
+) -> np.ndarray | np.float32:
     """
     Draws float32 samples from a uniform distribution.
 
@@ -353,7 +397,9 @@ def uniform32(
             try:
                 MAX_INT = np.iinfo(int_dtype).max
             except AttributeError:
-                MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+                from numpy.core import getlimits as _getlimits
+
+                MAX_INT = _getlimits.iinfo(int_dtype).max
             # Generate uniform-01 random numbers that we will transform
             out = rng.randint(
                 0, MAX_INT - 1, size=size, dtype=int_dtype
