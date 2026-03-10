@@ -542,8 +542,8 @@ def normalize(
     alpha: float | None = None,
     beta: float | None = None,
     out: np.ndarray | None = None,
-    min_val: object | None = None,
-    max_val: object | None = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
 ) -> np.ndarray:
     """
     Normalizes input values based on a specified scheme.

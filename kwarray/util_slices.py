@@ -139,7 +139,7 @@ def padded_slice(
         return data_sliced
 
 
-__TODO__ = """
+__TODO__: str = """
 
     - [ ] Could have a kwarray function to expose this inverse slice
           functionality. Also having a top-level call to apply an embedded slice

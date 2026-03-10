@@ -352,7 +352,7 @@ class SlidingWindow(ub.NiceRepr):
             yield center
 
 
-__devnote__ = """
+__devnote__: str = """
 TODO:
     - [ ] Look at the old "add_fast" code in the netharn version and see if
           it is worth porting. This code is kept in the dev folder in
