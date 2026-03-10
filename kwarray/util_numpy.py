@@ -160,7 +160,7 @@ def isect_flags(arr: np.ndarray, other: Iterable[object]) -> np.ndarray:
          [ True  True False  True]]
     """
     flags = cast(
-        np.ndarray | None,
+        'np.ndarray | None',
         iter_reduce_ufunc(np.logical_or, (arr == item for item in other)),
     )
     if flags is None:

@@ -149,9 +149,9 @@ def find_robust_normalizers(
                 raise KeyError(params)
 
         # hack
-        params_obj = cast(dict[str, object], params)
+        params_obj = cast('dict[str, object]', params)
         params_dict = cast(
-            dict[str, str | float],
+            'dict[str, str | float]',
             ub.dict_union(default_params, params_obj),
         )
 

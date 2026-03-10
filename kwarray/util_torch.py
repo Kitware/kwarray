@@ -90,7 +90,7 @@ def one_hot_embedding(
     """
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(labels):
-        torch_labels = cast(Tensor, labels)
+        torch_labels = cast('Tensor', labels)
         # TODO: dtype
         in_dims = torch_labels.ndimension()
         if dim < 0:
