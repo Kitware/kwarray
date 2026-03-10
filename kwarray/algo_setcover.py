@@ -137,16 +137,18 @@ def _setcover_greedy_old(
     if set_weights is None:
         get_weight = len
     else:
+        set_weights_ = set_weights
 
         def get_weight(solution_cover):
-            return sum(set_weights[key] for key in solution_cover.keys())
+            return sum(set_weights_[key] for key in solution_cover.keys())
 
     if item_values is None:
         get_value = len
     else:
+        item_values_ = item_values
 
         def get_value(vals):
-            return sum(item_values[v] for v in vals)
+            return sum(item_values_[v] for v in vals)
 
     if max_weight is None:
         max_weight = get_weight(candidate_sets_dict)
@@ -274,15 +276,18 @@ def _setcover_greedy_new(
         get_weight = len
     else:
         # TODO: we can improve this with bookkeeping
+        set_weights_ = set_weights
+
         def get_weight(solution_cover):
-            return sum(set_weights[key] for key in solution_cover.keys())
+            return sum(set_weights_[key] for key in solution_cover.keys())
 
     if item_values is None:
         get_value = len
     else:
+        item_values_ = item_values
 
         def get_value(vals):
-            return sum(item_values[v] for v in vals)
+            return sum(item_values_[v] for v in vals)
 
     if max_weight is None:
         max_weight = get_weight(candidate_sets_dict)

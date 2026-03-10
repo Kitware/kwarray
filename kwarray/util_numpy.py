@@ -5,7 +5,7 @@ Numpy specific extensions
 """
 
 import numpy as np
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -159,7 +159,10 @@ def isect_flags(arr: np.ndarray, other: Iterable[object]) -> np.ndarray:
          [False  True False  True]
          [ True  True False  True]]
     """
-    flags = iter_reduce_ufunc(np.logical_or, (arr == item for item in other))
+    flags = cast(
+        np.ndarray | None,
+        iter_reduce_ufunc(np.logical_or, (arr == item for item in other)),
+    )
     if flags is None:
         flags = np.zeros(arr.shape, dtype=bool)
     return flags

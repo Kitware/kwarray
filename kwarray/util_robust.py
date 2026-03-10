@@ -7,7 +7,7 @@ Functions relating to robust statistical methods for normalizing data.
 import numpy as np
 import ubelt as ub
 import math  # NOQA
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, cast, overload
 
 if TYPE_CHECKING:
     from typing import Any, Literal
@@ -20,7 +20,7 @@ except Exception:
 
 def find_robust_normalizers(
     data: np.ndarray,
-    params: str | dict = 'auto',
+    params: str | dict[str, object] = 'auto',
 ) -> dict[str, str | float | None]:
     """
     Finds robust normalization statistics a set of scalar observations.
@@ -114,6 +114,7 @@ def find_robust_normalizers(
         >>> # A random mixture distribution for testing
         >>> data = Mixture.random(6).sample(3000)
     """
+    normalizer: dict[str, str | float | None]
     if data.size == 0:
         normalizer = {
             'type': None,
@@ -148,21 +149,30 @@ def find_robust_normalizers(
                 raise KeyError(params)
 
         # hack
-        params = ub.dict_union(default_params, params)
+        params_obj = cast(dict[str, object], params)
+        params_dict = cast(
+            dict[str, str | float],
+            ub.dict_union(default_params, params_obj),
+        )
 
         # TODO:
         # https://github.com/derekbeaton/OuRS
         # https://en.wikipedia.org/wiki/Feature_scaling
-        if params['extrema'] in {'tukey', 'iqr'}:
+        if params_dict['extrema'] in {'tukey', 'iqr'}:
             fense_extremes = _tukey_quantile_fence(data, clip=False)
-        elif params['extrema'] in {'tukey-clip', 'iqr-clip'}:
+        elif params_dict['extrema'] in {'tukey-clip', 'iqr-clip'}:
             fense_extremes = _tukey_quantile_fence(data, clip=True)
-        elif params['extrema'] == 'quantile':
-            fense_extremes = _quantile_extreme_estimator(data, params)
-        elif params['extrema'] in {'custom-quantile', 'adaptive-quantile'}:
-            fense_extremes = _custom_quantile_extreme_estimator(data, params)
+        elif params_dict['extrema'] == 'quantile':
+            fense_extremes = _quantile_extreme_estimator(data, params_dict)
+        elif params_dict['extrema'] in {
+            'custom-quantile',
+            'adaptive-quantile',
+        }:
+            fense_extremes = _custom_quantile_extreme_estimator(
+                data, params_dict
+            )
         else:
-            raise KeyError(params['extrema'])
+            raise KeyError(params_dict['extrema'])
         min_val, mid_val, max_val = fense_extremes
 
         beta = mid_val
@@ -176,7 +186,7 @@ def find_robust_normalizers(
 
         normalizer = {
             'type': 'normalize',
-            'mode': params['scaling'],
+            'mode': cast(str, params_dict['scaling']),
             'min_val': min_val,
             'max_val': max_val,
             'mid_val': mid_val,
@@ -431,34 +441,51 @@ def robust_normalize(
         if mask is None:
             parts = []
             for item in reorg:
-                part = robust_normalize(
-                    item,
-                    nodata=nodata,
-                    params=params,
-                    dtype=dtype,
-                    axis=None,
-                    return_info=return_info,
-                )
                 if return_info:
-                    infos_to_return.append(part[1])
-                    part = part[0]
+                    part, info = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        return_info=True,
+                    )
+                    infos_to_return.append(info)
+                else:
+                    part = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        return_info=False,
+                    )
                 parts.append(part[None, :])
         else:
             reorg_mask = mask.swapaxes(0, axis)
             parts = []
             for item, item_mask in zip(reorg, reorg_mask):
-                part = robust_normalize(
-                    item,
-                    nodata=nodata,
-                    params=params,
-                    dtype=dtype,
-                    axis=None,
-                    mask=item_mask,
-                    return_info=return_info,
-                )
                 if return_info:
-                    infos_to_return.append(part[1])
-                    part = part[0]
+                    part, info = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        mask=item_mask,
+                        return_info=True,
+                    )
+                    infos_to_return.append(info)
+                else:
+                    part = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        mask=item_mask,
+                        return_info=False,
+                    )
                 parts.append(part[None, :])
         recomb = np.concatenate(parts, axis=0)
         final = recomb.swapaxes(0, axis)
@@ -467,9 +494,10 @@ def robust_normalize(
 
     is_masked = isinstance(imdata, np.ma.MaskedArray)
     if is_masked:
+        masked_imdata = cast(np.ma.MaskedArray, imdata)
         if mask is None:
-            mask = ~imdata.mask
-        imdata = imdata.data
+            mask = np.asarray(~masked_imdata.mask)
+        imdata = np.asarray(masked_imdata.data)
 
     if imdata.dtype.kind == 'f':
         if mask is None:
@@ -496,6 +524,7 @@ def robust_normalize(
         result = imdata_normalized
 
     if is_masked:
+        assert mask is not None
         result = np.ma.MaskedArray(result, ~mask)
 
     if return_info:

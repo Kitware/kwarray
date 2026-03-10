@@ -6,7 +6,7 @@ Torch specific extensions
 
 import numpy as np
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -90,34 +90,38 @@ def one_hot_embedding(
     """
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(labels):
+        torch_labels = cast(Tensor, labels)
         # TODO: dtype
-        in_dims = labels.ndimension()
+        in_dims = torch_labels.ndimension()
         if dim < 0:
             dim = in_dims - dim + 1
         if dim == 1 and in_dims == 1:
             # normal case where everything is already flat
-            y = torch.eye(int(num_classes), device=labels.device)
-            y_onehot = y[labels]
+            y = torch.eye(int(num_classes), device=torch_labels.device)
+            y_onehot = y[torch_labels]
         else:
             # non-flat case (note that this would handle the normal case, but
             # why do extra work?)
-            y = torch.eye(int(num_classes), device=labels.device)
-            flat_y_onehot = y[labels.view(-1)]
-            y_onehot = flat_y_onehot.view(*list(labels.shape) + [num_classes])
+            y = torch.eye(int(num_classes), device=torch_labels.device)
+            flat_y_onehot = y[torch_labels.view(-1)]
+            y_onehot = flat_y_onehot.view(
+                *list(torch_labels.shape) + [num_classes]
+            )
             if dim != in_dims:
                 dim_order = list(range(in_dims))
                 dim_order.insert(dim, in_dims)
                 y_onehot = y_onehot.permute(*dim_order)
     else:
+        np_labels = cast(np.ndarray, labels)
         if dim < 0:
-            dim = labels.ndim - dim + 1
-        flag = dim != 1 or labels.ndim == 2
+            dim = np_labels.ndim - dim + 1
+        flag = dim != 1 or np_labels.ndim == 2
         if flag:
-            orig_shape = labels.shape
-            labels = labels.reshape(-1)
+            orig_shape = np_labels.shape
+            np_labels = np_labels.reshape(-1)
             # raise NotImplementedError('not implemented for this case')
         y = np.eye(int(num_classes))
-        y_onehot = y[labels]
+        y_onehot = y[np_labels]
         if flag:
             new_shape = list(orig_shape) + [num_classes]
             y_onehot = y_onehot.reshape(*new_shape)

@@ -179,7 +179,7 @@ class SlidingWindow(ub.NiceRepr):
         # align to the original image. This shape will be a bit bigger.
         self.basis_slices = [list(_slices1d(**kw)) for kw in stide_kw]
         self.basis_shape = [len(b) for b in self.basis_slices]
-        self.n_total = np.prod(self.basis_shape)
+        self.n_total = int(np.prod(self.basis_shape))
 
     def __nice__(self) -> str:
         return 'bshape={}, shape={}, window={}, stride={}'.format(
@@ -252,7 +252,7 @@ class SlidingWindow(ub.NiceRepr):
 
     def _iter_basis_frac(self):
         for slices in self:
-            frac = [sl.start / D for sl, D in zip(slices, self.source.shape)]
+            frac = [sl.start / D for sl, D in zip(slices, self.input_shape)]
             yield frac
 
     def __iter__(self) -> Iterator[tuple[slice, ...]]:
@@ -468,19 +468,19 @@ class Stitcher(ub.NiceRepr):
         if use_memmap:
             import uuid
 
-            uuid = uuid.uuid4()
+            uuid_value = uuid.uuid4()
             if isinstance(memmap, (str, os.PathLike)):
                 memmap_dpath = ub.Path(memmap)
             else:
                 from tempfile import mkdtemp
 
                 memmap_dpath = ub.Path(mkdtemp())
-                memmap_sums_fpath = memmap_dpath / f'{uuid}-sums.npy'
-                memmap_weights_fpath = memmap_dpath / f'{uuid}-weights.npy'
-                self.paths = {
-                    'sums': memmap_sums_fpath,
-                    'weights': memmap_weights_fpath,
-                }
+            memmap_sums_fpath = memmap_dpath / f'{uuid_value}-sums.npy'
+            memmap_weights_fpath = memmap_dpath / f'{uuid_value}-weights.npy'
+            self.paths = {
+                'sums': memmap_sums_fpath,
+                'weights': memmap_weights_fpath,
+            }
         else:
             memmap_dpath = None
             memmap_sums_fpath = None
@@ -489,6 +489,8 @@ class Stitcher(ub.NiceRepr):
         if device == 'numpy':
             if use_memmap:
                 # Seems to always init to zero
+                assert memmap_sums_fpath is not None
+                assert memmap_weights_fpath is not None
                 self.sums = np.memmap(
                     memmap_sums_fpath, dtype=dtype, mode='w+', shape=shape
                 )

@@ -234,10 +234,9 @@ def group_indices(
     else:
         if ARGSORT_HAS_STABLE_KIND:
             # Handle output variation introduced (roughly) in numpy 1.25
-            argsort_kw = {'kind': 'stable'}
+            sortx = idx_to_groupid.argsort(kind='stable')
         else:
-            argsort_kw = {}
-        sortx = idx_to_groupid.argsort(**argsort_kw)
+            sortx = idx_to_groupid.argsort()
         groupids_sorted = idx_to_groupid.take(sortx)
 
     if _kind == 'b':
@@ -261,7 +260,7 @@ def group_indices(
 def apply_grouping(
     items: np.ndarray,
     groupxs: list[np.ndarray],
-    axis: int = 0,
+    axis: int | None = 0,
 ) -> list[np.ndarray]:
     """
     Applies grouping from group_indicies.
