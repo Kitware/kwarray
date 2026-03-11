@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 """
 Functions relating to robust statistical methods for normalizing data.
 """
+
 import numpy as np
 import ubelt as ub
 import math  # NOQA
+from typing import TYPE_CHECKING, cast, overload
+
+if TYPE_CHECKING:
+    from typing import Any, Literal
 
 try:
     from math import isclose
@@ -11,7 +18,10 @@ except Exception:
     from numpy import isclose
 
 
-def find_robust_normalizers(data, params='auto'):
+def find_robust_normalizers(
+    data: np.ndarray,
+    params: str | dict[str, object] = 'auto',
+) -> dict[str, str | float | None]:
     """
     Finds robust normalization statistics a set of scalar observations.
 
@@ -104,6 +114,7 @@ def find_robust_normalizers(data, params='auto'):
         >>> # A random mixture distribution for testing
         >>> data = Mixture.random(6).sample(3000)
     """
+    normalizer: dict[str, str | float | None]
     if data.size == 0:
         normalizer = {
             'type': None,
@@ -138,21 +149,30 @@ def find_robust_normalizers(data, params='auto'):
                 raise KeyError(params)
 
         # hack
-        params = ub.dict_union(default_params, params)
+        params_obj = cast('dict[str, object]', params)
+        params_dict = cast(
+            'dict[str, str | float]',
+            ub.dict_union(default_params, params_obj),
+        )
 
         # TODO:
         # https://github.com/derekbeaton/OuRS
         # https://en.wikipedia.org/wiki/Feature_scaling
-        if params['extrema'] in {'tukey', 'iqr'}:
+        if params_dict['extrema'] in {'tukey', 'iqr'}:
             fense_extremes = _tukey_quantile_fence(data, clip=False)
-        elif params['extrema'] in {'tukey-clip', 'iqr-clip'}:
+        elif params_dict['extrema'] in {'tukey-clip', 'iqr-clip'}:
             fense_extremes = _tukey_quantile_fence(data, clip=True)
-        elif params['extrema'] == 'quantile':
-            fense_extremes = _quantile_extreme_estimator(data, params)
-        elif params['extrema'] in {'custom-quantile', 'adaptive-quantile'}:
-            fense_extremes = _custom_quantile_extreme_estimator(data, params)
+        elif params_dict['extrema'] == 'quantile':
+            fense_extremes = _quantile_extreme_estimator(data, params_dict)
+        elif params_dict['extrema'] in {
+            'custom-quantile',
+            'adaptive-quantile',
+        }:
+            fense_extremes = _custom_quantile_extreme_estimator(
+                data, params_dict
+            )
         else:
-            raise KeyError(params['extrema'])
+            raise KeyError(params_dict['extrema'])
         min_val, mid_val, max_val = fense_extremes
 
         beta = mid_val
@@ -166,7 +186,7 @@ def find_robust_normalizers(data, params='auto'):
 
         normalizer = {
             'type': 'normalize',
-            'mode': params['scaling'],
+            'mode': cast(str, params_dict['scaling']),
             'min_val': min_val,
             'max_val': max_val,
             'mid_val': mid_val,
@@ -226,8 +246,13 @@ def _custom_quantile_extreme_estimator(data, params):
     qvals = [0, quant_low, quant_mid, quant_high, 1]
     quantile_vals = np.quantile(data, qvals)
 
-    (quant_low_abs, quant_low_val, quant_mid_val, quant_high_val,
-     quant_high_abs) = quantile_vals
+    (
+        quant_low_abs,
+        quant_low_val,
+        quant_mid_val,
+        quant_high_val,
+        quant_high_abs,
+    ) = quantile_vals
 
     # TODO: we could implement a heuristic where we do a numerical inspection
     # of the intensity distribution. We could apply a normalization that is
@@ -241,9 +266,9 @@ def _custom_quantile_extreme_estimator(data, params):
     # upper_lower_range = quant_mid_val - quant_low_val
 
     # Compute amount of weight in each quantile
-    quant_mid_amount = (quant_high_val - quant_low_val)
-    quant_low_amount = (quant_mid_val - quant_low_val)
-    quant_high_amount = (quant_high_val - quant_mid_val)
+    quant_mid_amount = quant_high_val - quant_low_val
+    quant_low_amount = quant_mid_val - quant_low_val
+    quant_high_amount = quant_high_val - quant_mid_val
 
     if isclose(quant_mid_amount, 0):
         high_weight = 0.5
@@ -252,8 +277,8 @@ def _custom_quantile_extreme_estimator(data, params):
         high_weight = quant_high_amount / quant_mid_amount
         low_weight = quant_low_amount / quant_mid_amount
 
-    quant_high_residual = (1.0 - quant_high)
-    quant_low_residual = (quant_low - 0.0)
+    quant_high_residual = 1.0 - quant_high
+    quant_low_residual = quant_low - 0.0
     # todo: verify, having slight head fog, not 100% sure
     low_pad_val = quant_low_residual * (low_weight * quant_mid_amount)
     high_pad_val = quant_high_residual * (high_weight * quant_mid_amount)
@@ -263,8 +288,41 @@ def _custom_quantile_extreme_estimator(data, params):
     return (min_val, mid_val, max_val)
 
 
-def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
-                     dtype=np.float32, params='auto', mask=None):
+@overload
+def robust_normalize(
+    imdata: np.ndarray,
+    return_info: Literal[False] = False,
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> np.ndarray:
+    ...
+
+
+@overload
+def robust_normalize(
+    imdata: np.ndarray,
+    return_info: Literal[True],
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> tuple[np.ndarray, Any]:
+    ...
+
+
+def robust_normalize(
+    imdata: np.ndarray,
+    return_info: bool = False,
+    nodata: int | None = None,
+    axis: int | None = None,
+    dtype: type = np.float32,
+    params: str | dict = 'auto',
+    mask: np.ndarray | None = None,
+) -> np.ndarray | tuple[np.ndarray, Any]:
     """
     Normalize data intensities using heuristics to help put sensor data with
     extremely high or low contrast into a visible range.
@@ -383,23 +441,51 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         if mask is None:
             parts = []
             for item in reorg:
-                part = robust_normalize(item, nodata=nodata, params=params,
-                                        dtype=dtype, axis=None,
-                                        return_info=return_info)
                 if return_info:
-                    infos_to_return.append(part[1])
-                    part = part[0]
+                    part, info = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        return_info=True,
+                    )
+                    infos_to_return.append(info)
+                else:
+                    part = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        return_info=False,
+                    )
                 parts.append(part[None, :])
         else:
             reorg_mask = mask.swapaxes(0, axis)
             parts = []
             for item, item_mask in zip(reorg, reorg_mask):
-                part = robust_normalize(item, nodata=nodata, params=params,
-                                        dtype=dtype, axis=None, mask=item_mask,
-                                        return_info=return_info)
                 if return_info:
-                    infos_to_return.append(part[1])
-                    part = part[0]
+                    part, info = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        mask=item_mask,
+                        return_info=True,
+                    )
+                    infos_to_return.append(info)
+                else:
+                    part = robust_normalize(
+                        item,
+                        nodata=nodata,
+                        params=params,
+                        dtype=dtype,
+                        axis=None,
+                        mask=item_mask,
+                        return_info=False,
+                    )
                 parts.append(part[None, :])
         recomb = np.concatenate(parts, axis=0)
         final = recomb.swapaxes(0, axis)
@@ -408,9 +494,10 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
 
     is_masked = isinstance(imdata, np.ma.MaskedArray)
     if is_masked:
+        masked_imdata = cast(np.ma.MaskedArray, imdata)
         if mask is None:
-            mask = ~imdata.mask
-        imdata = imdata.data
+            mask = np.asarray(~masked_imdata.mask)
+        imdata = np.asarray(masked_imdata.data)
 
     if imdata.dtype.kind == 'f':
         if mask is None:
@@ -427,8 +514,9 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
 
     assert not np.any(np.isnan(imdata_valid))
     normalizer = find_robust_normalizers(imdata_valid, params=params)
-    imdata_normalized = _apply_robust_normalizer(normalizer, imdata,
-                                                 imdata_valid, mask, dtype)
+    imdata_normalized = _apply_robust_normalizer(
+        normalizer, imdata, imdata_valid, mask, dtype
+    )
 
     if mask is not None:
         result = np.where(mask, imdata_normalized, imdata)
@@ -436,6 +524,7 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         result = imdata_normalized
 
     if is_masked:
+        assert mask is not None
         result = np.ma.MaskedArray(result, ~mask)
 
     if return_info:
@@ -444,20 +533,25 @@ def robust_normalize(imdata, return_info=False, nodata=None, axis=None,
         return result
 
 
-def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy=True):
+def _apply_robust_normalizer(
+    normalizer, imdata, imdata_valid, mask, dtype, copy=True
+):
     """
     TODO:
         abstract into a scikit-learn-style Normalizer class which can
         fit/predict different types of normalizers.
     """
     import kwarray
+
     if normalizer['type'] is None:
         imdata_normalized = imdata.astype(dtype, copy=copy)
     elif normalizer['type'] == 'normalize':
         # Note: we are using kwarray normalize, the one in kwimage is deprecated
         imdata_valid_normalized = kwarray.normalize(
-            imdata_valid.astype(dtype, copy=copy), mode=normalizer['mode'],
-            beta=normalizer['beta'], alpha=normalizer['alpha'],
+            imdata_valid.astype(dtype, copy=copy),
+            mode=normalizer['mode'],
+            beta=normalizer['beta'],
+            alpha=normalizer['alpha'],
             min_val=normalizer.get('min_val', None),
             max_val=normalizer.get('max_val', None),
         )
@@ -471,8 +565,15 @@ def _apply_robust_normalizer(normalizer, imdata, imdata_valid, mask, dtype, copy
     return imdata_normalized
 
 
-def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
-              min_val=None, max_val=None):
+def normalize(
+    arr: np.ndarray,
+    mode: str = 'linear',
+    alpha: float | None = None,
+    beta: float | None = None,
+    out: np.ndarray | None = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
+) -> np.ndarray:
     """
     Normalizes input values based on a specified scheme.
 
@@ -658,6 +759,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
         # nonlinear case
         # out = new_span * sigmoid((arr - beta) / alpha) + new_min
         from scipy.special import expit as sigmoid
+
         if beta is None:
             # should center the desired distribution to visualize on zero
             beta = old_max - old_min
@@ -695,4 +797,7 @@ def normalize(arr, mode='linear', alpha=None, beta=None, out=None,
     if float_out is not out:
         final_out = float_out.astype(out.dtype)
         out.ravel()[:] = final_out.ravel()[:]
+
+    # FIXME: this might return data that is actually outside of the 0/1 range
+    # due to floating point error.
     return out

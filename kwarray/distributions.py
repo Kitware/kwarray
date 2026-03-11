@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Defines data structures for efficient repeated sampling of specific
 distributions (e.g. Normal, Uniform, Binomial) with specific parameters.
@@ -19,6 +21,7 @@ References:
     https://stackoverflow.com/questions/4265988/generate-random-numbers-with-a-given-numerical-distribution
     https://codereview.stackexchange.com/questions/196286/inverse-transform-sampling
 """
+
 import numpy as np
 import ubelt as ub
 import functools
@@ -26,8 +29,16 @@ import builtins
 import numbers
 import fractions  # NOQA
 from kwarray.util_random import ensure_rng
+from typing import TYPE_CHECKING
 
-inf = float('inf')
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
+    from random import Random
+    from typing import ClassVar, NoReturn
+
+    RNGInput = int | float | str | None | np.random.RandomState | Random
+
+inf: float = float('inf')
 
 
 class Value(ub.NiceRepr):
@@ -47,8 +58,27 @@ class Value(ub.NiceRepr):
         >>> print(Value(name='bob', default=1.0, min=-5, max=5))
         >>> print(Value(name='alice', default=1.0, min=-5))
     """
-    def __init__(self, default=None, min=None, max=None, help=None,
-                 constraints=None, type=None, name=None):
+
+    default: object | None
+    name: str | None
+    min: object | None
+    max: object | None
+    help: str | None
+    type: type | None
+    constraints: object | None
+    category: str | None
+    numeric: bool | None
+
+    def __init__(
+        self,
+        default: object | None = None,
+        min: object | None = None,
+        max: object | None = None,
+        help: str | None = None,
+        constraints: object | None = None,
+        type: type | None = None,
+        name: str | None = None,
+    ) -> None:
         if type is None and default is not None:
             type = builtins.type(default)
         if help is None:
@@ -74,10 +104,11 @@ class Value(ub.NiceRepr):
             self.numeric = issubclass(self.type, numbers.Number)
             if self.numeric:
                 self.category = (
-                    (issubclass(self.type, numbers.Integral) and 'integral') or
-                    (issubclass(self.type, numbers.Rational) and 'rational') or
-                    (issubclass(self.type, float) and 'floating') or
-                    (issubclass(self.type, numbers.Rational) and 'rational') or
+                    (issubclass(self.type, numbers.Integral) and 'integral')
+                    or (issubclass(self.type, numbers.Rational) and 'rational')
+                    or (issubclass(self.type, float) and 'floating')
+                    or (issubclass(self.type, numbers.Rational) and 'rational')
+                    or
                     # (issubclass(self.type, numbers.Real) and 'real') or # is it though?
                     ('numeric')
                 )
@@ -86,7 +117,7 @@ class Value(ub.NiceRepr):
             else:
                 self.category = 'unknown'
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         parts = []
         parts.append('{name}={default}')
         # if self.numeric:
@@ -116,13 +147,13 @@ class Value(ub.NiceRepr):
         text = template.format(**kw)
         return text
 
-    def sample(self, rng):
+    def sample(self, rng: np.random.RandomState) -> int | float:
         """
         Get a random value for this parameter.
         """
         # TODO: special min and max values for classmethod random values
         _min = -1024 if self.min is None else self.min
-        _max =  1024 if self.max is None else self.max
+        _max = 1024 if self.max is None else self.max
         if self.category == 'integral':
             assert _min <= _max
             sample = rng.randint(_min, _max)
@@ -168,16 +199,18 @@ class Parameterized(ub.NiceRepr):
     """
     Keeps track of all registered params and classes with registered params
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         self._called_init = True
         self._params = ub.odict()
         self._children = ub.odict()
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: object) -> None:
         if not getattr(self, '_called_init', key == '_called_init'):
             raise Exception(
                 'Need to call super().__init__() before setting '
-                'attribute "{}" of Parameterized classes'.format(key))
+                'attribute "{}" of Parameterized classes'.format(key)
+            )
 
         if not key.startswith('_'):
             if key in self._children or _isinstance2(value, Parameterized):
@@ -192,17 +225,17 @@ class Parameterized(ub.NiceRepr):
         assert isinstance(key, str)
         self._children[key] = value
 
-    def children(self):
+    def children(self) -> Generator[tuple[str, object], None, None]:
         for key, value in self._children.items():
             yield key, value
 
-    def seed(self, rng=None):
+    def seed(self, rng: RNGInput = None) -> None:
         rng = ensure_rng(rng)
         for key, child in self.children():
             if _isinstance2(child, Parameterized):
                 child.seed(rng)
 
-    def parameters(self):
+    def parameters(self) -> Generator[tuple[str, object], None, None]:
         """
         Returns parameters in this object and its children
         """
@@ -211,12 +244,12 @@ class Parameterized(ub.NiceRepr):
         for prefix, child in self.children():
             for subkey, value in child.parameters():
                 key = prefix + '.' + subkey
-                yield key,  value
+                yield key, value
 
     def _body_str():
         pass
 
-    def idstr(self, nl=None, thresh=80):
+    def idstr(self, nl: int | None = None, thresh: int = 80) -> str:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:scipy)
@@ -259,25 +292,38 @@ class Parameterized(ub.NiceRepr):
             >>> print(ub.urepr(self.json_id()))
         """
         classname = self.__class__.__name__
-        self_part = ['{}={}'.format(key, ub.urepr(value, precision=2, si=True, nl=0))
-                     for key, value in self._params.items()]
-        child_part = ['{}={}'.format(key, child.idstr(nl, thresh=thresh - 2))
-                      for key, child in self.children()]
+        self_part = [
+            '{}={}'.format(key, ub.urepr(value, precision=2, si=True, nl=0))
+            for key, value in self._params.items()
+        ]
+        child_part = [
+            '{}={}'.format(key, child.idstr(nl, thresh=thresh - 2))
+            for key, child in self.children()
+        ]
 
-        body, nl = self._make_body(self_part, child_part, nl, thresh - len(classname) - 2)
+        body, nl = self._make_body(
+            self_part, child_part, nl, thresh - len(classname) - 2
+        )
         if nl:
             body = ub.indent(body, '  ')
         return '{}({})'.format(classname, body.rstrip(' '))
 
-    def json_id(self):
-        children = ub.odict([(key, child.json_id())
-                             for key, child in self.children()])
-        params = ub.odict([
-            (key, value.tolist() if isinstance(value, np.ndarray) else value)
-            for key, value in self._params.items()])
-        return ub.dict_union(ub.odict([('__class__', self.__class__.__name__)]),
-                             params,
-                             children)
+    def json_id(self) -> dict[str, object]:
+        children = ub.odict(
+            [(key, child.json_id()) for key, child in self.children()]
+        )
+        params = ub.odict(
+            [
+                (
+                    key,
+                    value.tolist() if isinstance(value, np.ndarray) else value,
+                )
+                for key, value in self._params.items()
+            ]
+        )
+        return ub.dict_union(
+            ub.odict([('__class__', self.__class__.__name__)]), params, children
+        )
 
     def _make_body(self, self_part, child_part, nl=None, thresh=80):
         parts = self_part + child_part
@@ -295,11 +341,12 @@ class Parameterized(ub.NiceRepr):
                 body = oneline_body
         return body, nl
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         try:
             params = ub.odict(self.parameters())
-            return ub.urepr(params, nl=0, precision=2, si=True, nobr=True,
-                            explicit=True)
+            return ub.urepr(
+                params, nl=0, precision=2, si=True, nobr=True, explicit=True
+            )
         except Exception:
             return '?'
 
@@ -323,7 +370,8 @@ class ParameterizedList(Parameterized):
         >>> print(self.idstr(0))
 
     """
-    def __init__(self, items):
+
+    def __init__(self, items: Sequence[object]) -> None:
         super(ParameterizedList, self).__init__()
         self._items = []
         for t in items:
@@ -332,25 +380,27 @@ class ParameterizedList(Parameterized):
     def _setparam(self, key, value):
         raise NotImplementedError('lists cannot have params')
 
-    def append(self, item):
+    def append(self, item: object) -> None:
         key = str(len(self._items))
         self._items.append(item)
         self._setchild(key, item)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[object]:
         return iter(self._items)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int | slice | str) -> object:
         if isinstance(key, (int, slice)):
             return self._items[key]
         else:
             return self._children[key]
 
-    def idstr(self, nl=None, thresh=80):
+    def idstr(self, nl: int | None = None, thresh: int = 80) -> str:
         assert len(self._items) == len(self._children)
         assert len(self._params) == 0
-        child_part = ['{}'.format(child.idstr(nl, thresh=thresh - 2))
-                      for key, child in self.children()]
+        child_part = [
+            '{}'.format(child.idstr(nl, thresh=thresh - 2))
+            for key, child in self.children()
+        ]
         body, nl = self._make_body([], child_part, nl, thresh - 2)
         if nl:
             body = ub.indent(body, '  ')
@@ -362,70 +412,71 @@ class _BinOpMixin(object):
     Allows binary operations to be performed on distributions to create
     composed distributions.
     """
-    def __add__(self, other):
+
+    def __add__(self, other: object) -> Composed:
         return Composed(np.add, [self, other])
 
-    def __pow__(self, other):
+    def __pow__(self, other: object) -> Composed:
         return Composed(np.power, [self, other])
 
-    def __mul__(self, other):
+    def __mul__(self, other: object) -> Composed:
         return Composed(np.multiply, [self, other])
 
-    def __sub__(self, other):
+    def __sub__(self, other: object) -> Composed:
         return Composed(np.subtract, [self, other])
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: object) -> Composed:
         return Composed(np.divide, [self, other])
 
-    def __matmul__(self, other):
+    def __matmul__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __floordiv__(self, other):
+    def __floordiv__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __mod__(self, other):
+    def __mod__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __divmod__(self, other):
+    def __divmod__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __lshift__(self, other):
+    def __lshift__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rshift__(self, other):
+    def __rshift__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __and__(self, other):
+    def __and__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __xor__(self, other):
+    def __xor__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __or__(self, other):
+    def __or__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __neg__(self):
+    def __neg__(self) -> Composed:
         return Composed(np.negative, [self])
 
-    def __pos__(self):
+    def __pos__(self) -> Composed:
         return Composed(np.positive, [self])
 
-    def __invert__(self):
+    def __invert__(self) -> NoReturn:
         raise NotImplementedError
 
-    def __abs__(self):
+    def __abs__(self) -> Composed:
         return Composed(np.abs, [self])
 
-    def __round__(self, ndigits=None):
+    def __round__(self, ndigits: int | None = None) -> Composed:
         return Composed(np.round, [self, ndigits])
 
-    def __trunc__(self):
+    def __trunc__(self) -> Composed:
         return Composed(np.trunc, [self])
 
-    def __floor__(self):
+    def __floor__(self) -> Composed:
         return Composed(np.floor, [self])
 
-    def __ceil__(self):
+    def __ceil__(self) -> Composed:
         return Composed(np.ceil, [self])
 
     # Numpy mixins
@@ -435,33 +486,38 @@ class _BinOpMixin(object):
     #     operation = getattr(np, attr)
     #     return Composed(operation, [self])
 
-    def int(self):
+    def int(self) -> Composed:
         def _cast_int(x):
             if isinstance(x, np.ndarray):
                 return x.astype(np.int)
             else:
                 return int(x)
+
         return Composed(_cast_int, [self])
 
-    def round(self, ndigits=None):
+    def round(self, ndigits: int | None = None) -> Composed:
         return Composed(np.round, [self, ndigits])
 
-    def clip(self, a_min=None, a_max=None):
+    def clip(
+        self,
+        a_min: object | None = None,
+        a_max: object | None = None,
+    ) -> Composed:
         return Composed(np.clip, [self, a_min, a_max])
 
-    def log(self):
+    def log(self) -> Composed:
         return Composed(np.log, [self])
 
-    def log10(self):
+    def log10(self) -> Composed:
         return Composed(np.log10, [self])
 
-    def exp(self):
+    def exp(self) -> Composed:
         return Composed(np.exp, [self])
 
-    def sqrt(self):
+    def sqrt(self) -> Composed:
         return Composed(np.sqrt, [self])
 
-    def abs(self):
+    def abs(self) -> Composed:
         return Composed(np.abs, [self])
 
 
@@ -469,46 +525,47 @@ class _RBinOpMixin(_BinOpMixin):
     """
     https://docs.python.org/3/reference/datamodel.html
     """
-    def __radd__(self, other):
+
+    def __radd__(self, other: object) -> Composed:
         return Composed(np.add, [other, self])
 
-    def __rpow__(self, other):
+    def __rpow__(self, other: object) -> Composed:
         return Composed(np.power, [other, self])
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: object) -> Composed:
         return Composed(np.multiply, [other, self])
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: object) -> Composed:
         return Composed(np.subtract, [other, self])
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: object) -> Composed:
         return Composed(np.divide, [other, self])
 
-    def __rmatmul__(self, other):
+    def __rmatmul__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rfloordiv__(self, other):
+    def __rfloordiv__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rmod__(self, other):
+    def __rmod__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rdivmod__(self, other):
+    def __rdivmod__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rlshift__(self, other):
+    def __rlshift__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rrshift__(self, other):
+    def __rrshift__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rand__(self, other):
+    def __rand__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __rxor__(self, other):
+    def __rxor__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
-    def __ror__(self, other):
+    def __ror__(self, other: object) -> NoReturn:
         raise NotImplementedError
 
 
@@ -539,9 +596,12 @@ class Distribution(Parameterized, _RBinOpMixin):
     References:
         .. [DiscVsCont] https://www.quora.com/Can-a-random-variable-be-both-discrete-and-continuous
     """
-    __params__ = NotImplemented  # overwrite!
 
-    def __init__(self, *args, **kwargs):
+    __params__: ClassVar[dict[str, Value] | object] = NotImplemented  # overwrite!
+
+    rng: np.random.RandomState
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
         super(Distribution, self).__init__()
         rng = kwargs.pop('rng', None)
         self.rng = ensure_rng(rng)
@@ -555,7 +615,9 @@ class Distribution(Parameterized, _RBinOpMixin):
                 if paramx < len(args):
                     val = args[paramx]
                     if key in kwargs:
-                        raise ValueError('arg passed as both positional and keyword')
+                        raise ValueError(
+                            'arg passed as both positional and keyword'
+                        )
                 else:
                     val = kwargs.get(key, info.default)
                 self._setparam(key, val)
@@ -568,18 +630,18 @@ class Distribution(Parameterized, _RBinOpMixin):
         else:
             raise TypeError(__params__)
 
-    def __call__(self, *shape):
+    def __call__(self, *shape: int) -> object:
         return self.sample(*shape)
 
-    def seed(self, rng=None):
+    def seed(self, rng: RNGInput = None) -> None:
         super(Distribution, self).seed(rng)
         self.rng = ensure_rng(rng)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> object:
         raise NotImplementedError('overwrite me')
 
     @classmethod
-    def random(cls, rng=None):
+    def random(cls, rng: RNGInput = None) -> Distribution:
         """
         Returns a random distribution
 
@@ -635,7 +697,7 @@ class Distribution(Parameterized, _RBinOpMixin):
         return self
 
     @classmethod
-    def coerce(cls, arg, rng=None):
+    def coerce(cls, arg: object, rng: RNGInput = None) -> Distribution:
         if isinstance(arg, cls):
             self = arg
         elif isinstance(arg, Distribution):
@@ -650,18 +712,28 @@ class Distribution(Parameterized, _RBinOpMixin):
         return self
 
     @classmethod
-    def cast(cls, arg):
+    def cast(cls, arg: object) -> Distribution:
         import warnings
-        warnings.warn('Distributions.cast is deprecated. Use coerce',
-                      DeprecationWarning)
+
+        warnings.warn(
+            'Distributions.cast is deprecated. Use coerce', DeprecationWarning
+        )
         return cls.coerce(arg)
 
     @classmethod
-    def seeded(cls, rng=0):
+    def seeded(cls, rng: int = 0) -> Seeded:
         return Seeded(rng, cls)
 
-    def plot(self, n='0.01s', bins='auto', stat='count', color=None, kde=True,
-             ax=None, **kwargs):
+    def plot(
+        self,
+        n: str | int = '0.01s',
+        bins: int | list[Number] | str = 'auto',
+        stat: str = 'count',
+        color: object | None = None,
+        kde: bool = True,
+        ax: object | None = None,
+        **kwargs: object,
+    ) -> object:
         """
         Plots ``n`` samples from the distribution.
 
@@ -686,20 +758,26 @@ class Distribution(Parameterized, _RBinOpMixin):
             >>> kwplot.show_if_requested()
         """
         import seaborn as sns
+
         if isinstance(n, str):
-            data = _generate_on_a_time_budget(func=lambda: self.sample(100), maxiters=1000, budget=n)
+            data = _generate_on_a_time_budget(
+                func=lambda: self.sample(100), maxiters=1000, budget=n
+            )
             print(len(data))
         else:
             data = self.sample(n)
-        return sns.histplot(data, ax=ax, bins=bins, color=color, stat=stat,
-                            kde=kde, **kwargs)
+        return sns.histplot(
+            data, ax=ax, bins=bins, color=color, stat=stat, kde=kde, **kwargs
+        )
 
     def _show(self, n, bins=None, ax=None, color=None, label=None):
-        """ plot samples monte-carlo style """
+        """plot samples monte-carlo style"""
         import warnings
+
         warnings.warn('plot is deprecated, use plot instead')
         if ax is None:
             from matplotlib import pyplot as plt
+
             ax = plt.gca()
         data = self.sample(n)
         ax.hist(data, bins=bins, color=color, label=label)
@@ -707,6 +785,7 @@ class Distribution(Parameterized, _RBinOpMixin):
 
 def _coerce_timedelta(data):
     import datetime
+
     if isinstance(data, datetime.timedelta):
         delta = data
         num_seconds = delta.total_seconds()
@@ -720,6 +799,7 @@ def _coerce_timedelta(data):
                 num_seconds = None
         if num_seconds is None:
             import pytimeparse
+
             num_seconds = pytimeparse.parse(data)
             if num_seconds is None:
                 raise ValueError('{} is not a parsable delta'.format(data))
@@ -829,7 +909,15 @@ class Mixture(MixedDistribution):
         >>> mixture.plot(n, ax=ax, **plotkw)
         >>> kwplot.show_if_requested()
     """
-    def __init__(self, pdfs, weights=None, rng=None):
+
+    pdfs: Sequence[Distribution]
+
+    def __init__(
+        self,
+        pdfs: Sequence[Distribution],
+        weights: Sequence[float] | None = None,
+        rng: RNGInput = None,
+    ) -> None:
         super(Mixture, self).__init__(rng=rng)
         self.pdfs = pdfs
         self._setparam('pdfs', pdfs)
@@ -837,7 +925,7 @@ class Mixture(MixedDistribution):
         idxs = np.arange(len(pdfs))
         self._idx_choice = Categorical(idxs, weights, rng=rng)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray:
         """
         Sampling from a mixture of k distributions with weights w_k is
         equivalent to picking a distribution with probability w_k, and then
@@ -850,13 +938,13 @@ class Mixture(MixedDistribution):
         out = np.zeros(shape)
         for idx, n in idx_to_nsamples.items():
             # Sample the from the distribution we picked
-            mask = (idx == idxs)
+            mask = idx == idxs
             subsample = self.pdfs[idx].sample(n)
             out[mask] = subsample
         return out
 
     @classmethod
-    def random(cls, rng=None, n=3):
+    def random(cls, rng: RNGInput = None, n: int = 3) -> Mixture:
         """
         Args:
             rng (int | float | None | numpy.random.RandomState | random.Random):
@@ -945,19 +1033,22 @@ class Composed(MixedDistribution):
         >>> kwplot.show_if_requested()
 
     """
-    __params__ = ub.odict([
-        ('operation', Value()),
-        ('operands', Value()),
-    ])
 
-    def sample(self, *shape):
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('operation', Value()),
+            ('operands', Value()),
+        ]
+    )
+
+    def sample(self, *shape: int) -> object:
         # resolved_args = [arg.sample(*shape) for arg in self.operands]
         resolved_args = [_trysample(arg, shape) for arg in self.operands]
         return self.operation(*resolved_args)
 
 
 def _trysample(arg, shape):
-    """ samples if arg is a distribution, otherwise returns arg """
+    """samples if arg is a distribution, otherwise returns arg"""
     try:
         return arg.sample(*shape)
     except Exception:
@@ -981,7 +1072,7 @@ class Uniform(ContinuousDistribution):
         >>> self = Uniform(rng=0)
         >>> self.sample()
         0.548813...
-        >>> float(self.sample(1))
+        >>> float(self.sample(1).ravel()[0])
         0.7151...
 
     Benchmark:
@@ -994,12 +1085,15 @@ class Uniform(ContinuousDistribution):
         >>>     with timer:
         >>>         self(100)
     """
-    __params__ = ub.odict([
-        ('high', Value(default=1)),
-        ('low', Value(default=0)),
-    ])
 
-    def sample(self, *shape):
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('high', Value(default=1)),
+            ('low', Value(default=0)),
+        ]
+    )
+
+    def sample(self, *shape: int) -> np.ndarray | float:
         return self.rng.rand(*shape) * (self.high - self.low) + self.low
 
     def __scipy__(self):
@@ -1012,12 +1106,13 @@ class Uniform(ContinuousDistribution):
             array([0.1, 0.1, 0.1, 0. ])
         """
         from scipy.stats import uniform
+
         rv = uniform(self.low, self.high)
         rv.random_state = self.rng
         return rv
 
     @classmethod
-    def coerce(cls, arg):
+    def coerce(cls, arg: object) -> Uniform:
         try:
             self = super(Uniform, cls).coerce(arg)
         except CoerceError:
@@ -1052,10 +1147,14 @@ class Exponential(ContinuousDistribution):
     Args:
         scale (int) : no help given. Defaults to 1.
     """
-    __params__ = ub.odict([
-        ('scale', Value(1, min=0)),
-    ])
-    def sample(self, *shape):
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('scale', Value(1, min=0)),
+        ]
+    )
+
+    def sample(self, *shape: int) -> np.ndarray | float:
         return self.rng.exponential(self.scale, size=shape)
 
     def __scipy__(self):
@@ -1068,6 +1167,7 @@ class Exponential(ContinuousDistribution):
             array([0.  , 1.  , 0.82])
         """
         from scipy.stats import expon
+
         rv = expon(self.scale)
         rv.random_state = self.rng
         return rv
@@ -1082,10 +1182,14 @@ class Constant(DiscreteDistribution):
         >>> self.sample(3)
         array([42, 42, 42])
     """
-    __params__ = ub.odict([
-        ('value', Value(1, help='constant value')),
-    ])
-    def sample(self, *shape):
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('value', Value(1, help='constant value')),
+        ]
+    )
+
+    def sample(self, *shape: int) -> np.ndarray | object:
         if shape:
             return np.full(shape, fill_value=self.value)
         else:
@@ -1104,19 +1208,22 @@ class DiscreteUniform(DiscreteDistribution):
         >>> self = DiscreteUniform.coerce(4)
         >>> self.sample(100)
     """
-    __params__ = ub.odict([
-        ('min', Value(0)),
-        ('max', Value(1)),
-    ])
 
-    def sample(self, *shape):
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('min', Value(0)),
+            ('max', Value(1)),
+        ]
+    )
+
+    def sample(self, *shape: int) -> np.ndarray | int:
         if len(shape) == 0:
             shape = None
         idx = self.rng.randint(self.min, self.max, size=shape)
         return idx
 
     @classmethod
-    def coerce(cls, arg, rng=None):
+    def coerce(cls, arg: object, rng: RNGInput = None) -> DiscreteUniform:
         try:
             self = super(DiscreteUniform, cls).coerce(arg, rng=rng)
         except CoerceError:
@@ -1147,22 +1254,26 @@ class Normal(ContinuousDistribution):
         >>> self.plot(500, bins=25)
         >>> kwplot.show_if_requested()
     """
-    __params__ = ub.odict([
-        ('mean', Value(0.0)),
-        ('std', Value(1.0, min=1e-3)),
-    ])
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('mean', Value(0.0)),
+            ('std', Value(1.0, min=1e-3)),
+        ]
+    )
 
     def __scipy__(self):
         from scipy.stats import norm
+
         rv = norm(self.mean, self.std)
         rv.random_state = self.rng
         return rv
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | float:
         return self.rng.randn(*shape) * self.std + self.mean
 
     @classmethod
-    def random(cls, rng=None):
+    def random(cls, rng: RNGInput = None) -> Normal:
         rng = ensure_rng(rng)
         mean = (rng.rand() * 1024) - 512
         std = np.abs((rng.randn() * 32)) + 1
@@ -1210,14 +1321,17 @@ class TruncNormal(ContinuousDistribution):
                   [ 0.01692, -0.0288 ,  0.05517],
                   [-0.02354,  0.15134,  0.18098]], dtype=np.float64)
     """
-    __params__ = ub.odict([
-        ('mean', Value(0.0)),
-        ('std', Value(1.0)),
-        ('low', Value(-inf)),
-        ('high', Value(inf)),
-    ])
 
-    def __init__(self, *args, **kwargs):
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('mean', Value(0.0)),
+            ('std', Value(1.0)),
+            ('low', Value(-inf)),
+            ('high', Value(inf)),
+        ]
+    )
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
         super(TruncNormal, self).__init__(*args, **kwargs)
         self._update_internals()
 
@@ -1226,6 +1340,7 @@ class TruncNormal(ContinuousDistribution):
 
     def _update_internals(self):
         from scipy.stats import truncnorm
+
         # Convert high and low values to be wrt the standard normal range
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
         self.a = (self.low - self.mean) / self.std
@@ -1234,7 +1349,7 @@ class TruncNormal(ContinuousDistribution):
         self.rv.random_state = self.rng
 
     @classmethod
-    def random(cls, rng=None):
+    def random(cls, rng: RNGInput = None) -> TruncNormal:
         rng = ensure_rng(rng)
         mean = (rng.rand() * 1024) - 512
         std = np.abs((rng.randn() * 32)) + 1
@@ -1242,7 +1357,7 @@ class TruncNormal(ContinuousDistribution):
         high = mean + (std * rng.rand() * 6)
         return cls(mean=mean, std=std, low=low, high=high)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | float:
         arr = self.rv.rvs(size=shape, random_state=self.rng)
         return arr
 
@@ -1253,14 +1368,22 @@ class Bernoulli(DiscreteDistribution):
     random variable which takes the value 1 with probability `p` and the value
     0 with probability `q = 1 - p`.
 
-    References:
-        https://en.wikipedia.org/wiki/Bernoulli_distribution
-    """
-    __params__ = ub.odict([
-        ('p', Value(0.5, help='probability of success', min=0, max=1)),
-    ])
+    Note:
+        The Concrete distribution is a continuous relaxation of the Bernoulli
+        distribtuion [AxrivConcrete]_.
 
-    def sample(self, *shape):
+    References:
+        .. [WikiBernoulli] https://en.wikipedia.org/wiki/Bernoulli_distribution
+        .. [AxrivConcrete] https://arxiv.org/pdf/1611.00712
+    """
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('p', Value(0.5, help='probability of success', min=0, max=1)),
+        ]
+    )
+
+    def sample(self, *shape: int) -> np.ndarray | bool:
         return self.rng.rand(*shape) < self.p
 
     def __scipy__(self):
@@ -1273,12 +1396,13 @@ class Bernoulli(DiscreteDistribution):
             array([0.9, 0.1])
         """
         from scipy.stats import bernoulli
+
         rv = bernoulli(self.p)
         rv.random_state = self.rng
         return rv
 
     @classmethod
-    def coerce(cls, arg):
+    def coerce(cls, arg: object) -> Bernoulli:
         try:
             self = super(Bernoulli, cls).coerce(arg)
         except CoerceError:
@@ -1314,20 +1438,32 @@ class Binomial(DiscreteDistribution):
         >>> self.__scipy__().pmf([0, 1, 2])
         array([0.729, 0.243, 0.027])
     """
-    __params__ = ub.odict([
-        ('p', Value(0.5, min=0, max=1, help='probability of success in each experiment')),
-        ('n', Value(1, min=0, help='number of binary experiments')),
-    ])
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            (
+                'p',
+                Value(
+                    0.5,
+                    min=0,
+                    max=1,
+                    help='probability of success in each experiment',
+                ),
+            ),
+            ('n', Value(1, min=0, help='number of binary experiments')),
+        ]
+    )
 
     def __scipy__(self):
         from scipy.stats import binom
+
         rv = binom(self.n, self.p)
         # References:
         # https://stackoverflow.com/questions/16016959/scipy-stats-seed
         rv.random_state = self.rng
         return rv
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | int:
         rv = self.__scipy__()
         return rv.rvs(size=shape, random_state=self.rng)
 
@@ -1361,17 +1497,26 @@ class Categorical(DiscreteDistribution):
         array([[5, 5, 1],
                [5, 1, 1]])
     """
-    __params__ = ub.odict([
-        ('categories', Value()),
-        ('weights', Value(None)),
-    ])
-    def __init__(self, categories, weights=None, rng=None):
+
+    __params__: ClassVar[dict[str, Value]] = ub.odict(
+        [
+            ('categories', Value()),
+            ('weights', Value(None)),
+        ]
+    )
+
+    def __init__(
+        self,
+        categories: Sequence[object],
+        weights: Sequence[float] | None = None,
+        rng: RNGInput = None,
+    ) -> None:
         super(Categorical, self).__init__(rng=rng)
         self._setparam('categories', np.array(categories))
         self._setparam('weights', weights)
         self._idxs = np.arange(len(self.categories))
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | object:
         if len(shape) == 0:
             shape = None
         idxs = self.rng.choice(self._idxs, size=shape, p=self.weights)
@@ -1410,7 +1555,15 @@ class NonlinearUniform(ContinuousDistribution):
         NonlinearUniform(0, 100, 4.0, rng=0).plot(10000, bins=bins)
         NonlinearUniform(0, 100, 2.0, rng=0).plot(10000, bins=bins)
     """
-    def __init__(self, min, max, nonlinearity=None, reverse=False, rng=None):
+
+    def __init__(
+        self,
+        min: float,
+        max: float,
+        nonlinearity: object | None = None,
+        reverse: bool = False,
+        rng: RNGInput = None,
+    ) -> None:
         super(NonlinearUniform, self).__init__(rng=rng)
         self._setparam('min', min)
         self._setparam('max', max)
@@ -1433,7 +1586,7 @@ class NonlinearUniform(ContinuousDistribution):
         self._setparam('nonlinearity', nonlinearity)
         self._setparam('reverse', reverse)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | float:
         if len(shape) == 0:
             base = self.rng.rand()
         else:
@@ -1449,12 +1602,17 @@ class CategoryUniform(DiscreteUniform):
     """
     Discrete Uniform over a list of categories
     """
-    def __init__(self, categories=[None], rng=None):
+
+    def __init__(
+        self,
+        categories: Sequence[object] = [None],
+        rng: RNGInput = None,
+    ) -> None:
         super(CategoryUniform, self).__init__(rng=rng)
         self._setparam('categories', np.array(categories))
         self._num = len(self.categories)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | object:
         if len(shape) == 0:
             shape = None
         idx = self.rng.randint(0, self._num, size=shape)
@@ -1491,15 +1649,28 @@ class PDF(Distribution):
         >>> self.plot(5000, bins=50)
         >>> kwplot.show_if_requested()
     """
-    def __init__(self, x, p, rng=None):
+
+    edge_x: np.ndarray
+    edge_cdf: np.ndarray
+    inv_cdf: object
+
+    def __init__(
+        self,
+        x: Sequence[float] | tuple[float, float],
+        p: np.ndarray,
+        rng: RNGInput = None,
+    ) -> None:
         import scipy.interpolate as interpolate
+
         super(PDF, self).__init__(rng=rng)
 
         if isinstance(x, tuple):
             self.edge_x = np.linspace(x[0], x[1], len(p) + 1)
         else:
             # Need to convert point samples to edges
-            self.edge_x = interpolate.interp1d(np.linspace(0, 1, len(x)), x)(np.linspace(0, 1, len(x) + 1))
+            self.edge_x = interpolate.interp1d(np.linspace(0, 1, len(x)), x)(
+                np.linspace(0, 1, len(x) + 1)
+            )
             # FIXME: might have a bug causing probability to be shifted slightly
 
         # Normalize probabilities
@@ -1512,7 +1683,7 @@ class PDF(Distribution):
         # In fact its the inverse of the inverse.
         self.inv_cdf = interpolate.interp1d(self.edge_cdf, self.edge_x)
 
-    def sample(self, *shape):
+    def sample(self, *shape: int) -> np.ndarray | float:
         # Right idea, but wrong implementation
         r = np.random.rand(*shape)
         return self.inv_cdf(r)
@@ -1522,19 +1693,28 @@ class Seeded(object):
     """
     Helper for grabbing pre-seeded distributions
     """
-    def __init__(self, rng=None, cls=None):
+
+    rng: RNGInput
+    cls: type[Distribution] | None
+
+    def __init__(
+        self,
+        rng: RNGInput = None,
+        cls: type[Distribution] | None = None,
+    ) -> None:
         self.rng = rng
         self.cls = cls
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: object, **kwargs: object) -> Distribution:
         return self.cls(*args, rng=self.rng, **kwargs)
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> object:
         return functools.partial(globals()[key], rng=self.rng)
 
 
 def _test_distributions():
     from kwarray import distributions as stoch
+
     cls_list = []
     for cls in vars(stoch).values():
         if isinstance(cls, type):
@@ -1580,6 +1760,7 @@ def _process_docstrings():
         >>>     print('======')
     """
     from kwarray import distributions
+
     candidates = []
     for val in distributions.__dict__.values():
         if hasattr(val, '__params__') and val.__params__ is not NotImplemented:
@@ -1595,7 +1776,9 @@ def _process_docstrings():
                 if info.help:
                     desc_parts.append(info.help)
                 desc_parts.append('Defaults to {}'.format(info.default))
-                desc_parts = [p if p.endswith('.') else p + '.' for p in desc_parts]
+                desc_parts = [
+                    p if p.endswith('.') else p + '.' for p in desc_parts
+                ]
                 desc = ' '.join(desc_parts)
                 if info.type is None:
                     type = 'Any'
@@ -1610,7 +1793,10 @@ def _process_docstrings():
                 }
                 arglines.append('{name} ({type}) : {desc}'.format(**arginfo))
 
-            newpart = ' ' * 4 + 'Args:\n' + ub.indent('\n'.join(arglines), ' ' * 8)
+            newpart = (
+                ' ' * 4 + 'Args:\n' + ub.indent('\n'.join(arglines), ' ' * 8)
+            )
             val.__doc__ = val.__doc__ + '\n' + newpart + '\n'
+
 
 _process_docstrings()

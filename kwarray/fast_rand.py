@@ -1,11 +1,48 @@
+from __future__ import annotations
+
 """
 Fast 32-bit random functions for numpy as of 2018. (More recent versions of
 numpy may have these natively supported).
 """
+
 import numpy as np
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    RNGBackend = np.random.RandomState | ModuleType
 
 
-def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
+@overload
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: None = None,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> float | np.float32:
+    ...
+
+
+@overload
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] = ...,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
+    ...
+
+
+def uniform(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] | None = None,
+    dtype: type = np.float32,
+    rng: RNGBackend = np.random,
+) -> np.ndarray | float | np.float32:
     """
     Draws float32 samples from a uniform distribution.
 
@@ -61,7 +98,13 @@ def uniform(low=0.0, high=1.0, size=None, dtype=np.float32, rng=np.random):
         raise ValueError('dtype = {!r}'.format(dtype))
 
 
-def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
+def standard_normal(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    dtype: type = float,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Draw samples from a standard Normal distribution with a specified mean and
     standard deviation.
@@ -101,7 +144,12 @@ def standard_normal(size, mean=0, std=1, dtype=float, rng=np.random):
         raise ValueError('dtype = {!r}'.format(dtype))
 
 
-def standard_normal32(size, mean=0, std=1, rng=np.random):
+def standard_normal32(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Fast normally distributed random variables.
 
@@ -174,7 +222,9 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     try:
         MAX_INT = np.iinfo(int_dtype).max
     except AttributeError:
-        MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+        from numpy.core import getlimits as _getlimits
+
+        MAX_INT = _getlimits.iinfo(int_dtype).max
 
     # Preallocate output
     out = np.empty(size, dtype=dtype)
@@ -198,7 +248,7 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     #   flat_out[0:n] = R * np.cos(Theta) + mean
     #   flat_out[-n:] = R * np.sin(Theta) + mean
     np.log(u1, out=u1)
-    np.multiply(-2 * (std ** 2), u1, out=u1)
+    np.multiply(-2 * (std**2), u1, out=u1)
     R = np.sqrt(u1, out=u1)
 
     Theta = np.multiply(2 * np.pi, u2, out=u2)
@@ -216,7 +266,12 @@ def standard_normal32(size, mean=0, std=1, rng=np.random):
     return out
 
 
-def standard_normal64(size, mean=0, std=1, rng=np.random):
+def standard_normal64(
+    size: int | tuple[int, ...],
+    mean: float = 0,
+    std: float = 1,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
     """
     Simple wrapper around rng.standard_normal to make an API compatible with
     :func:`standard_normal32`.
@@ -250,7 +305,32 @@ def standard_normal64(size, mean=0, std=1, rng=np.random):
     return out
 
 
-def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
+@overload
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: None = None,
+    rng: RNGBackend = np.random,
+) -> np.float32:
+    ...
+
+
+@overload
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] = ...,
+    rng: RNGBackend = np.random,
+) -> np.ndarray:
+    ...
+
+
+def uniform32(
+    low: float = 0.0,
+    high: float = 1.0,
+    size: int | tuple[int, ...] | None = None,
+    rng: RNGBackend = np.random,
+) -> np.ndarray | np.float32:
     """
     Draws float32 samples from a uniform distribution.
 
@@ -317,9 +397,13 @@ def uniform32(low=0.0, high=1.0, size=None, rng=np.random):
             try:
                 MAX_INT = np.iinfo(int_dtype).max
             except AttributeError:
-                MAX_INT = np.core.getlimits.iinfo(int_dtype).max
+                from numpy.core import getlimits as _getlimits
+
+                MAX_INT = _getlimits.iinfo(int_dtype).max
             # Generate uniform-01 random numbers that we will transform
-            out = rng.randint(0, MAX_INT - 1, size=size, dtype=int_dtype).astype(dtype)
+            out = rng.randint(
+                0, MAX_INT - 1, size=size, dtype=int_dtype
+            ).astype(dtype)
             if low == 0 and high == 1.0:
                 np.divide(out, dtype(MAX_INT), out=out)
             else:

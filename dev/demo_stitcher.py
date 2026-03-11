@@ -13,6 +13,7 @@ Ignore:
     print(lib.current_sourcecode())
 
 """
+
 import numpy as np
 import cv2
 import numbers
@@ -20,7 +21,11 @@ from functools import lru_cache
 import kwimage
 
 
-_CV2_STRUCT_ELEMENTS = {'rect': cv2.MORPH_RECT, 'cross': cv2.MORPH_CROSS, 'ellipse': cv2.MORPH_ELLIPSE}
+_CV2_STRUCT_ELEMENTS = {
+    'rect': cv2.MORPH_RECT,
+    'cross': cv2.MORPH_CROSS,
+    'ellipse': cv2.MORPH_ELLIPSE,
+}
 
 
 @lru_cache
@@ -41,11 +46,15 @@ def _morph_kernel(size, element='rect'):
 
 
 _CV2_MORPH_MODES = {
-    'erode': cv2.MORPH_ERODE, 'dilate': cv2.MORPH_DILATE,
-    'open': cv2.MORPH_OPEN, 'close': cv2.MORPH_CLOSE,
-    'gradient': cv2.MORPH_GRADIENT, 'tophat': cv2.MORPH_TOPHAT,
+    'erode': cv2.MORPH_ERODE,
+    'dilate': cv2.MORPH_DILATE,
+    'open': cv2.MORPH_OPEN,
+    'close': cv2.MORPH_CLOSE,
+    'gradient': cv2.MORPH_GRADIENT,
+    'tophat': cv2.MORPH_TOPHAT,
     'blackhat': cv2.MORPH_BLACKHAT,
-    'hitmiss': cv2.MORPH_HITMISS}
+    'hitmiss': cv2.MORPH_HITMISS,
+}
 
 
 def morphology(data, mode, kernel=5, element='rect', iterations=1):
@@ -60,7 +69,8 @@ def morphology(data, mode, kernel=5, element='rect', iterations=1):
         raise TypeError(type(mode))
 
     new = cv2.morphologyEx(
-        data, op=morph_mode, kernel=kernel, iterations=iterations)
+        data, op=morph_mode, kernel=kernel, iterations=iterations
+    )
     return new
 
 
@@ -137,7 +147,8 @@ def upweight_center_mask(shape):
     kernel = np.maximum(np.array(shape) // 8, 3)
     kernel = kernel + (1 - (kernel % 2))
     weights = morphology(
-        weights, kernel=kernel, mode='dilate', element='rect', iterations=1)
+        weights, kernel=kernel, mode='dilate', element='rect', iterations=1
+    )
     weights = kwimage.ensure_float01(weights)
     weights = np.maximum(weights, 0.001)
     return weights
@@ -170,8 +181,13 @@ def _demo_weighted_stitcher():
     center_weights = upweight_center_mask(window_dims)
 
     for overlap in [0, 0.1, 0.2, 0.25, 0.3, 0.5]:
-        slider = kwarray.SlidingWindow(stitch_dims, window_dims, overlap=overlap,
-                                       keepbound=True, allow_overshoot=True)
+        slider = kwarray.SlidingWindow(
+            stitch_dims,
+            window_dims,
+            overlap=overlap,
+            keepbound=True,
+            allow_overshoot=True,
+        )
 
         unweighted_sticher = kwarray.Stitcher(stitch_dims, device='numpy')
         weighted_sticher = kwarray.Stitcher(stitch_dims, device='numpy')
@@ -179,7 +195,6 @@ def _demo_weighted_stitcher():
         # Seed a local random number generator
         rng = kwarray.ensure_rng(8022)
         for space_slice in slider:
-
             # Make a (dummy) prediction at this slice
             # Our predition will be a perterbed version of the truth
             real_data = truth[space_slice]
@@ -187,7 +202,7 @@ def _demo_weighted_stitcher():
 
             # Perterb spatial location
             pred_data = kwimage.warp_affine(real_data, aff)
-            pred_data += (rng.randn(*window_dims) * 0.5)
+            pred_data += rng.randn(*window_dims) * 0.5
             pred_data = pred_data.clip(0, 1)
 
             # Add annoying boundary artifacts
@@ -207,7 +222,9 @@ def _demo_weighted_stitcher():
         overlap_to_unweighted[overlap] = unweighted_stiched_pred
 
     kwplot.autompl()
-    pnum_ = kwplot.PlotNums(nCols=2, nSubplots=len(overlap_to_unweighted) * 2 + 2)
+    pnum_ = kwplot.PlotNums(
+        nCols=2, nSubplots=len(overlap_to_unweighted) * 2 + 2
+    )
 
     kwplot.imshow(truth, fnum=1, pnum=pnum_(), title='(Dummy) Truth')
     kwplot.imshow(center_weights, fnum=1, pnum=pnum_(), title='Window Weights')
@@ -216,5 +233,15 @@ def _demo_weighted_stitcher():
         weighted_stiched_pred = overlap_to_weighted[overlap]
         unweighted_stiched_pred = overlap_to_unweighted[overlap]
 
-        kwplot.imshow(unweighted_stiched_pred, fnum=1, pnum=pnum_(), title=f'Unweighted stitched preds: overlap={overlap}')
-        kwplot.imshow(weighted_stiched_pred, fnum=1, pnum=pnum_(), title=f'Weighted stitched preds: overlap={overlap}')
+        kwplot.imshow(
+            unweighted_stiched_pred,
+            fnum=1,
+            pnum=pnum_(),
+            title=f'Unweighted stitched preds: overlap={overlap}',
+        )
+        kwplot.imshow(
+            weighted_stiched_pred,
+            fnum=1,
+            pnum=pnum_(),
+            title=f'Weighted stitched preds: overlap={overlap}',
+        )

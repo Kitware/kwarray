@@ -12,6 +12,7 @@ References:
 def hodgest_lehmann_estimator():
     from kwarray.distributions import Mixture
     import numpy as np
+
     data = Mixture.random(6).sample(3000)
 
     pairwise_mean = (data[:, None] + data[None, :]) / 2.0
@@ -25,37 +26,42 @@ def other():
     arithmetic_mean = np.mean(data)
 
     import sklearn
+
     sklearn.linear_model.RANSACRegressor
 
     import numpy as np
     from sklearn.covariance import EmpiricalCovariance
-    cov = EmpiricalCovariance().fit(data[:, None])
 
+    cov = EmpiricalCovariance().fit(data[:, None])
 
     import numpy as np
     from sklearn.covariance import GraphicalLassoCV
+
     lass = GraphicalLassoCV().fit(data[:, None])
 
     import numpy as np
     import statsmodels.formula.api as smf
     import statsmodels as sm
 
-    modelspec = ('cost ~ np.log(units) + np.log(units):item + item') #where item is a categorical variable
-    results = smf.rlm(modelspec, data = dataset, M = sm.robust.norms.TukeyBiweight()).fit()
+    modelspec = 'cost ~ np.log(units) + np.log(units):item + item'  # where item is a categorical variable
+    results = smf.rlm(
+        modelspec, data=dataset, M=sm.robust.norms.TukeyBiweight()
+    ).fit()
 
 
 def m_estimator():
     from kwarray.distributions import Mixture
     import numpy as np
     import scipy
+
     data = Mixture.random(6).sample(3000)
 
     def tukey_bisquare(x):
         c = 4.685
         absx = np.abs(x)
-        x2 = (x * x)
-        x4 = (x2 * x2)
-        x6 = (x4 * x2)
+        x2 = x * x
+        x4 = x2 * x2
+        x6 = x4 * x2
         c2 = c * c
         c4 = c2 * c2
         r0 = x2 / 2 - (x4 / (2 * c2)) + x6 / (6 * c4)
@@ -65,19 +71,20 @@ def m_estimator():
 
     from scipy.stats import rv_continuous, norm
     from scipy import stats
+
     stats.exponnorm.fit(data)
     stats.truncnorm.fit(data)
     stats.genlogistic.fit(data)
     norm.fit(data)
 
-    #https://github.com/deepak7376/robustbase
+    # https://github.com/deepak7376/robustbase
     import robustbase
 
     def robust_center(data, robust_function='tukey'):
         # Maximum likelihood estimator
         if robust_function == 'tukey':
             rho = tukey_bisquare
-            phi = None # TODO
+            phi = None  # TODO
         elif robust_function == 'mean':
             rho = lambda x: (x * x) / 2  # NOQA
             phi = lambda x: x
@@ -86,14 +93,15 @@ def m_estimator():
             phi = lambda x: np.sign(x)
         else:
             raise KeyError
+
         def mle_objective(center):
             return np.sum(np.log(rho(data - center)))
+
         x0 = np.median(data)
         # result = scipy.optimize.newton(mle_objective, x0, fprime=phi)
         result = scipy.optimize.minimize(mle_objective, x0, jac=phi)
         # method='BFGS')
         return result.x
-
 
     def irls():
         sig = data.std()
@@ -136,7 +144,6 @@ def m_estimator():
     # but we can adjust them to be by computing scale first.
 
     # Location estimator
-
 
     pass
 
@@ -192,7 +199,7 @@ def tukey_biweight_loss(r, c=4.685):
     """
     # https://statisticaloddsandends.wordpress.com/2021/04/23/what-is-the-tukey-loss-function/
     is_inside = np.abs(r) < c
-    c26 = (c ** 2) / 6
+    c26 = (c**2) / 6
     loss = np.full_like(r, fill_value=c26, dtype=np.float32)
     r_inside = r[is_inside]
     loss_inside = c26 * (1 - (1 - (r_inside / c) ** 2) ** 3)

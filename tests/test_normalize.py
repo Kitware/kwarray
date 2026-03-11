@@ -17,8 +17,17 @@ def test_normalize_grid():
 
     basis = {
         'shape': [
-            [], [0], [0, 1], [1, 0], [3, 8, 0, 2],
-            [1], [8, 1], [1, 3], [3, 5], [2, 3, 5]],
+            [],
+            [0],
+            [0, 1],
+            [1, 0],
+            [3, 8, 0, 2],
+            [1],
+            [8, 1],
+            [1, 3],
+            [3, 5],
+            [2, 3, 5],
+        ],
         **NORMALIZE_PARAM_BASIS,
     }
     results = []
@@ -34,8 +43,4 @@ def test_normalize_grid():
         assert result is not arr
         assert result.shape == arr.shape
         assert result.dtype == arr.dtype
-        results.append({
-            'arr': arr,
-            'out': out,
-            **params
-        })
+        results.append({'arr': arr, 'out': out, **params})

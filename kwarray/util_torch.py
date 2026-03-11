@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 """
 Torch specific extensions
 """
+
 import numpy as np
 import sys
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from torch import Tensor
 
 
-def _is_in_onnx_export():
+def _is_in_onnx_export() -> bool:
     torch = sys.modules.get('torch', None)
     if torch is None:
         return False
@@ -16,7 +23,11 @@ def _is_in_onnx_export():
         return False
 
 
-def one_hot_embedding(labels, num_classes, dim=1):
+def one_hot_embedding(
+    labels: Tensor | np.ndarray,
+    num_classes: int,
+    dim: int = 1,
+) -> Tensor | np.ndarray:
     """
     Embedding labels to one-hot form.
 
@@ -79,36 +90,40 @@ def one_hot_embedding(labels, num_classes, dim=1):
     """
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(labels):
+        torch_labels = cast('Tensor', labels)
         # TODO: dtype
-        in_dims = labels.ndimension()
+        in_dims = torch_labels.ndimension()
         if dim < 0:
             dim = in_dims - dim + 1
         if dim == 1 and in_dims == 1:
             # normal case where everything is already flat
-            y = torch.eye(int(num_classes), device=labels.device)
-            y_onehot = y[labels]
+            y = torch.eye(int(num_classes), device=torch_labels.device)
+            y_onehot = y[torch_labels]
         else:
             # non-flat case (note that this would handle the normal case, but
             # why do extra work?)
-            y = torch.eye(int(num_classes), device=labels.device)
-            flat_y_onehot = y[labels.view(-1)]
-            y_onehot = flat_y_onehot.view(*list(labels.shape) + [num_classes])
+            y = torch.eye(int(num_classes), device=torch_labels.device)
+            flat_y_onehot = y[torch_labels.view(-1)]
+            y_onehot = flat_y_onehot.view(
+                *list(torch_labels.shape) + [num_classes]
+            )
             if dim != in_dims:
                 dim_order = list(range(in_dims))
                 dim_order.insert(dim, in_dims)
                 y_onehot = y_onehot.permute(*dim_order)
     else:
+        np_labels = cast(np.ndarray, labels)
         if dim < 0:
-            dim = labels.ndim - dim + 1
-        flag = (dim != 1 or labels.ndim == 2)
+            dim = np_labels.ndim - dim + 1
+        flag = dim != 1 or np_labels.ndim == 2
         if flag:
-            orig_shape = labels.shape
-            labels = labels.reshape(-1)
+            orig_shape = np_labels.shape
+            np_labels = np_labels.reshape(-1)
             # raise NotImplementedError('not implemented for this case')
         y = np.eye(int(num_classes))
-        y_onehot = y[labels]
+        y_onehot = y[np_labels]
         if flag:
-            new_shape =  list(orig_shape) + [num_classes]
+            new_shape = list(orig_shape) + [num_classes]
             y_onehot = y_onehot.reshape(*new_shape)
             old_axes = list(range(len(orig_shape)))
             new_axes = old_axes
@@ -117,7 +132,10 @@ def one_hot_embedding(labels, num_classes, dim=1):
     return y_onehot
 
 
-def one_hot_lookup(data, indices):
+def one_hot_lookup(
+    data: Tensor | np.ndarray,
+    indices: Tensor | np.ndarray,
+) -> Tensor | np.ndarray:
     """
     Return value of a particular column for each row in data.
 
@@ -257,7 +275,6 @@ def one_hot_lookup(data, indices):
     torch = sys.modules.get('torch', None)
     if torch is not None and torch.is_tensor(indices):
         if _is_in_onnx_export():
-
             # Don't use eye for ONNX
             ASSUME_OPTSET = 10
 
@@ -282,7 +299,11 @@ def one_hot_lookup(data, indices):
                 flat_idxs = torch.arange(n * n)
                 # Broadcast and check if these flat indexes are equal to the
                 # target indexes, then sum over the broadcast dimension
-                flat_eye = (flat_idxs[:, None] == eye_idxs[None, :]).to(data.dtype).sum(dim=1)
+                flat_eye = (
+                    (flat_idxs[:, None] == eye_idxs[None, :])
+                    .to(data.dtype)
+                    .sum(dim=1)
+                )
             else:
                 raise AssertionError('ASSUME_OPTSET = {}'.format(ASSUME_OPTSET))
 
@@ -298,7 +319,9 @@ def one_hot_lookup(data, indices):
             # Have to use multiply trick to satisfy onnx
             out = (data * ohe).sum(dim=1)
         else:
-            ohe = torch.eye(data.shape[1], dtype=torch.bool, device=indices.device)[indices]
+            ohe = torch.eye(
+                data.shape[1], dtype=torch.bool, device=indices.device
+            )[indices]
             out = data[ohe]
     else:
         # ohe = kwarray.one_hot_embedding(indices, data.shape[1]).astype(bool)
@@ -341,4 +364,5 @@ if __name__ == '__main__':
         python -m kwarray.util_torch all
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)

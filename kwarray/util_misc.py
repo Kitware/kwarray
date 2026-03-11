@@ -1,9 +1,16 @@
+from __future__ import annotations
+
 """
 Misc tools that should find a better home
 """
+
 import numpy as np
 import ubelt as ub
 import numbers
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class FlatIndexer(ub.NiceRepr):
@@ -15,18 +22,32 @@ class FlatIndexer(ub.NiceRepr):
         lens (List[int]):
             a list of the lengths of the nested objects.
 
+    Example:
+        >>> import kwarray
+        >>> indexer = kwarray.FlatIndexer([1000, 1000, 1000, 42])
+        >>> outer, inner = indexer.unravel(2321)
+        >>> print(f'outer={outer}, inner={inner}')
+        outer=2, inner=321
+        >>> index = indexer.ravel(outer, inner)
+        >>> print(f'index={index}')
+        index=2321
+
     Doctest:
         >>> self = FlatIndexer([1, 2, 3])
         >>> len(self)
         >>> self.unravel(4)
         >>> self.ravel(2, 1)
     """
-    def __init__(self, lens):
+
+    lens: np.ndarray
+    cums: np.ndarray
+
+    def __init__(self, lens: Sequence[int]) -> None:
         self.lens = np.asarray(lens)
         self.cums = np.cumsum(lens)
 
     @classmethod
-    def fromlist(cls, items):
+    def fromlist(cls, items: Sequence[Sequence[object]]) -> FlatIndexer:
         """
         Convenience method to create a :class:`FlatIndexer` from the list of
         items itself instead of the array of lengths.
@@ -40,14 +61,25 @@ class FlatIndexer(ub.NiceRepr):
         lens = list(map(len, items))
         return cls(lens)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Returns:
             int
         """
         return self.cums[-1] if len(self.cums) else 0
 
-    def unravel(self, index):
+    @overload
+    def unravel(self, index: int) -> tuple[int, int]:
+        ...
+
+    @overload
+    def unravel(self, index: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        ...
+
+    def unravel(
+        self,
+        index: int | np.ndarray,
+    ) -> tuple[int, int] | tuple[np.ndarray, np.ndarray]:
         """
         Args:
             index (int | List[int]) : raveled index
@@ -83,7 +115,11 @@ class FlatIndexer(ub.NiceRepr):
             inner = index - base
             return (outer, inner)
 
-    def ravel(self, outer, inner):
+    def ravel(
+        self,
+        outer: int | np.ndarray,
+        inner: int | np.ndarray,
+    ) -> int | np.ndarray:
         """
         Args:
             outer: index into outer list

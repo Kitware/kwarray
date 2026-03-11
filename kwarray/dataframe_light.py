@@ -1,27 +1,43 @@
+from __future__ import annotations
+
 """
 A faster-than-pandas pandas-like interface to column-major data, in the case
 where the data only needs to be accessed by index.
 
 For data where more complex ids are needed you must use pandas.
+
+TODO:
+    - [ ] Rename to DataFrameLite?
 """
+
 import ubelt as ub
 import numpy as np
 import copy
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterator, Mapping, Sequence
+
+    import pandas as pd
+
+    ColumnData = list[object] | np.ndarray
 
 try:
     import pandas as pd
 except Exception:
-    pd = None
+    pd = None  # ty: ignore[invalid-assignment]
 
 
 __version__ = '0.0.1'
 
 
-class LocLight(object):
-    def __init__(self, parent):
+class LocLight:
+    parent: DataFrameLight
+
+    def __init__(self, parent: DataFrameLight) -> None:
         self.parent = parent
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, object]:
         return self.parent._getrow(index)
 
 
@@ -35,6 +51,10 @@ class DataFrameLight(ub.NiceRepr):
         Assumes underlying data is Dict[list|ndarray]. If the data is known
         to be a Dict[ndarray] use DataFrameArray instead, which has faster
         implementations for some operations.
+
+    Note:
+        THe DataFrameLight has no distinction between ids and indexes (i.e. loc
+        and iloc). They are always the same.
 
     Note:
         pandas.DataFrame is slow. DataFrameLight is faster.
@@ -53,6 +73,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> # xdoc: +REQUIRES(--bench)
         >>> from kwarray.dataframe_light import *  # NOQA
         >>> import ubelt as ub
+        >>> import timerit
         >>> NUM = 1000
         >>> print('NUM = {!r}'.format(NUM))
         >>> # to_dict conversions
@@ -61,7 +82,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> _keys = ['list', 'dict', 'series', 'split', 'records', 'index']
         >>> results = []
         >>> df = DataFrameLight._demodata(num=NUM).pandas()
-        >>> ti = ub.Timerit(verbose=False, unit='ms')
+        >>> ti = timerit.Timerit(verbose=False, unit='ms')
         >>> for key in _keys:
         >>>     result = ti.reset(key).call(lambda: df.to_dict(orient=key))
         >>>     results.append((result.mean(), result.report()))
@@ -71,7 +92,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> print('\n'.join([t[1] for t in sorted(results)]))
         >>> print('==============')
         >>> print('====== DFLight Conversions =======')
-        >>> ti = ub.Timerit(verbose=True, unit='ms')
+        >>> ti = timerit.Timerit(verbose=True, unit='ms')
         >>> key = 'self.pandas'
         >>> self = DataFrameLight(df)
         >>> ti.reset(key).call(lambda: self.pandas())
@@ -81,7 +102,7 @@ class DataFrameLight(ub.NiceRepr):
         >>> ti.reset(key).call(lambda: DataFrameLight(self._data))
         >>> print('==============')
         >>> print('====== BENCHMARK: .LOC[] =======')
-        >>> ti = ub.Timerit(num=20, bestof=4, verbose=True, unit='ms')
+        >>> ti = timerit.Timerit(num=20, bestof=4, verbose=True, unit='ms')
         >>> df_light = DataFrameLight._demodata(num=NUM)
         >>> # xdoctest: +REQUIRES(module:pandas)
         >>> df_heavy = df_light.pandas()
@@ -152,7 +173,16 @@ class DataFrameLight(ub.NiceRepr):
         Timed best=0.760 ms, mean=0.776 ± 0.0 ms for DF-Light._getrow
 
     """
-    def __init__(self, data=None, columns=None):
+
+    _raw: object | None
+    _data: dict[str, ColumnData]
+    _localizer: LocLight
+
+    def __init__(
+        self,
+        data: object | None = None,
+        columns: Sequence[str] | None = None,
+    ) -> None:
         if columns is not None:
             if data is None:
                 data = ub.odict(zip(columns, [[] for _ in range(len(columns))]))
@@ -165,19 +195,19 @@ class DataFrameLight(ub.NiceRepr):
         self.__normalize__()
 
     @property
-    def iloc(self):
+    def iloc(self) -> LocLight:
         return self._localizer
 
     @property
-    def values(self):
+    def values(self) -> np.ndarray:
         data = self._getcols(self.columns)
         return data
 
     @property
-    def loc(self):
+    def loc(self) -> LocLight:
         return self._localizer
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> np.ndarray:  # ty: ignore[invalid-method-override]
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:pandas)
@@ -194,14 +224,14 @@ class DataFrameLight(ub.NiceRepr):
             other_vals = other
         return self_vals == other_vals
 
-    def to_string(self, *args, **kwargs):
+    def to_string(self, *args: object, **kwargs: object) -> str:
         """
         Returns:
             str:
         """
         return self.pandas().to_string(*args, **kwargs)
 
-    def to_dict(self, orient='dict', into=dict):
+    def to_dict(self, orient: str = 'dict', into: type = dict) -> dict:
         """
         Convert the data frame into a dictionary.
 
@@ -225,13 +255,15 @@ class DataFrameLight(ub.NiceRepr):
             out = into(self.iterrows())
         elif orient == 'list':
             import kwarray
-            out = into((k, kwarray.ArrayAPI.tolist(v))
-                        for k, v in self._data.items())
+
+            out = into(
+                (k, kwarray.ArrayAPI.tolist(v)) for k, v in self._data.items()
+            )
         else:
             out = self.pandas().to_dict(orient=orient, into=into)
         return out
 
-    def pandas(self):
+    def pandas(self) -> pd.DataFrame:
         """
         Convert back to pandas if you need the full API
 
@@ -249,12 +281,12 @@ class DataFrameLight(ub.NiceRepr):
             raise Exception('Pandas is not available')
         return pd.DataFrame(self._data)
 
-    def _pandas(self):
-        """ Deprecated, use self.pandas instead """
+    def _pandas(self) -> pd.DataFrame:
+        """Deprecated, use self.pandas instead"""
         return self.pandas()
 
     @classmethod
-    def _demodata(cls, num=7):
+    def _demodata(cls, num: int = 7) -> DataFrameLight:
         """
         Example:
             >>> self = DataFrameLight._demodata(num=7)
@@ -274,20 +306,20 @@ class DataFrameLight(ub.NiceRepr):
         self = cls(demodata)
         return self
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return 'keys: {}, len={}'.format(list(self.keys()), len(self))
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self._data:
             key = next(iter(self.keys()))
             return len(self._data[key])
         else:
             return 0
 
-    def __contains__(self, item):
+    def __contains__(self, item: str) -> bool:
         return item in self.keys()
 
-    def __normalize__(self):
+    def __normalize__(self) -> None:
         """
         Try to convert input data to Dict[List]
         """
@@ -301,7 +333,7 @@ class DataFrameLight(ub.NiceRepr):
                     if not isinstance(d, (list, np.ndarray)):
                         raise TypeError(type(d))
                     lens.append(len(d))
-                assert ub.allsame(lens)
+                assert ub.allsame(lens), f'Got unequal lens: {lens}'
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
         elif pd is not None and isinstance(self._raw, pd.DataFrame):
@@ -310,39 +342,108 @@ class DataFrameLight(ub.NiceRepr):
             raise TypeError('Unknown _raw type')
 
     @property
-    def columns(self):
+    def columns(self) -> list[str]:
         return list(self.keys())
 
-    def sort_values(self, key, inplace=False, ascending=True):
+    def sort_values(
+        self,
+        key: str,
+        inplace: bool = False,
+        ascending: bool = True,
+    ) -> DataFrameLight:
         sortx = np.argsort(self._getcol(key))
         if not ascending:
             sortx = sortx[::-1]
         return self.take(sortx, inplace=inplace)
 
-    def keys(self):
+    def drop(
+        self,
+        labels: str | Sequence[int] | Sequence[str],
+        *,
+        axis: int = 0,
+    ) -> DataFrameLight:
+        """
+        Drop specified labels from rows or columns.
+
+        Example
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight._demodata(num=7)
+            >>> labels = 'foo'
+            >>> # test drop columns
+            >>> new = self.drop(labels, axis=1)
+            >>> assert 'foo' not in new.columns
+            >>> assert 'bar' in new.columns
+            >>> # test drop rows
+            >>> new = self.drop([1, 3], axis=0)
+            >>> assert len(new) == (len(self) - 2)
+            >>> # test drop non-existing
+            >>> import pytest
+            >>> with pytest.raises(KeyError):
+            >>>     new = self.drop('not-exist', axis=1)
+            >>> with pytest.raises(KeyError):
+            >>>     new = self.drop('not-exist', axis=0)
+            >>> with pytest.raises(ValueError):
+            >>>     new = self.drop(None, axis=3)
+        """
+        if axis == 1:
+            # Drop columns
+            if not ub.iterable(labels):
+                labels = {labels}
+            else:
+                labels = set(labels)
+            columns = ub.oset(self.columns)
+            missing = labels - columns
+            if missing:
+                raise KeyError(f'{missing} not found in axis')
+            new_columns = list(columns - labels)
+            new_data = {c: self._data[c] for c in new_columns}
+            new = self.__class__(new_data)
+        elif axis == 0:
+            # Drop rows
+            keep = np.ones(len(self), dtype=bool)
+            try:
+                keep[labels] = False
+            except IndexError:
+                raise KeyError('row indexes not found in axis')
+            new = self.compress(keep)
+        else:
+            raise ValueError('axis can only be 0 or 1')
+        return new
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        n_rows = len(self)
+        n_cols = len(self._data)
+        return n_rows, n_cols
+
+    def keys(self) -> Generator[str, None, None]:
         if self._data:
             for key in self._data.keys():
                 yield key
 
-    def _getrow(self, index):
+    def _getrow(self, index: int) -> dict[str, object]:
         return {key: self._data[key][index] for key in self._data.keys()}
 
-    def _getcol(self, key):
+    def _getcol(self, key: str) -> ColumnData:
         return self._data[key]
 
-    def _getcols(self, keys):
+    def _getcols(self, keys: Sequence[str]) -> np.ndarray:
         num = len(self)
         col_data = [self._getcol(key) for key in keys]
         data = np.hstack([np.asarray(d).reshape(num, -1) for d in col_data])
         return data
 
-    def get(self, key, default=None):
+    def get(
+        self,
+        key: str,
+        default: object | None = None,
+    ) -> ColumnData | object | None:
         """
         Get item for given key. Returns default value if not found.
         """
         return self[key] if key in self else default
 
-    def clear(self):
+    def clear(self) -> None:
         """
         Removes all rows inplace
         """
@@ -350,7 +451,7 @@ class DataFrameLight(ub.NiceRepr):
             for key in self._data.keys():
                 self._data[key].clear()
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> ColumnData:
         """
         Note:
             only handles the case where key is a single column name.
@@ -365,7 +466,7 @@ class DataFrameLight(ub.NiceRepr):
         """
         return self._getcol(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: ColumnData) -> None:
         """
         Note:
             only handles the case where key is a single column name. and value
@@ -382,7 +483,11 @@ class DataFrameLight(ub.NiceRepr):
         """
         self._data[key] = value
 
-    def compress(self, flags, inplace=False):
+    def compress(
+        self,
+        flags: Sequence[bool] | np.ndarray,
+        inplace: bool = False,
+    ) -> DataFrameLight:
         """
         NOTE: NOT A PART OF THE PANDAS API
         """
@@ -391,7 +496,11 @@ class DataFrameLight(ub.NiceRepr):
             subset._data[key] = list(ub.compress(self._data[key], flags))
         return subset
 
-    def take(self, indices, inplace=False):
+    def take(
+        self,
+        indices: slice | Sequence[int] | np.ndarray,
+        inplace: bool = False,
+    ) -> DataFrameLight:
         """
         Return the elements in the given *positional* indices along an axis.
 
@@ -419,13 +528,53 @@ class DataFrameLight(ub.NiceRepr):
                 subset._data[key] = list(ub.take(self._data[key], indices))
         return subset
 
-    def copy(self):
+    def copy(self) -> DataFrameLight:
         other = copy.copy(self)
         other._data = other._data.copy()
         other._localizer = LocLight(other)
         return other
 
-    def extend(self, other):
+    def append(self, row: Mapping[str, object]) -> None:
+        """
+        Append a row to this data frame.
+
+        Args:
+            other (dict[str, Any]):
+                A value for each column to add the end of this object.
+
+        Note:
+            Not part of the pandas API.
+
+        Example:
+            >>> from kwarray.dataframe_light import *  # NOQA
+            >>> self = DataFrameLight(columns=['foo', 'bar'])
+            >>> other = {'foo': 0, 'bar': 1}
+            >>> self.append(other)
+            >>> self.append(other)
+            >>> assert len(self) == 2
+        """
+        _data = self._data
+        # Check if the row contains new columns
+        new_keys = row.keys() - _data.keys()
+        if new_keys:
+            num_rows = len(self)
+            if num_rows == 0:
+                # If this is the first row just initialize the columns
+                for key in new_keys:
+                    _data[key] = []
+            else:
+                # If so, backfill the previous rows for the new column
+                for key in new_keys:
+                    _data[key] = [None] * num_rows
+
+        for k, vals in _data.items():
+            new_value = row.get(k, None)
+            vals.append(new_value)
+
+    def extend(
+        self,
+        other: DataFrameLight | Mapping[str, Sequence[object] | np.ndarray],
+    ) -> None:
         """
         Extend ``self`` inplace using another dataframe array
 
@@ -433,8 +582,8 @@ class DataFrameLight(ub.NiceRepr):
             other (DataFrameLight | dict[str, Sequence]):
                 values to concat to end of this object
 
-        NOTE:
-            Not part of the pandas API
+        Note:
+            Not part of the pandas API.
 
         Example:
             >>> self = DataFrameLight(columns=['foo', 'bar'])
@@ -458,7 +607,10 @@ class DataFrameLight(ub.NiceRepr):
                 else:
                     raise
 
-    def union(self, *others):
+    def union(
+        self,
+        *others: DataFrameLight | Mapping[str, Sequence[object] | np.ndarray],
+    ) -> DataFrameLight:
         """
         NOTE:
             Note part of the pandas API
@@ -484,16 +636,24 @@ class DataFrameLight(ub.NiceRepr):
         return both
 
     @classmethod
-    def concat(cls, others):
+    def concat(
+        cls,
+        others: Sequence[
+            DataFrameLight | Mapping[str, Sequence[object] | np.ndarray]
+        ],
+    ) -> DataFrameLight:
         return cls.union(*others)
 
     @classmethod
-    def from_pandas(cls, df):
+    def from_pandas(cls, df: pd.DataFrame) -> DataFrameLight:
         _raw = {k: v.values for k, v in df.to_dict(orient='series').items()}
         return cls(_raw)
 
     @classmethod
-    def from_dict(cls, records):
+    def from_dict(
+        cls,
+        records: Sequence[Mapping[str, object]],
+    ) -> DataFrameLight:
         record_iter = iter(records)
         columns = {}
         try:
@@ -509,11 +669,16 @@ class DataFrameLight(ub.NiceRepr):
         self = cls(columns)
         return self
 
-    def reset_index(self, drop=False):
-        """ noop for compatibility, the light version doesnt store an index """
+    def reset_index(self, drop: bool = False) -> DataFrameLight:
+        """noop for compatibility, the light version doesnt store an index"""
         return self
 
-    def groupby(self, by=None, *args, **kwargs):
+    def groupby(
+        self,
+        by: str | None = None,
+        *args: object,
+        **kwargs: object,
+    ) -> Iterator[tuple[object, DataFrameLight]] | object:
         """
         Group rows by the value of a column. Unlike pandas this simply
         returns a zip object. To ensure compatibility call list on the
@@ -539,12 +704,13 @@ class DataFrameLight(ub.NiceRepr):
             >>> self['cx'] = (np.random.rand(len(self)) * 10).astype(np.int)
             >>> # As expected, our custom restricted implementation is faster
             >>> # than pandas
-            >>> ub.Timerit(100).call(lambda: dict(list(self.pandas().groupby('cx')))).print()
-            >>> ub.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
+            >>> timerit.Timerit(100).call(lambda: dict(list(self.pandas().groupby('cx')))).print()
+            >>> timerit.Timerit(100).call(lambda: dict(self.groupby('cx'))).print()
         """
         if len(args) == 0 and len(kwargs) == 0:
             # In this special case we can be fast
             import kwarray
+
             unique, groupxs = kwarray.group_indices(self[by])
             groups = [self.take(idxs) for idxs in groupxs]
             return zip(unique, groups)
@@ -552,7 +718,13 @@ class DataFrameLight(ub.NiceRepr):
             # otherwise we need to use the slow method
             return self.pandas().groupby(by=by)
 
-    def rename(self, mapper=None, columns=None, axis=None, inplace=False):
+    def rename(
+        self,
+        mapper: Mapping[str, str] | None = None,
+        columns: Mapping[str, str] | None = None,
+        axis: int | None = None,
+        inplace: bool = False,
+    ) -> DataFrameLight:
         """
         Rename the columns (index renaming is not supported)
 
@@ -571,7 +743,9 @@ class DataFrameLight(ub.NiceRepr):
         """
         if columns is not None:
             if axis is not None:
-                raise TypeError("Cannot specify both 'axis' and any of 'index' or 'columns'")
+                raise TypeError(
+                    "Cannot specify both 'axis' and any of 'index' or 'columns'"
+                )
         else:
             if axis != 1:
                 raise NotImplementedError('only axis=1 is supported')
@@ -584,7 +758,7 @@ class DataFrameLight(ub.NiceRepr):
                 self._data[new] = self._data.pop(old)
         return self
 
-    def iterrows(self):
+    def iterrows(self) -> Generator[tuple[int, dict[str, object]], None, None]:
         """
         Iterate over rows as (index, Dict) pairs.
 
@@ -607,7 +781,7 @@ class DataFrameLight(ub.NiceRepr):
             >>> import ubelt as ub
             >>> df_light = DataFrameLight._demodata(num=1000)
             >>> df_heavy = df_light.pandas()
-            >>> ti = ub.Timerit(21, bestof=3, verbose=2, unit='ms')
+            >>> ti = timerit.Timerit(21, bestof=3, verbose=2, unit='ms')
             >>> ti.reset('light').call(lambda: list(df_light.iterrows()))
             >>> ti.reset('heavy').call(lambda: list(df_heavy.iterrows()))
             >>> # xdoctest: +IGNORE_WANT
@@ -629,7 +803,7 @@ class DataFrameArray(DataFrameLight):
     Take and compress are much faster, but extend and union are slower
     """
 
-    def __normalize__(self):
+    def __normalize__(self) -> None:
         """
         Try to convert input data to Dict[ndarray]
         """
@@ -645,30 +819,41 @@ class DataFrameArray(DataFrameLight):
                     lens.append(len(d))
                 assert ub.allsame(lens), (
                     'lens are not all same {} for columns {}'.format(
-                        lens,
-                        list(self._data.keys()))
+                        lens, list(self._data.keys())
+                    )
                 )
         elif isinstance(self._raw, DataFrameLight):
             self._data = copy.copy(self._raw._data)
         elif pd is not None and isinstance(self._raw, pd.DataFrame):
-            self._data = {k: v.values for k, v in self._raw.to_dict(orient='series').items()}
+            self._data = {
+                k: v.values
+                for k, v in self._raw.to_dict(orient='series').items()
+            }
         else:
             raise TypeError('Unknown _raw type')
         # self._data = ub.map_vals(np.asarray, self._data)  # does this break anything?
 
-    def extend(self, other):
+    def extend(self, other: DataFrameArray) -> None:
         for key in self._data.keys():
             vals1 = self._data[key]
             vals2 = other._data[key]
             self._data[key] = np.hstack([vals1, vals2])
 
-    def compress(self, flags, inplace=False):
+    def compress(
+        self,
+        flags: Sequence[bool] | np.ndarray,
+        inplace: bool = False,
+    ) -> DataFrameArray:
         subset = self if inplace else self.__class__()
         for key in self._data.keys():
             subset._data[key] = self._data[key][flags]
         return subset
 
-    def take(self, indices, inplace=False):
+    def take(
+        self,
+        indices: slice | Sequence[int] | np.ndarray,
+        inplace: bool = False,
+    ) -> DataFrameArray:
         subset = self if inplace else self.__class__()
         for key in self._data.keys():
             subset._data[key] = self._data[key][indices]

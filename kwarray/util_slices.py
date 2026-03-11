@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Utilities related to slicing
 
@@ -9,11 +11,45 @@ TODO:
           functionality. Also having a top-level call to apply an embedded slice
           would be good.
 """
+
 import ubelt as ub
 import numpy as np
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Any, Literal
 
 
-def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
+@overload
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: Literal[False] = False,
+) -> Any:
+    ...
+
+
+@overload
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: Literal[True] = True,
+) -> tuple[Any, dict[str, Any]]:
+    ...
+
+
+def padded_slice(
+    data: Any,
+    slices: slice | Sequence[slice],
+    pad: int | list[int | tuple[int, int]] | None = None,
+    padkw: dict[str, Any] | None = None,
+    return_info: bool = False,
+) -> Any | tuple[Any, dict[str, Any]]:
     """
     Allows slices with out-of-bound coordinates. Any out of bounds coordinate
     will be sampled via padding.
@@ -92,19 +128,18 @@ def padded_slice(data, slices, pad=None, padkw=None, return_info=False):
     data_sliced = apply_embedded_slice(data, data_slice, extra_padding, **padkw)
 
     if return_info:
-        st_dims = [(sl.start - pad_[0], sl.stop + pad_[1])
-                   for sl, pad_ in zip(data_slice, extra_padding)]
+        st_dims = [
+            (sl.start - pad_[0], sl.stop + pad_[1])
+            for sl, pad_ in zip(data_slice, extra_padding)
+        ]
         # TODO: return a better transform back to the original space
-        transform = {
-            'st_dims': st_dims,
-            'st_offset': [d[0] for d in st_dims]
-        }
+        transform = {'st_dims': st_dims, 'st_offset': [d[0] for d in st_dims]}
         return data_sliced, transform
     else:
         return data_sliced
 
 
-__TODO__ = """
+__TODO__: str = """
 
     - [ ] Could have a kwarray function to expose this inverse slice
           functionality. Also having a top-level call to apply an embedded slice
@@ -129,7 +164,12 @@ __TODO__ = """
 """
 
 
-def apply_embedded_slice(data, data_slice, extra_padding, **padkw):
+def apply_embedded_slice(
+    data: np.ndarray,
+    data_slice: tuple[slice, ...],
+    extra_padding: list[tuple[int, int]],
+    **padkw: Any,
+) -> np.ndarray:
     """
     Apply a precomputed embedded slice.
 
@@ -150,7 +190,11 @@ def apply_embedded_slice(data, data_slice, extra_padding, **padkw):
     return data_sliced
 
 
-def _apply_padding(array, pad_width, **padkw):
+def _apply_padding(
+    array: np.ndarray,
+    pad_width: list[tuple[int, int]],
+    **padkw: Any,
+) -> np.ndarray:
     """
     Alternative to numpy pad with different short-cut semantics for
     the "pad_width" argument.
@@ -173,7 +217,11 @@ def _apply_padding(array, pad_width, **padkw):
     return padded
 
 
-def embed_slice(slices, data_dims, pad=None):
+def embed_slice(
+    slices: Sequence[slice],
+    data_dims: Sequence[int],
+    pad: int | list[int | tuple[int, int]] | None = None,
+) -> tuple[tuple[slice, ...], list[tuple[int, int]]]:
     """
     Embeds a "padded-slice" inside known data dimension.
 
@@ -270,7 +318,9 @@ def embed_slice(slices, data_dims, pad=None):
     extra_padding = []
 
     # Determine the real part of the image that can be sliced out
-    for D_img, d_low, d_high, d_pad in zip(data_dims, low_dims, high_dims, pad_slice):
+    for D_img, d_low, d_high, d_pad in zip(
+        data_dims, low_dims, high_dims, pad_slice
+    ):
         if d_low is None:
             d_low = 0
         if d_high is None:
@@ -299,7 +349,10 @@ def embed_slice(slices, data_dims, pad=None):
     return data_slice, extra_padding
 
 
-def _coerce_pad(pad, ndims):
+def _coerce_pad(
+    pad: int | Sequence[int | tuple[int, int]] | None,
+    ndims: int,
+):
     if pad is None:
         pad_slice = [(0, 0)] * ndims
     elif isinstance(pad, int):
@@ -315,3 +368,84 @@ def _coerce_pad(pad, ndims):
         #     pad = list(pad) + [(0, 0)] * n_trailing
         raise ValueError('pad and data_dims must have the same length')
     return pad_slice
+
+
+class _SliceMeta(type):
+    """
+    Normally you cannot inherit from slice, but we can use a metaclass to
+    overload the constructor of our Slice class to return a real slice.
+    """
+
+    def __call__(cls, *args):
+        # Allow for empty constructor
+        if len(args) == 0:
+            return slice(None)
+        # When the class is called (instantiated), return a real slice instead
+        return slice(*args)
+
+    def __instancecheck__(self, instance):
+        # https://peps.python.org/pep-3119/
+        return isinstance(instance, slice)
+
+    def __getitem__(self, index):
+        # __class_getitem__ was introduced in Python 3.7
+        # https://peps.python.org/pep-0560/
+        return index
+
+
+class Slice(metaclass=_SliceMeta):
+    """
+    A "subclass" of :class:`slice` with convinience features.
+
+    Namely you can create a slice with class getitem syntax.
+
+    The motiviation is creating explicit slice objects is cumbersome, and this
+    provides a more concise notation. Consider the example
+
+    .. code:: python
+
+        import kwarray
+
+        # This is the standard way to create multi dimensional index
+        sl = (Ellipsis, slice(0, 10), slice(0, 10), slice(None))
+        arr = arr[sl]
+
+        # And this is equivalent
+        sl = kwarray.Slice[..., 0:10, 0:10, :]
+        arr = arr[sl]
+
+    Note:
+        This is not a real subclass of slice, but by using metaclasses it
+        behaves like one in most circumstances. The instances created by using
+        the constructor or convinience methods are real slice instances (or
+        tuples of real slice instances).
+
+    A similar idea has been proposed and rejected several times to core Python
+    [CPythonIssue68567]_ [PythonDiscuss30316]_.
+
+    References:
+        .. [PythonDiscuss30316] https://discuss.python.org/t/alternative-to-create-slice-and-tuple-of-slices-with-slice-class-getitem/30316/6
+        .. [CPythonIssue68567] https://github.com/python/cpython/issues/68567
+
+    Example:
+        >>> import kwarray
+        >>> kwarray.Slice[::3]
+        slice(None, None, 3)
+        >>> kwarray.Slice[0:10, 3:11]
+        (slice(0, 10, None), slice(3, 11, None))
+
+    Example:
+        >>> from kwarray.util_slices import Slice
+        >>> assert Slice() == slice(None, None, None)
+        >>> assert Slice[0:3] == slice(0, 3, None)
+        >>> assert Slice[0:3, 0:5] == (slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice[..., 0:3, 0:5] == (Ellipsis, slice(0, 3, None), slice(0, 5, None))
+        >>> assert Slice(0, 3) == slice(0, 3, None)
+        >>> assert isinstance(Slice(), Slice)
+        >>> assert not issubclass(Slice, slice), 'no way to make this work AFAIK'
+    """
+
+    def __init__(self, *args):
+        raise AssertionError(
+            'It should not be possible to construct a real instance of this class'
+        )
