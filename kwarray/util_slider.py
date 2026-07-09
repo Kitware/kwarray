@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Defines the :class:`SlidingWindow` and :class:`Sticher` classes.
 
@@ -6,10 +8,17 @@ The :class:`SlidingWindow` generates a grid of slices over an
 data. The :class:`Stitcher` can then take these results and recombine them into
 a final result that matches the larger array.
 """
+
 import ubelt as ub
 import os
 import numpy as np
 import itertools as it
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterator, Sequence
+
+    from torch import Tensor, device as TorchDevice
 
 
 class SlidingWindow(ub.NiceRepr):
@@ -103,20 +112,45 @@ class SlidingWindow(ub.NiceRepr):
         >>> print(list(SlidingWindow((3, 3), (None, 2), allow_overshoot=True, keepbound=True)))
         [(slice(0, 3, None), slice(0, 2, None)), (slice(0, 3, None), slice(1, 3, None))]
     """
-    def __init__(self, shape, window, overlap=None, stride=None,
-                 keepbound=False, allow_overshoot=False):
+
+    stride: list[int]
+    overlap: list[float]
+    window: Sequence[int]
+    input_shape: Sequence[int]
+    undershot_shape: list[int]
+    basis_slices: list[list[slice]]
+    basis_shape: list[int]
+    n_total: int
+
+    def __init__(
+        self,
+        shape: Sequence[int],
+        window: Sequence[int] | None,
+        overlap: float | Sequence[float] | None = None,
+        stride: int | Sequence[int] | None = None,
+        keepbound: bool = False,
+        allow_overshoot: bool = False,
+    ) -> None:
 
         stride, overlap, window = self._compute_stride(
-            overlap, stride, shape, window)
+            overlap, stride, shape, window
+        )
 
-        stide_kw = [dict(margin=d, stop=D, step=s, keepbound=keepbound,
-                         check=not keepbound and not allow_overshoot)
-                      for d, D, s in zip(window, shape, stride)]
+        stide_kw = [
+            dict(
+                margin=d,
+                stop=D,
+                step=s,
+                keepbound=keepbound,
+                check=not keepbound and not allow_overshoot,
+            )
+            for d, D, s in zip(window, shape, stride)
+        ]
 
         undershot_shape = []
         overshoots = []
         for kw in stide_kw:
-            final_pos = (kw['stop'] - kw['margin'])
+            final_pos = kw['stop'] - kw['margin']
             n_steps = final_pos // kw['step']
             overshoot = final_pos % kw['step']
             undershot_shape.append(n_steps + 1)
@@ -125,8 +159,9 @@ class SlidingWindow(ub.NiceRepr):
         self._final_step = overshoots
 
         if not allow_overshoot and any(overshoots):
-            raise ValueError('overshoot={} stide_kw={}'.format(overshoots,
-                                                               stide_kw))
+            raise ValueError(
+                'overshoot={} stide_kw={}'.format(overshoots, stide_kw)
+            )
 
         # make a slice generator for each dimension
         self.stride = stride
@@ -144,14 +179,14 @@ class SlidingWindow(ub.NiceRepr):
         # align to the original image. This shape will be a bit bigger.
         self.basis_slices = [list(_slices1d(**kw)) for kw in stide_kw]
         self.basis_shape = [len(b) for b in self.basis_slices]
-        self.n_total = np.prod(self.basis_shape)
+        self.n_total = int(np.prod(self.basis_shape))
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return 'bshape={}, shape={}, window={}, stride={}'.format(
             tuple(self.basis_shape),
             tuple(self.input_shape),
             self.window,
-            tuple(self.stride)
+            tuple(self.stride),
         )
 
     def _compute_stride(self, overlap, stride, shape, window):
@@ -171,8 +206,9 @@ class SlidingWindow(ub.NiceRepr):
             overlap = tuple(overlap)
 
         if len(window) != len(shape):
-            raise ValueError('incompatible dims: {} {}'.format(len(window),
-                                                               len(shape)))
+            raise ValueError(
+                'incompatible dims: {} {}'.format(len(window), len(shape))
+            )
 
         if any(d is None for d in window):
             window = [D if d is None else d for d, D in zip(window, shape)]
@@ -181,17 +217,22 @@ class SlidingWindow(ub.NiceRepr):
             overlap = 0
 
         if not (overlap is None) ^ (stride is None):
-            raise ValueError('specify overlap({}) XOR stride ({})'.format(
-                overlap, stride))
+            raise ValueError(
+                'specify overlap({}) XOR stride ({})'.format(overlap, stride)
+            )
         if stride is None:
             if not isinstance(overlap, (list, tuple)):
                 overlap = [overlap] * len(window)
             if any(frac < 0 or frac >= 1 for frac in overlap):
-                raise ValueError((
-                    'part overlap was {}, but fractional overlaps must be '
-                    'in the range [0, 1)').format(overlap))
-            stride = [int(round(d - d * frac))
-                      for frac, d in zip(overlap, window)]
+                raise ValueError(
+                    (
+                        'part overlap was {}, but fractional overlaps must be '
+                        'in the range [0, 1)'
+                    ).format(overlap)
+                )
+            stride = [
+                int(round(d - d * frac)) for frac, d in zip(overlap, window)
+            ]
         else:
             if not isinstance(stride, (list, tuple)):
                 stride = [stride] * len(window)
@@ -202,22 +243,23 @@ class SlidingWindow(ub.NiceRepr):
 
         if not all(stride):
             raise ValueError(
-                'Step must be positive everywhere. Got={}'.format(stride))
+                'Step must be positive everywhere. Got={}'.format(stride)
+            )
         return stride, overlap, window
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_total
 
     def _iter_basis_frac(self):
         for slices in self:
-            frac = [sl.start / D for sl, D in zip(slices, self.source.shape)]
+            frac = [sl.start / D for sl, D in zip(slices, self.input_shape)]
             yield frac
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[slice, ...]]:
         for slices in it.product(*self.basis_slices):
             yield slices
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> tuple[slice, ...]:
         """
         Get a specific item by its flat (raveled) index
 
@@ -238,12 +280,13 @@ class SlidingWindow(ub.NiceRepr):
         # Find the nd location in the grid
         basis_idx = np.unravel_index(index, self.basis_shape)
         # Take the slice for each of the n dimensions
-        slices = tuple([bdim[i]
-                        for bdim, i in zip(self.basis_slices, basis_idx)])
+        slices = tuple(
+            [bdim[i] for bdim, i in zip(self.basis_slices, basis_idx)]
+        )
         return slices
 
     @property
-    def grid(self):
+    def grid(self) -> Generator[tuple[int, ...], None, None]:
         """
         Generate indices into the "basis" slice for each dimension.
         This enumerates the nd indices of the grid.
@@ -258,7 +301,7 @@ class SlidingWindow(ub.NiceRepr):
             yield basis_idxs
 
     @property
-    def slices(self):
+    def slices(self) -> Iterator[tuple[slice, ...]]:
         """
         Generate slices for each window (equivalent to iter(self))
 
@@ -277,7 +320,7 @@ class SlidingWindow(ub.NiceRepr):
         return iter(self)
 
     @property
-    def centers(self):
+    def centers(self) -> Generator[tuple[float, ...], None, None]:
         """
         Generate centers of each window
 
@@ -303,17 +346,18 @@ class SlidingWindow(ub.NiceRepr):
              ((1.5, 1.5), (slice(1, 3, None), slice(1, 3, None)))]
         """
         for slices in self:
-            center = tuple(sl_.start + (sl_.stop - sl_.start - 1) / 2
-                           for sl_ in slices)
+            center = tuple(
+                sl_.start + (sl_.stop - sl_.start - 1) / 2 for sl_ in slices
+            )
             yield center
 
 
-__devnote__ = '''
+__devnote__: str = """
 TODO:
     - [ ] Look at the old "add_fast" code in the netharn version and see if
           it is worth porting. This code is kept in the dev folder in
           ../dev/_dev_slider.py
-'''
+"""
 
 
 class Stitcher(ub.NiceRepr):
@@ -377,8 +421,23 @@ class Stitcher(ub.NiceRepr):
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final1, square_shape=1), title='stitched (nan_policy=omit)', pnum=(3, 1, 2))
         >>> kwplot.imshow(kwimage.nodata_checkerboard(final2, square_shape=1), title='stitched (nan_policy=propagate)', pnum=(3, 1, 3))
     """
-    def __init__(self, shape, device='numpy', dtype='float32',
-                 nan_policy='propogate', memmap=False):
+
+    nan_policy: str
+    shape: tuple[int, ...]
+    device: str | int | TorchDevice
+    sums: np.ndarray | Tensor
+    weights: np.ndarray | Tensor
+    sumview: np.ndarray | Tensor
+    weightview: np.ndarray | Tensor
+
+    def __init__(
+        self,
+        shape: tuple[int, ...],
+        device: str | int | TorchDevice = 'numpy',
+        dtype: str = 'float32',
+        nan_policy: str = 'propogate',
+        memmap: bool | os.PathLike[str] = False,
+    ) -> None:
         """
         Args:
             shape (tuple): dimensions of the large image that will be created from
@@ -408,29 +467,36 @@ class Stitcher(ub.NiceRepr):
         use_memmap = bool(memmap)
         if use_memmap:
             import uuid
-            uuid = uuid.uuid4()
+
+            uuid_value = uuid.uuid4()
             if isinstance(memmap, (str, os.PathLike)):
                 memmap_dpath = ub.Path(memmap)
             else:
                 from tempfile import mkdtemp
+
                 memmap_dpath = ub.Path(mkdtemp())
-                memmap_sums_fpath = memmap_dpath / f'{uuid}-sums.npy'
-                memmap_weights_fpath = memmap_dpath / f'{uuid}-weights.npy'
-                self.paths = {
-                    'sums': memmap_sums_fpath,
-                    'weights': memmap_weights_fpath,
-                }
+            memmap_sums_fpath = memmap_dpath / f'{uuid_value}-sums.npy'
+            memmap_weights_fpath = memmap_dpath / f'{uuid_value}-weights.npy'
+            self.paths = {
+                'sums': memmap_sums_fpath,
+                'weights': memmap_weights_fpath,
+            }
         else:
             memmap_dpath = None
             memmap_sums_fpath = None
             memmap_weights_fpath = None
 
         if device == 'numpy':
-
             if use_memmap:
                 # Seems to always init to zero
-                self.sums = np.memmap(memmap_sums_fpath, dtype=dtype, mode='w+', shape=shape)
-                self.weights = np.memmap(memmap_weights_fpath, dtype=dtype, mode='w+', shape=shape)
+                assert memmap_sums_fpath is not None
+                assert memmap_weights_fpath is not None
+                self.sums = np.memmap(
+                    memmap_sums_fpath, dtype=dtype, mode='w+', shape=shape
+                )
+                self.weights = np.memmap(
+                    memmap_weights_fpath, dtype=dtype, mode='w+', shape=shape
+                )
             else:
                 self.sums = np.zeros(shape, dtype=dtype)
                 self.weights = np.zeros(shape, dtype=dtype)
@@ -439,6 +505,7 @@ class Stitcher(ub.NiceRepr):
             # self.weightview = self.weights.ravel()
         else:
             import torch
+
             if memmap:
                 raise NotImplementedError('cannot do torch memmaping')
             else:
@@ -456,10 +523,15 @@ class Stitcher(ub.NiceRepr):
         elif self.nan_policy != 'propogate':
             raise ValueError(self.nan_policy)
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         return str(self.sums.shape)
 
-    def add(self, indices, patch, weight=None):
+    def add(
+        self,
+        indices: slice | tuple | None,
+        patch: np.ndarray | Tensor,
+        weight: float | np.ndarray | Tensor | None = None,
+    ) -> None:
         """
         Incorporate a new (possibly overlapping) patch or pixel using a
         weighted sum.
@@ -492,17 +564,18 @@ class Stitcher(ub.NiceRepr):
             self.sums[indices] += patch
             self.weights[indices] += 1.0
         else:
-            self.sums[indices] += (patch * weight)
+            self.sums[indices] += patch * weight
             self.weights[indices] += weight
 
-    def __getitem__(self, indices):
+    def __getitem__(self, indices: slice | tuple | None) -> Callable[..., None]:
         """
         Convenience function to use slice notation directly.
         """
         from functools import partial
+
         return partial(self.add, indices)
 
-    def average(self):
+    def average(self) -> np.ndarray | Tensor:
         """
         Averages out contributions from overlapping adds using weighted average
 
@@ -512,7 +585,10 @@ class Stitcher(ub.NiceRepr):
         out = self.sums / self.weights
         return out
 
-    def finalize(self, indices=None):
+    def finalize(
+        self,
+        indices: slice | tuple | None = None,
+    ) -> np.ndarray | Tensor:
         """
         Averages out contributions from overlapping adds
 
@@ -530,7 +606,14 @@ class Stitcher(ub.NiceRepr):
         return final
 
 
-def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
+def _slices1d(
+    margin: int,
+    stop: int,
+    step: int | None = None,
+    start: int = 0,
+    keepbound: bool = False,
+    check: bool = True,
+) -> Iterator[slice]:
     """
     Helper to generates slices in a single dimension.
 
@@ -584,13 +667,15 @@ def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
 
     if check:
         # see how far off the end we would fall if we didnt check bounds
-        perfect_final_pos = (stop - start - margin)
+        perfect_final_pos = stop - start - margin
         overshoot = perfect_final_pos % step
         if overshoot > 0:
             raise ValueError(
-                ('margin={} and step={} overshoot endpoint={} '
-                 'by {} units when starting from={}').format(
-                     margin, step, stop, overshoot, start))
+                (
+                    'margin={} and step={} overshoot endpoint={} '
+                    'by {} units when starting from={}'
+                ).format(margin, step, stop, overshoot, start)
+            )
     pos = start
     # probably could be more efficient with numpy here
     while True:
@@ -609,6 +694,7 @@ def _slices1d(margin, stop, step=None, start=0, keepbound=False, check=True):
                     break
             else:
                 break
+
 
 # TODO: make nicer
 # class _mkslice_cls:

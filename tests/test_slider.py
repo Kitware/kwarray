@@ -1,15 +1,16 @@
-
 def test_memmaped_stitcher():
     import kwarray
+
     shape = (4, 4)
     device = 'numpy'
     dtype = 'float32'
     nan_policy = 'propogate'
     memmap = True
     self = kwarray.Stitcher(
-        shape, device=device, dtype=dtype, nan_policy=nan_policy,
-        memmap=memmap)
+        shape, device=device, dtype=dtype, nan_policy=nan_policy, memmap=memmap
+    )
     import numpy as np
+
     assert np.all(self.sums == 0)
     assert np.all(self.weights == 0)
     index = (slice(None, None), slice(None, None))
@@ -28,9 +29,11 @@ def test_stitcher_grid():
         import kwimage
     except ImportError:
         import pytest
+
         pytest.skip('requires kwimage')
     import kwarray
     import ubelt as ub
+
     data = kwimage.Mask.demo().data.astype(np.float32)
     data_dims = data.shape
     window_dims = (8, 8)
@@ -39,10 +42,10 @@ def test_stitcher_grid():
     # can do it. Lets demo the params.
     basis = {
         # Vary the overlap of the slider
-        'overlap': (0, 0.5, .9),
+        'overlap': (0, 0.5, 0.9),
         # Vary if we are using weighted stitching or not
         'weighted': ['none', 'gauss'],
-        'keepbound': [True, False]
+        'keepbound': [True, False],
     }
     results = []
     gauss_weights = kwimage.gaussian_patch(window_dims)
@@ -58,7 +61,8 @@ def test_stitcher_grid():
             window=window_dims,
             allow_overshoot=True,
             overlap=params['overlap'],
-            keepbound=params['keepbound'])
+            keepbound=params['keepbound'],
+        )
         slider = kwarray.SlidingWindow(**kwargs)
         stitcher = kwarray.Stitcher(data_dims)
         # Loop over the regions
@@ -68,13 +72,16 @@ def test_stitcher_grid():
             predicted = np.ones_like(chip) * chip.sum() / chip.size
             stitcher.add(sl, predicted, weight=weights)
         final = stitcher.finalize()
-        results.append({
-            'final': final,
-            'params': params,
-        })
+        results.append(
+            {
+                'final': final,
+                'params': params,
+            }
+        )
     # xdoctest: +REQUIRES(--show)
     # xdoctest: +REQUIRES(module:kwplot)
     import kwplot
+
     kwplot.autompl()
     pnum_ = kwplot.PlotNums(nCols=3, nSubplots=len(results) + 2)
     kwplot.imshow(data, pnum=pnum_(), title='input image')

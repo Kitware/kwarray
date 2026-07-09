@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 A convenient interface to solving assignment problems with the Hungarian
 algorithm (also known as Munkres or maximum linear-sum-assignment).
@@ -9,11 +11,16 @@ TODO:
    - [ ] Implement linear-time maximum weight matching approximation algorithm
      from this paper: https://web.eecs.umich.edu/~pettie/papers/ApproxMWM-JACM.pdf
 """
+
 import numpy as np
 from typing import List, Dict, Tuple, Any, Optional, Union  # NOQA
 
 
-def mindist_assignment(vecs1, vecs2, p=2):
+def mindist_assignment(
+    vecs1: np.ndarray,
+    vecs2: np.ndarray,
+    p: float = 2,
+) -> tuple[list[tuple[int, int]], float]:
     """
     Finds minimum cost assignment between two sets of D dimensional vectors.
 
@@ -47,12 +54,13 @@ def mindist_assignment(vecs1, vecs2, p=2):
         Assignment: [(0, 0), (1, 3), (2, 5), (3, 2), (4, 6)]
     """
     from scipy.spatial import distance_matrix
+
     cost = distance_matrix(vecs1, vecs2, p=p)
     assignment, dist_tot = mincost_assignment(cost)
     return assignment, dist_tot
 
 
-def mincost_assignment(cost):
+def mincost_assignment(cost: np.ndarray) -> tuple[list[tuple[int, int]], float]:
     """
     Finds the minimum cost assignment based on a NxM cost matrix, subject to
     the constraint that each row can match at most one column and each column
@@ -119,6 +127,7 @@ def mincost_assignment(cost):
         Total cost: 102.0
     """
     from scipy.optimize import linear_sum_assignment
+
     n1, n2 = cost.shape
     n = max(n1, n2)
     # Embed the [n1 x n2] matrix in a padded (with inf) [n x n] matrix
@@ -146,14 +155,15 @@ def mincost_assignment(cost):
     # Solve munkres problem for minimum weight assignment
     indexes = list(zip(*linear_sum_assignment(cost_matrix)))
     # Return only the feasible assignments
-    assignment = [(i, j) for (i, j) in indexes
-                  if cost_matrix[i, j] < approx_pos_inf]
+    assignment = [
+        (i, j) for (i, j) in indexes if cost_matrix[i, j] < approx_pos_inf
+    ]
     # assert len(assignment) == min(cost.shape)
     cost_tot = sum([cost[i, j] for i, j in assignment])
     return assignment, cost_tot
 
 
-def maxvalue_assignment(value):
+def maxvalue_assignment(value: np.ndarray) -> tuple[list[tuple[int, int]], float]:
     """
     Finds the maximum value assignment based on a NxM value matrix. Any pair
     with a non-positive value will not be assigned.
@@ -207,8 +217,7 @@ def maxvalue_assignment(value):
     return assignment, value_tot
 
 
-def _benchmark_sparse_vs_dense():
-    ...
+def _benchmark_sparse_vs_dense(): ...
 
 
 def _demo_assign_problem(n, m, num_vals, maximize, rng):
@@ -238,6 +247,7 @@ def _demo_assign_problem(n, m, num_vals, maximize, rng):
 def _test_sparse_vs_dense_consistency(n, m, num_vals):
     import kwarray
     import ubelt as ub
+
     rng = kwarray.ensure_rng(0)
 
     max_size = 5
@@ -247,14 +257,15 @@ def _test_sparse_vs_dense_consistency(n, m, num_vals):
 
     def randint_loguniform(low: int, high: int, rng) -> int:
         import math
+
         if low < 1 or high < low:
-            raise ValueError("low must be >= 1 and high >= low")
+            raise ValueError('low must be >= 1 and high >= low')
 
         log_low = math.log10(low)
         log_high = math.log10(high)
 
         rand_log = rng.uniform(log_low, log_high)
-        result = int(10 ** rand_log)
+        result = int(10**rand_log)
 
         # Ensure result falls within the desired bounds due to rounding
         return min(max(result, low), high)
@@ -291,10 +302,14 @@ def _test_sparse_vs_dense_consistency(n, m, num_vals):
         # normalize
         assign1 = [(int(u), int(v)) for u, v in assign1]
 
-        assign3, total3 = _sparse_assignment_networkx(ids1, ids2, values, maximize=maximize)
+        assign3, total3 = _sparse_assignment_networkx(
+            ids1, ids2, values, maximize=maximize
+        )
         assert np.isclose(total3, total1)
 
-        assign2, total2 = sparse_assignment(ids1, ids2, values, maximize=maximize)
+        assign2, total2 = sparse_assignment(
+            ids1, ids2, values, maximize=maximize
+        )
         assert np.isclose(total2, total1)
 
         # assign4, total4 = sparse_partial_assignment(ids1, ids2, values, maximize=maximize)
@@ -303,21 +318,30 @@ def _test_sparse_vs_dense_consistency(n, m, num_vals):
 
 def _sparse_assignment_networkx(ids1, ids2, values, maximize: bool = False):
     import networkx as nx
+
     graph = nx.Graph()
     nodes1 = [('row', k) for k in ids1]
     nodes2 = [('col', k) for k in ids2]
 
     if maximize:
-        edges = [(u, v, {'weight': w}) for u, v, w in zip(nodes1, nodes2, values) if w > 0]
+        edges = [
+            (u, v, {'weight': w})
+            for u, v, w in zip(nodes1, nodes2, values)
+            if w > 0
+        ]
     else:
-        edges = [(u, v, {'weight': w}) for u, v, w in zip(nodes1, nodes2, values)]
+        edges = [
+            (u, v, {'weight': w}) for u, v, w in zip(nodes1, nodes2, values)
+        ]
 
     graph.add_nodes_from(nodes1)
     graph.add_nodes_from(nodes2)
     graph.add_edges_from(edges)
 
     if maximize:
-        edge_assignments = nx.algorithms.matching.max_weight_matching(graph, maxcardinality=True)
+        edge_assignments = nx.algorithms.matching.max_weight_matching(
+            graph, maxcardinality=True
+        )
     else:
         edge_assignments = nx.algorithms.matching.min_weight_matching(graph)
 
@@ -406,7 +430,9 @@ def _sparse_assignment_networkx(ids1, ids2, values, maximize: bool = False):
 #     return assignments, total
 
 
-def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback='auto'):
+def sparse_assignment(
+    ids1, ids2, values, maximize: bool = False, dense_fallback='auto'
+):
     """
     Solves the sparse assignment problem using a padded square matrix.
 
@@ -460,7 +486,7 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
     # from scipy.sparse.csgraph import maximum_bipartite_matching
 
     if not (len(ids1) == len(ids2) == len(values)):
-        raise ValueError("Input lists must have equal length")
+        raise ValueError('Input lists must have equal length')
 
     def unique(seq):
         return list(dict.fromkeys(seq))
@@ -508,7 +534,9 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
     # See issue about forcing a full solution
     # https://github.com/scipy/scipy/issues/14041
     try:
-        row_ind, col_ind = min_weight_full_bipartite_matching(cost_csr, maximize=maximize)
+        row_ind, col_ind = min_weight_full_bipartite_matching(
+            cost_csr, maximize=maximize
+        )
     except ValueError:
         if dense_fallback == 'auto':
             # probably better to just use dense
@@ -529,7 +557,9 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
             row_ind, col_ind = list(zip(*_assigns))
         else:
             # networkx fallback
-            return _sparse_assignment_networkx(ids1, ids2, values, maximize=maximize)
+            return _sparse_assignment_networkx(
+                ids1, ids2, values, maximize=maximize
+            )
 
     assignments = []
     total = 0.0
@@ -543,10 +573,12 @@ def sparse_assignment(ids1, ids2, values, maximize: bool = False, dense_fallback
                 total += cost
     return assignments, total
 
+
 if __name__ == '__main__':
     """
     CommandLine:
         xdoctest -m kwarray.algo_assignment
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)

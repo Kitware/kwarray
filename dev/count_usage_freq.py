@@ -1,5 +1,3 @@
-
-
 # import scriptconfig as scfg
 
 

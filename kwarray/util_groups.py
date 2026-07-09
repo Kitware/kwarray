@@ -1,14 +1,17 @@
+from __future__ import annotations
+
 """
 Functions for partitioning numpy arrays into groups.
 """
+
 import numpy as np
 import ubelt as ub
 from packaging.version import parse as Version
 
-ARGSORT_HAS_STABLE_KIND = Version(np.__version__) >= Version('1.15.0')
+ARGSORT_HAS_STABLE_KIND: bool = Version(np.__version__) >= Version('1.15.0')
 
 
-__TODO__ = """
+__TODO__: str = """
 
 TODO:
 
@@ -31,7 +34,12 @@ the same.
 """
 
 
-def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
+def group_items(
+    item_list: np.ndarray,
+    groupid_list: np.ndarray,
+    assume_sorted: bool = False,
+    axis: int | None = None,
+) -> dict[object, np.ndarray]:
     """
     Groups a list of items by group id.
 
@@ -91,7 +99,10 @@ def group_items(item_list, groupid_list, assume_sorted=False, axis=None):
     return grouped
 
 
-def group_indices(idx_to_groupid, assume_sorted=False):
+def group_indices(
+    idx_to_groupid: np.ndarray | list[object],
+    assume_sorted: bool = False,
+) -> tuple[np.ndarray | list[object], list[np.ndarray]]:
     """
     Find unique items and the indices at which they appear in an array.
 
@@ -223,10 +234,9 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     else:
         if ARGSORT_HAS_STABLE_KIND:
             # Handle output variation introduced (roughly) in numpy 1.25
-            argsort_kw = {'kind': 'stable'}
+            sortx = idx_to_groupid.argsort(kind='stable')
         else:
-            argsort_kw = {}
-        sortx = idx_to_groupid.argsort(**argsort_kw)
+            sortx = idx_to_groupid.argsort()
         groupids_sorted = idx_to_groupid.take(sortx)
 
     if _kind == 'b':
@@ -247,7 +257,11 @@ def group_indices(idx_to_groupid, assume_sorted=False):
     return keys, groupxs
 
 
-def apply_grouping(items, groupxs, axis=0):
+def apply_grouping(
+    items: np.ndarray,
+    groupxs: list[np.ndarray],
+    axis: int | None = 0,
+) -> list[np.ndarray]:
     """
     Applies grouping from group_indicies.
 
@@ -279,7 +293,7 @@ def apply_grouping(items, groupxs, axis=0):
     return [items.take(xs, axis=axis) for xs in groupxs]
 
 
-def group_consecutive(arr, offset=1):
+def group_consecutive(arr: np.ndarray, offset: float = 1) -> list[np.ndarray]:
     """
     Returns lists of consecutive values. Implementation inspired by [3]_.
 
@@ -321,7 +335,10 @@ def group_consecutive(arr, offset=1):
     return groups
 
 
-def group_consecutive_indices(arr, offset=1):
+def group_consecutive_indices(
+    arr: np.ndarray,
+    offset: float = 1,
+) -> list[np.ndarray]:
     """
     Returns lists of indices pointing to consecutive values
 
@@ -369,4 +386,5 @@ if __name__ == '__main__':
         xdoctest -m kwarray.util_groups
     """
     import xdoctest
+
     xdoctest.doctest_module(__file__)
