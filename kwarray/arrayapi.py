@@ -491,20 +491,22 @@ class TorchImpls:
         """
         import torch
 
-        if not torch.is_tensor(flags):
-            flags = np.asarray(flags).astype(np.uint8)
-            flags = torch.BoolTensor(flags).to(data.device)
-        if flags.ndimension() != 1:
+        if isinstance(flags, torch.Tensor):
+            torch_flags = flags
+        else:
+            flags_np = np.asarray(flags).astype(np.uint8)
+            torch_flags = torch.BoolTensor(flags_np).to(data.device)
+        if torch_flags.ndimension() != 1:
             raise ValueError('condition must be a 1-d tensor')
         if axis is None:
-            return torch.masked_select(data.view(-1), flags)
+            return torch.masked_select(data.view(-1), torch_flags)
         else:
             out_shape = list(data.shape)
-            out_shape[axis] = int(flags.sum())
+            out_shape[axis] = int(torch_flags.sum())
 
             fancy_shape = [1] * len(out_shape)
-            fancy_shape[axis] = flags.numel()
-            explicit_flags = flags.view(*fancy_shape)
+            fancy_shape[axis] = torch_flags.numel()
+            explicit_flags = torch_flags.view(*fancy_shape)
 
             flat_out = torch.masked_select(data, explicit_flags)
             out = flat_out.view(*out_shape)
@@ -1424,9 +1426,7 @@ class TorchImpls:
     ) -> Tensor:
         import torch
 
-        return torch.clamp(  # ty: ignore[no-matching-overload]
-            data, a_min, a_max, out=out
-        )
+        return torch.clamp(data, a_min, a_max, out=out)
 
     @_torchmethod(func_type='data_func')
     def softmax(data: Tensor, axis: int | None = None) -> Tensor:
