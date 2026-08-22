@@ -302,7 +302,7 @@ def argmaxima(
             return np.empty(0, dtype=int)
         elif num == 1:
             # very fast
-            idxs = np.array([arr.argmax(axis=axis)])
+            idxs = np.array([np.argmax(arr)])
         elif num < axis_size:
             # argpartition is almost what we want, and its faster than argsort
             kth = axis_size - num
@@ -481,7 +481,7 @@ def argminima(
             return np.empty(0, dtype=int)
         elif num == 1:
             # very fast
-            idxs = np.array([arr.argmin(axis=axis)])
+            idxs = np.array([np.argmin(arr)])
         elif num < len(arr):
             # argpartition is almost what we want, and its faster than argsort
             kth = num

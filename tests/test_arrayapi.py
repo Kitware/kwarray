@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 def indexable_allclose(
     dct1, dct2, rel_tol=1e-9, abs_tol=0.0, return_info=False
 ):
@@ -24,18 +26,19 @@ def indexable_allclose(
     walker2 = ub.IndexableWalker(dct2)
     flat_items1 = [
         (path, value)
-        for path, value in walker1
+        for path, value in cast(Any, walker1)
         if not isinstance(value, walker1.indexable_cls) or len(value) == 0
     ]
     flat_items2 = [
         (path, value)
-        for path, value in walker2
+        for path, value in cast(Any, walker2)
         if not isinstance(value, walker1.indexable_cls) or len(value) == 0
     ]
 
     flat_items1 = sorted(flat_items1)
     flat_items2 = sorted(flat_items2)
 
+    info: dict[str, Any]
     if len(flat_items1) != len(flat_items2):
         info = {'faillist': ['length mismatch']}
         final_flag = False
@@ -156,7 +159,7 @@ def test_numpy_torch_compat():
                     # TODO: better signature registration so we know how we
                     # need to call the data. For now blocklist non-easy cases
 
-                    func_name = row['func_name']
+                    func_name = cast(str, row['func_name'])
                     if func_name in blocklist:
                         continue
 

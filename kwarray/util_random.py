@@ -94,7 +94,7 @@ This results in:
 import numpy as np
 import random
 import itertools as it
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
@@ -181,7 +181,7 @@ def shuffle(
         [3, 2, 5, 1, 4, 6]
     """
     rng = ensure_rng(rng)
-    rng.shuffle(items)  # ty: ignore[invalid-argument-type]
+    rng.shuffle(items)
     return items
 
 
@@ -279,10 +279,8 @@ def random_combinations(
         items = list(items)
         combos = set()
         while len(combos) < num_:
-            # combo = tuple(sorted(rng.choice(items, size, replace=False)))
-            combo = tuple(sorted(rng.sample(items, size)))
+            combo = tuple(sorted(cast(Any, rng.sample(items, size))))
             if combo not in combos:
-                # TODO: store indices instead of combo values
                 combos.add(combo)
                 yield combo
 
@@ -341,8 +339,7 @@ def random_product(
         idx_cards = np.array([len(g) for g in items], dtype=np.uint32)
 
     ndims = len(items)
-    # max_num = np.prod(idx_cards.astype(np.float))
-    max_num = np.multiply.reduce(idx_cards.astype(np.float32))
+    max_num = np.multiply.reduce(idx_cards.astype(np.float32))  # ty: ignore[no-matching-overload]
 
     if num is None:
         num = max_num
@@ -362,7 +359,7 @@ def random_product(
             rng = ensure_rng(rng, 'numpy')
             # Need to use least-common-multiple so the mod of all idxs
             # are equally likely
-            card_lcm = np.lcm.reduce(idx_cards)
+            card_lcm = np.lcm.reduce(idx_cards)  # ty: ignore[no-matching-overload]
         else:
             rng = ensure_rng(rng, 'python')
 

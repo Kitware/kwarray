@@ -39,7 +39,7 @@ import collections
 import numpy as np
 import ubelt as ub
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -47,30 +47,10 @@ if TYPE_CHECKING:
     from numpy.typing import ArrayLike
     from ubelt.util_const import NoParamType
 
-try:
-    from packaging.version import parse as Version
-except ImportError:
-    from distutils.version import LooseVersion as Version
+from packaging.version import Version
 
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    import pkg_resources
-
-    importlib_metadata = None  # ty: ignore[invalid-assignment]
-else:
-    pkg_resources = None
-
-try:
-    _NUMPY_VERSION = Version(importlib_metadata.version('numpy'))
-except importlib_metadata.PackageNotFoundError:
-    _NUMPY_VERSION = None
-
-
-if _NUMPY_VERSION is None:
-    _NUMPY_LT_1_22_0 = None
-else:
-    _NUMPY_LT_1_22_0 = _NUMPY_VERSION < Version('1.22.0')
+_NUMPY_VERSION = Version(np.__version__)
+_NUMPY_LT_1_22_0 = _NUMPY_VERSION < Version('1.22.0')
 
 
 # Maybe name or alias or use in kwarray.describe?
@@ -194,7 +174,7 @@ def stats_dict(
     elif torch is not None and isinstance(inputs, torch.Tensor):
         nparr = inputs.data.cpu().numpy()
     else:
-        nparr = np.array(list(inputs))
+        nparr = np.array(list(cast(Any, inputs)))
     # Check to make sure stats are feasible
     if len(nparr) == 0:
         stats['empty_list'] = True
@@ -227,10 +207,7 @@ def stats_dict(
 
         if quantile:
             # if not ub.iterable(quantile):
-            if quantile is True:
-                quantile == 'auto'
-
-            if quantile == 'auto':
+            if quantile is True or quantile == 'auto':
                 quantile = [0.25, 0.50, 0.75]
 
         if True:
@@ -240,15 +217,14 @@ def stats_dict(
             stats['min'] = np.float32(min_val)
             stats['max'] = np.float32(max_val)
         if quantile:
-            if quantile == 'auto':
-                quantile = [0.25, 0.50, 0.75]
+            quantile = cast('list[float]', quantile)
             # FIXME allow nans
             if nan:
                 _quantile = nanquantile
             else:
                 # Prefer numpy implementation if available
                 _quantile = getattr(np, 'nanquantile', nanquantile)
-            quant_values = _quantile(nparr, quantile, axis=axis)
+            quant_values = np.asarray(_quantile(nparr, quantile, axis=axis))
             quant_keys = ['q_{:0.2f}'.format(q) for q in quantile]
             for k, v in zip(quant_keys, quant_values):
                 stats[k] = v
@@ -347,9 +323,12 @@ def nanquantile(
                 return np.full(np.shape(q), np.nan)
 
         if _NUMPY_LT_1_22_0:
-            return np.quantile(valid, q, interpolation=interpolation)
+            quantile_compat = cast(Any, np.quantile)
+            return quantile_compat(valid, q, interpolation=interpolation)
         else:
-            return np.quantile(valid, q, method=interpolation)
+            return np.quantile(
+                valid, cast(Any, q), method=cast(Any, interpolation)
+            )
 
     # Case 1: When axis is None, flatten the array.
     if axis is None:
@@ -357,9 +336,12 @@ def nanquantile(
         if valid.size == 0:
             return np.nan if np.isscalar(q) else np.full(np.shape(q), np.nan)
         if _NUMPY_LT_1_22_0:
-            return np.quantile(valid, q, interpolation=interpolation)
+            quantile_compat = cast(Any, np.quantile)
+            return quantile_compat(valid, q, interpolation=interpolation)
         else:
-            return np.quantile(valid, q, method=interpolation)
+            return np.quantile(
+                valid, cast(Any, q), method=cast(Any, interpolation)
+            )
 
     # Case 2: When axis is an integer.
     if isinstance(axis, int):
@@ -483,6 +465,11 @@ class RunningStats(ub.NiceRepr):
 
     nan_policy: str
     check_weights: bool
+    raw_max: Any
+    raw_min: Any
+    raw_total: Any
+    raw_squares: Any
+    n: Any
 
     def __init__(
         run,
@@ -508,7 +495,7 @@ class RunningStats(ub.NiceRepr):
                 nan_behavior = kwargs.pop('nan_behavior', None)
                 if nan_behavior == 'ignore':
                     nan_behavior = 'omit'
-                nan_policy = nan_behavior
+                nan_policy = cast(str, nan_behavior)
                 ub.schedule_deprecation(
                     'kwarray',
                     'nan_policy',
@@ -618,6 +605,7 @@ class RunningStats(ub.NiceRepr):
             >>> run.update_many(data, weight)
         """
         data = np.asarray(data)
+        weights = np.asarray(weights)
         if run.nan_policy == 'omit':
             weights = weights * (~np.isnan(data)).astype(float)
         elif run.nan_policy == 'propogate':
@@ -698,6 +686,8 @@ class RunningStats(ub.NiceRepr):
             >>> print('summary(axis=1) = {}'.format(ub.urepr(run.summarize(axis=1), nl=1)))
             >>> print('summary(axis=0) = {}'.format(ub.urepr(run.summarize(axis=0), nl=1)))
         """
+        data = np.asarray(data)
+        weights = np.asarray(weights)
         if run.nan_policy == 'omit':
             weights = weights * (~np.isnan(data)).astype(float)
         elif run.nan_policy == 'propogate':
@@ -752,7 +742,7 @@ class RunningStats(ub.NiceRepr):
         run,
         axis: int | list[int] | tuple[int, ...] | None | NoParamType = None,
         keepdims: bool = True,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """
         Compute summary statistics across a one or more dimension
 
@@ -793,6 +783,8 @@ class RunningStats(ub.NiceRepr):
             >>> #assert ub.util_indexable.indexable_allclose(s1N, s2N, rel_tol=0.0, abs_tol=0.0)
             >>> assert s0N['mean'] == 0.625
         """
+        if isinstance(axis, list):
+            axis = tuple(axis)
         with np.errstate(divide='ignore'):
             with warnings.catch_warnings():
                 warnings.filterwarnings(
@@ -851,7 +843,7 @@ class RunningStats(ub.NiceRepr):
                     )
                     return info
 
-    def current(run) -> dict[str, object]:
+    def current(run) -> dict[str, Any]:
         """
         Returns current staticis on a per-element basis
         (not summarized over any axis)
@@ -1168,14 +1160,13 @@ def _no_keepdim_indexer(result, axis):
     if axis is None:
         indexer = [0] * len(result.shape)
     else:
-        indexer = [slice(None)] * len(result.shape)
+        indexer: list[Any] = [slice(None)] * len(result.shape)
         if isinstance(axis, (list, tuple)):
             for a in axis:
                 indexer[a] = 0
         else:
             indexer[axis] = 0
-    indexer = tuple(indexer)
-    return indexer
+    return tuple(indexer)
 
 
 def _postprocess_keepdims(original, result, axis):
@@ -1185,7 +1176,7 @@ def _postprocess_keepdims(original, result, axis):
     """
     # Newer versions of numpy have keepdims on more functions
     if axis is not None:
-        expander = [slice(None)] * len(original.shape)
+        expander: list[Any] = [slice(None)] * len(original.shape)
         if isinstance(axis, (list, tuple)):
             for a in axis:
                 expander[a] = None
@@ -1340,8 +1331,8 @@ class RunningHistogram:
             # underflow/overflow
             under = arr < self.edges[0]
             over = arr >= self.edges[-1]
-            self.n_underflow += under.sum()
-            self.n_overflow += over.sum()
+            self.n_underflow += int(under.sum())
+            self.n_overflow += int(over.sum())
             mid = arr[~(under | over)]
         else:
             mid = arr
@@ -1480,9 +1471,9 @@ class RunningDiscreteHistogram:
         if self.dtype != other.dtype:
             raise ValueError('dtype mismatch when merging histograms')
         # merge other's data by updating from its values repeated by counts
-        if other.values.size:
+        if other.bins.size:
             # vectorized: repeat values and call update
             self.update(np.repeat(other.bins, other.counts))
-        self.n_total += other.n_total
+        self.n_total += other.n_nan
         self.n_nan += other.n_nan
         return self
