@@ -123,3 +123,18 @@ Resolved the final `torch.clamp` typing diagnostic after the previous ArrayAPI c
 I kept the runtime implementation unchanged and widened only `TorchImpls.clip`'s `a_min` and `a_max` annotations to `Any`. This is an intentional type boundary around a third-party overload discrepancy: Torch documents clamp bounds as numbers or tensors, and kwarray's cross-backend wrapper is intentionally more permissive than a single version of the Torch stubs can express. Because annotations are deferred, this adds no runtime conversion, allocation, `typing.cast` call, or branch to the hot path.
 
 Validation here is `python -m compileall -q kwarray tests` plus `git diff --check`; `ty` is not installed in this sandbox. The remaining risk is limited to whether another checker version chooses to diagnose the broad bound annotation itself, which is unlikely because `Any` is specifically intended to terminate overload checking at this backend boundary.
+
+## 2026-08-22 14:57:00 -0400
+The cp38 strict-full job still resolved the installed wheel with the intended
+`torch<2.5` bound but constrained the environment to `torch==2.5.1`. The
+checked-in exported lock had been regenerated from a stale `uv.lock` after the
+requirements edit. The project declares dependencies dynamically from files
+under `requirements/`, while uv's default local-project cache invalidation
+only watches the project metadata files. I added explicit uv cache keys for the
+requirements inputs (and the module that supplies the dynamic version), then
+restored the cp38 branch of the strict optional lock to the Torch 2.4.1
+resolution. This keeps the lock workflow rather than special-casing CI. I
+could verify the stale export locally and verify that the corrected constraint
+matches the source requirement, but this sandbox cannot perform a networked
+`uv lock`; the next refresh should be run on a networked checkout and its
+`uv.lock` change reviewed before committing.

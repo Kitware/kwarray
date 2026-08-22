@@ -78,6 +78,16 @@ packages.find.include = [
   "kwarray*",
 ]
 
+[tool.uv]
+# Dependency metadata is populated dynamically from requirements/*.txt.
+# Include those inputs in uv's local-project cache key so `uv lock` sees
+# dependency edits even when pyproject.toml itself is unchanged.
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "requirements/*.txt" },
+  { file = "kwarray/__init__.py" },
+]
+
 [tool.ruff]
 target-version = "py38"
 line-length = 80
