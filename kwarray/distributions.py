@@ -29,7 +29,7 @@ import builtins
 import numbers
 import fractions  # NOQA
 from kwarray.util_random import ensure_rng
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
@@ -61,8 +61,8 @@ class Value(ub.NiceRepr):
 
     default: object | None
     name: str | None
-    min: object | None
-    max: object | None
+    min: Any
+    max: Any
     help: str | None
     type: type | None
     constraints: object | None
@@ -72,8 +72,8 @@ class Value(ub.NiceRepr):
     def __init__(
         self,
         default: object | None = None,
-        min: object | None = None,
-        max: object | None = None,
+        min: Any = None,
+        max: Any = None,
         help: str | None = None,
         constraints: object | None = None,
         type: type | None = None,
@@ -221,11 +221,15 @@ class Parameterized(ub.NiceRepr):
         setattr(self, key, value)
         self._params[key] = value
 
+    def __getattr__(self, key: str) -> Any:
+        # Parameters are materialized dynamically by ``_setparam``.
+        raise AttributeError(key)
+
     def _setchild(self, key, value):
         assert isinstance(key, str)
         self._children[key] = value
 
-    def children(self) -> Generator[tuple[str, object], None, None]:
+    def children(self) -> Generator[tuple[str, Any], None, None]:
         for key, value in self._children.items():
             yield key, value
 
@@ -467,7 +471,7 @@ class _BinOpMixin(object):
     def __abs__(self) -> Composed:
         return Composed(np.abs, [self])
 
-    def __round__(self, ndigits: int | None = None) -> Composed:
+    def __round__(self, ndigits: builtins.int | None = None) -> Composed:
         return Composed(np.round, [self, ndigits])
 
     def __trunc__(self) -> Composed:
@@ -489,13 +493,13 @@ class _BinOpMixin(object):
     def int(self) -> Composed:
         def _cast_int(x):
             if isinstance(x, np.ndarray):
-                return x.astype(np.int)
+                return x.astype(int)
             else:
                 return int(x)
 
         return Composed(_cast_int, [self])
 
-    def round(self, ndigits: int | None = None) -> Composed:
+    def round(self, ndigits: builtins.int | None = None) -> Composed:
         return Composed(np.round, [self, ndigits])
 
     def clip(
@@ -604,7 +608,7 @@ class Distribution(Parameterized, _RBinOpMixin):
     def __init__(self, *args: object, **kwargs: object) -> None:
         super(Distribution, self).__init__()
         rng = kwargs.pop('rng', None)
-        self.rng = ensure_rng(rng)
+        self.rng = ensure_rng(cast(Any, rng))
         constraints = []
         __params__ = self.__params__
         if __params__ is NotImplemented:
@@ -635,9 +639,9 @@ class Distribution(Parameterized, _RBinOpMixin):
 
     def seed(self, rng: RNGInput = None) -> None:
         super(Distribution, self).seed(rng)
-        self.rng = ensure_rng(rng)
+        self.rng = ensure_rng(cast(Any, rng))
 
-    def sample(self, *shape: int) -> object:
+    def sample(self, *shape: int) -> Any:
         raise NotImplementedError('overwrite me')
 
     @classmethod
@@ -677,7 +681,7 @@ class Distribution(Parameterized, _RBinOpMixin):
                 TruncNormal,
                 Uniform,
             ]
-            chosen = rng.choice(_PRIMATIVES)
+            chosen = cast(Any, rng).choice(_PRIMATIVES)
             self = chosen.random(rng=rng)
         else:
             try:
@@ -685,7 +689,10 @@ class Distribution(Parameterized, _RBinOpMixin):
                 # - [ ] Support for notations like a "min" param must be smaller
                 # than a "max" param.
                 kw = {}
-                for k, v in cls.__params__.items():
+                params = cls.__params__
+                if not isinstance(params, dict):
+                    raise TypeError(params)
+                for k, v in params.items():
                     type = v.type
                     if type is not None:
                         sample = v.sample(rng=rng)
@@ -727,7 +734,7 @@ class Distribution(Parameterized, _RBinOpMixin):
     def plot(
         self,
         n: str | int = '0.01s',
-        bins: int | list[Number] | str = 'auto',
+        bins: int | Sequence[float] | str = 'auto',
         stat: str = 'count',
         color: object | None = None,
         kde: bool = True,
@@ -779,7 +786,7 @@ class Distribution(Parameterized, _RBinOpMixin):
             from matplotlib import pyplot as plt
 
             ax = plt.gca()
-        data = self.sample(n)
+        data = np.asarray(self.sample(n))
         ax.hist(data, bins=bins, color=color, label=label)
 
 
@@ -915,7 +922,7 @@ class Mixture(MixedDistribution):
     def __init__(
         self,
         pdfs: Sequence[Distribution],
-        weights: Sequence[float] | None = None,
+        weights: Sequence[float] | np.ndarray | None = None,
         rng: RNGInput = None,
     ) -> None:
         super(Mixture, self).__init__(rng=rng)
@@ -933,7 +940,7 @@ class Mixture(MixedDistribution):
         `SOuser6655984 <https://stackoverflow.com/a/47762586/887074>`
         """
         # Choose which distributions are picked for each sample
-        idxs = self._idx_choice.sample(*shape)
+        idxs = np.asarray(self._idx_choice.sample(*shape))
         idx_to_nsamples = ub.dict_hist(idxs.ravel())
         out = np.zeros(shape)
         for idx, n in idx_to_nsamples.items():
@@ -1112,15 +1119,15 @@ class Uniform(ContinuousDistribution):
         return rv
 
     @classmethod
-    def coerce(cls, arg: object) -> Uniform:
+    def coerce(cls, arg: object, rng: RNGInput = None) -> Uniform:
         try:
-            self = super(Uniform, cls).coerce(arg)
+            self = super(Uniform, cls).coerce(arg, rng=rng)
         except CoerceError:
             if isinstance(arg, (int, float)):
-                self = cls(low=0, high=arg)
+                self = cls(low=0, high=arg, rng=rng)
             else:
                 raise
-        return self
+        return cast(Uniform, self)
 
 
 class Exponential(ContinuousDistribution):
@@ -1217,9 +1224,8 @@ class DiscreteUniform(DiscreteDistribution):
     )
 
     def sample(self, *shape: int) -> np.ndarray | int:
-        if len(shape) == 0:
-            shape = None
-        idx = self.rng.randint(self.min, self.max, size=shape)
+        size = None if len(shape) == 0 else shape
+        idx = self.rng.randint(self.min, self.max, size=size)
         return idx
 
     @classmethod
@@ -1231,7 +1237,7 @@ class DiscreteUniform(DiscreteDistribution):
                 self = cls(max=arg, rng=rng)
             else:
                 raise
-        return self
+        return cast(DiscreteUniform, self)
 
 
 class Normal(ContinuousDistribution):
@@ -1402,15 +1408,15 @@ class Bernoulli(DiscreteDistribution):
         return rv
 
     @classmethod
-    def coerce(cls, arg: object) -> Bernoulli:
+    def coerce(cls, arg: object, rng: RNGInput = None) -> Bernoulli:
         try:
-            self = super(Bernoulli, cls).coerce(arg)
+            self = super(Bernoulli, cls).coerce(arg, rng=rng)
         except CoerceError:
             if isinstance(arg, (int, float)):
-                self = cls(p=arg)
+                self = cls(p=arg, rng=rng)
             else:
                 raise
-        return self
+        return cast(Bernoulli, self)
 
 
 class Binomial(DiscreteDistribution):
@@ -1507,8 +1513,8 @@ class Categorical(DiscreteDistribution):
 
     def __init__(
         self,
-        categories: Sequence[object],
-        weights: Sequence[float] | None = None,
+        categories: Sequence[object] | np.ndarray,
+        weights: Sequence[float] | np.ndarray | None = None,
         rng: RNGInput = None,
     ) -> None:
         super(Categorical, self).__init__(rng=rng)
@@ -1517,9 +1523,8 @@ class Categorical(DiscreteDistribution):
         self._idxs = np.arange(len(self.categories))
 
     def sample(self, *shape: int) -> np.ndarray | object:
-        if len(shape) == 0:
-            shape = None
-        idxs = self.rng.choice(self._idxs, size=shape, p=self.weights)
+        size = None if len(shape) == 0 else shape
+        idxs = self.rng.choice(self._idxs, size=size, p=self.weights)
         # if isinstance(self.categories, np.ndarray):
         return self.categories[idxs]
         # return self.rng.choice(self.categories, size=shape, p=self.weights)
@@ -1612,10 +1617,9 @@ class CategoryUniform(DiscreteUniform):
         self._setparam('categories', np.array(categories))
         self._num = len(self.categories)
 
-    def sample(self, *shape: int) -> np.ndarray | object:
-        if len(shape) == 0:
-            shape = None
-        idx = self.rng.randint(0, self._num, size=shape)
+    def sample(self, *shape: int) -> Any:
+        size = None if len(shape) == 0 else shape
+        idx = self.rng.randint(0, self._num, size=size)
         return self.categories[idx]
 
 
@@ -1652,7 +1656,7 @@ class PDF(Distribution):
 
     edge_x: np.ndarray
     edge_cdf: np.ndarray
-    inv_cdf: object
+    inv_cdf: Callable[[Any], Any]
 
     def __init__(
         self,
@@ -1706,6 +1710,8 @@ class Seeded(object):
         self.cls = cls
 
     def __call__(self, *args: object, **kwargs: object) -> Distribution:
+        if self.cls is None:
+            raise TypeError('No distribution class was configured')
         return self.cls(*args, rng=self.rng, **kwargs)
 
     def __getattr__(self, key: str) -> object:

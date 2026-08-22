@@ -94,7 +94,7 @@ This results in:
 import numpy as np
 import random
 import itertools as it
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
@@ -279,10 +279,8 @@ def random_combinations(
         items = list(items)
         combos = set()
         while len(combos) < num_:
-            # combo = tuple(sorted(rng.choice(items, size, replace=False)))
-            combo = tuple(sorted(rng.sample(items, size)))
+            combo = tuple(sorted(cast(Any, rng.sample(items, size))))
             if combo not in combos:
-                # TODO: store indices instead of combo values
                 combos.add(combo)
                 yield combo
 

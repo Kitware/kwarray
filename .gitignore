@@ -95,3 +95,6 @@ pip-wheel-metadata
 
 docs/source/_static
 docs/source/images
+*.tar.gz
+untracked
+git-of-theseus

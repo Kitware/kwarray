@@ -13,7 +13,7 @@ import ubelt as ub
 import os
 import numpy as np
 import itertools as it
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator, Sequence
@@ -177,7 +177,9 @@ class SlidingWindow(ub.NiceRepr):
 
         # NOTE: if we have overshot, then basis shape will not perfectly
         # align to the original image. This shape will be a bit bigger.
-        self.basis_slices = [list(_slices1d(**kw)) for kw in stide_kw]
+        self.basis_slices = [
+            list(_slices1d(**cast(Any, kw))) for kw in stide_kw
+        ]
         self.basis_shape = [len(b) for b in self.basis_slices]
         self.n_total = int(np.prod(self.basis_shape))
 
@@ -425,10 +427,12 @@ class Stitcher(ub.NiceRepr):
     nan_policy: str
     shape: tuple[int, ...]
     device: str | int | TorchDevice
-    sums: np.ndarray | Tensor
-    weights: np.ndarray | Tensor
-    sumview: np.ndarray | Tensor
-    weightview: np.ndarray | Tensor
+    sums: Any
+    weights: Any
+    sumview: Any
+    weightview: Any
+    _isnan: Any
+    _any: Any
 
     def __init__(
         self,
@@ -529,7 +533,7 @@ class Stitcher(ub.NiceRepr):
     def add(
         self,
         indices: slice | tuple | None,
-        patch: np.ndarray | Tensor,
+        patch: Any,
         weight: float | np.ndarray | Tensor | None = None,
     ) -> None:
         """
@@ -549,11 +553,19 @@ class Stitcher(ub.NiceRepr):
             mask = self._isnan(patch)
             if self._any(mask):
                 # Detect nans, set weight and value to zero
-                if weight is None:
-                    weight = (~mask).astype(self.weights.dtype)
+                valid = ~mask
+                if self.device == 'numpy':
+                    valid_weight = valid.astype(self.weights.dtype)
                 else:
-                    weight = weight * (~mask).astype(self.weights.dtype)
-                patch = patch.copy()
+                    valid_weight = valid.to(dtype=self.weights.dtype)
+                if weight is None:
+                    weight = valid_weight
+                else:
+                    weight = weight * valid_weight
+                if isinstance(patch, np.ndarray):
+                    patch = patch.copy()
+                else:
+                    patch = patch.clone()
                 patch[mask] = 0
         elif self.nan_policy == 'raise':
             mask = self._isnan(patch)

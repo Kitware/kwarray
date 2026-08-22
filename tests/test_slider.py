@@ -1,3 +1,5 @@
+from typing import Any
+
 def test_memmaped_stitcher():
     import kwarray
 
@@ -40,14 +42,14 @@ def test_stitcher_grid():
     # We are going to slide a window over the data, do some processing
     # and then stitch it all back together. There are a few ways we
     # can do it. Lets demo the params.
-    basis = {
+    basis: dict[str, Any] = {
         # Vary the overlap of the slider
         'overlap': (0, 0.5, 0.9),
         # Vary if we are using weighted stitching or not
         'weighted': ['none', 'gauss'],
         'keepbound': [True, False],
     }
-    results = []
+    results: list[dict[str, Any]] = []
     gauss_weights = kwimage.gaussian_patch(window_dims)
     gauss_weights = kwarray.normalize(gauss_weights)
     for params in ub.named_product(basis):
@@ -56,7 +58,7 @@ def test_stitcher_grid():
         elif params['weighted'] == 'gauss':
             weights = gauss_weights
         # Build the slider and stitcher
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             shape=data_dims,
             window=window_dims,
             allow_overshoot=True,
@@ -88,7 +90,7 @@ def test_stitcher_grid():
     kwplot.imshow(gauss_weights, pnum=pnum_(), title='Gaussian weights')
     pnum_()
     for result in results:
-        param_key = ub.urepr(result['params'], compact=1)
+        param_key = ub.urepr(result['params'], compact=True)
         final = result['final']
         canvas = kwarray.normalize(final)
         canvas = kwimage.fill_nans_with_checkers(canvas)

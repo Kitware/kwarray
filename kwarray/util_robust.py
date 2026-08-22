@@ -776,7 +776,7 @@ def normalize(
             if isclose(alpha, 0):
                 alpha = 1
         except TypeError:
-            alpha = alpha + np.isclose(alpha, 0)
+            alpha = cast(float, alpha + np.isclose(alpha, 0))
 
         energy = float_out
         energy -= beta
