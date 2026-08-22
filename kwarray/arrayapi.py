@@ -1420,8 +1420,8 @@ class TorchImpls:
     @_torchmethod(func_type='data_func')
     def clip(
         data: Tensor,
-        a_min: object | None = None,
-        a_max: object | None = None,
+        a_min: Any = None,
+        a_max: Any = None,
         out: Tensor | None = None,
     ) -> Tensor:
         import torch
