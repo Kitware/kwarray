@@ -1,82 +1,204 @@
 [build-system]
-requires = [ "setuptools>=41.0.1",]
 build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=77",
+]
 
-# TODO:
-#[project]
+[project]
+name = "kwarray"
+description = "The kwarray module"
+license = "Apache-2.0"
+license-files = [
+  "LICENSE",
+]
+authors = [
+  { name = "Kitware Inc.", email = "kitware@kitware.com" },
+  { name = "Jon Crall", email = "jon.crall@kitware.com" }
+]
+requires-python = ">=3.8"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Utilities",
+]
+dynamic = [
+  "dependencies",
+  "optional-dependencies",
+  "readme",
+  "version",
+]
+urls.Homepage = "https://gitlab.kitware.com/computer-vision/kwarray"
+
+[tool.setuptools]
+include-package-data = true
+dynamic.dependencies.file = [
+  "requirements/runtime.txt",
+]
+dynamic.optional-dependencies.all.file = [
+  "requirements/optional.txt",
+]
+dynamic.optional-dependencies.docs.file = [
+  "requirements/docs.txt",
+]
+dynamic.optional-dependencies.linting.file = [
+  "requirements/linting.txt",
+]
+dynamic.optional-dependencies.optional.file = [
+  "requirements/optional.txt",
+]
+dynamic.optional-dependencies.tests.file = [
+  "requirements/tests.txt",
+]
+dynamic.readme.file = [
+  "README.rst",
+]
+dynamic.readme.content-type = "text/x-rst"
+dynamic.version.attr = "kwarray.__version__"
+package-data."*" = [
+  "requirements/*.txt",
+]
+package-data.kwarray = [
+  "py.typed",
+]
+packages.find.where = [
+  ".",
+]
+packages.find.include = [
+  "kwarray*",
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 80
+format.indent-style = "space"
+format.quote-style = "single"
+format.line-ending = "auto"
+format.skip-magic-trailing-comma = false
+format.docstring-code-format = false
+lint.select = [
+  "E",
+  "F",
+  "I",
+]
+lint.ignore = [
+  "E402",
+  "E501",
+]
+
+[tool.codespell]
+skip = [
+  "./docs/build",
+  "./*.egg-info",
+  "./build",
+  "./htmlcov",
+]
+count = true
+quiet-level = 3
+ignore-words-list = [
+  "fpr",
+  "ANS",
+  "ans",
+  "numer",
+  "wont",
+  "cant",
+  "ANS",
+  "doesnt",
+  "arent",
+  "ans",
+  "thats",
+  "datas",
+  "isnt",
+  "nd",
+  "bu",
+  "hasnt",
+  "didnt",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.ty]
+rules.unused-type-ignore-comment = "ignore"
+rules.unresolved-import = "ignore"
+
+[tool.pytest]
+ini_options.addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py --ignore-glob=dev --ignore-glob=docs"
+ini_options.norecursedirs = ".git ignore build __pycache__ dev _skbuild docs"
+ini_options.filterwarnings = [
+  "default",
+  "ignore:.*No cfgstr given in Cacher constructor or call.*:Warning",
+  "ignore:.*Define the __nice__ method for.*:Warning",
+  "ignore:.*private pytest class or function.*:Warning",
+]
+
+[tool.coverage]
+run.branch = true
+report.exclude_lines = [
+  ".*  # nocover",
+  ".*  # pragma: no cover",
+  ".*if six.PY2:",
+  "^ *pass *$",
+  "^ *raise",
+  "def __repr__",
+  "if __name__ == .__main__.:",
+  "if _debug:",
+  "if 0:",
+  "if trace is not None",
+  "pragma: no cover",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "verbose = .*",
+]
+report.omit = [
+  "*/setup.py",
+  "kwarray/__main__.py",
+]
 
 [tool.xcookie]
-tags = [ "purepy", "gitlab", "kitware",]
+tags = [
+  "purepy",
+  "gitlab",
+  "kitware",
+]
 mod_name = "kwarray"
 repo_name = "kwarray"
 rel_mod_parent_dpath = "."
-#ci_cpython_versions = ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
-os = [ "osx", "all", "win", "linux",]
+os = [
+  "linux",
+  "osx",
+  "win",
+]
 min_python = "3.8"
 max_python = "3.14"
 version = "{mod_dpath}/__init__.py::__version__"
 author = "Kitware Inc., Jon Crall"
 author_email = "kitware@kitware.com, jon.crall@kitware.com"
-url = 'https://gitlab.kitware.com/computer-vision/kwarray' 
+url = "https://gitlab.kitware.com/computer-vision/kwarray"
 description = "The kwarray module"
 license = "Apache 2"
 typed = 1
 render_doc_images = 1
 dev_status = "beta"
-
 classifiers = [
-    'Development Status :: 4 - Beta',
-    'Intended Audience :: Developers',
-    'Intended Audience :: Science/Research',
-    'Topic :: Scientific/Engineering',
-    'Topic :: Software Development',
-    'Topic :: Software Development :: Libraries :: Python Modules',
-    'Topic :: Utilities',
-    'License :: OSI Approved :: Apache Software License',
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Utilities",
 ]
-
-[tool.pytest.ini_options]
-addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py --ignore-glob=dev --ignore-glob=docs"
-norecursedirs = ".git ignore build __pycache__ dev _skbuild"
-filterwarnings = [ "default", "ignore:.*No cfgstr given in Cacher constructor or call.*:Warning", "ignore:.*Define the __nice__ method for.*:Warning", "ignore:.*private pytest class or function.*:Warning",]
-
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-exclude_lines = [ "pragma: no cover", ".*  # pragma: no cover", ".*  # nocover", "def __repr__", "raise AssertionError", "raise NotImplementedError", "if 0:", "if trace is not None", "verbose = .*", "^ *raise", "^ *pass *$", "if _debug:", "if __name__ == .__main__.:"]
-omit = [ "kwarray/__main__.py", "*/setup.py",]
-
-
-[tool.codespell]
-skip = ['./docs/build', './*.egg-info', './build', './htmlcov']
-count = true
-quiet-level = 3
-ignore-words-list = ["fpr", 'ANS', 'ans', 'numer', 'wont', 'cant', 'ANS', 'doesnt', 'arent', 'ans', 'thats', 'datas', 'isnt', 'nd', 'bu', 'hasnt', 'didnt']
-
-[tool.ruff]
-line-length = 80
-target-version = "py38"
-
-[tool.ruff.lint]
-# Enable Flake8 (E, F) and isort (I) rules.
-select = ["E", "F", "I"]
-# Ignore specific rules, for example, E501 (line too long) as it's handled by the formatter.
-ignore = [
-    "E501",  # line too long
-    "E402",  # Module level import not at top of file
-]
-
-[tool.ruff.format]
-quote-style = "single"
-indent-style = "space"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-docstring-code-format = false
-
-[tool.ty.rules]
-unused-type-ignore-comment = "ignore"
-unresolved-import = "ignore"
-
-[tool.mypy]
-ignore_missing_imports = true
+use_setup_py = false
+use_pyproject_requirements = false
+enable_gpg = true
