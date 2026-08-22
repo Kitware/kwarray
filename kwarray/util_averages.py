@@ -49,31 +49,8 @@ if TYPE_CHECKING:
 
 from packaging.version import Version
 
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    importlib_metadata = None
-
-if importlib_metadata is not None:
-    try:
-        _NUMPY_VERSION = Version(importlib_metadata.version('numpy'))
-    except importlib_metadata.PackageNotFoundError:
-        _NUMPY_VERSION = None
-else:
-    import pkg_resources
-
-    try:
-        _NUMPY_VERSION = Version(
-            pkg_resources.get_distribution('numpy').version
-        )
-    except pkg_resources.DistributionNotFound:
-        _NUMPY_VERSION = None
-
-
-if _NUMPY_VERSION is None:
-    _NUMPY_LT_1_22_0 = None
-else:
-    _NUMPY_LT_1_22_0 = _NUMPY_VERSION < Version('1.22.0')
+_NUMPY_VERSION = Version(np.__version__)
+_NUMPY_LT_1_22_0 = _NUMPY_VERSION < Version('1.22.0')
 
 
 # Maybe name or alias or use in kwarray.describe?

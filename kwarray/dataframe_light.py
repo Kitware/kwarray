@@ -402,8 +402,11 @@ class DataFrameLight(ub.NiceRepr):
             if isinstance(labels, str):
                 raise KeyError('row indexes not found in axis')
             keep = np.ones(len(self), dtype=bool)
+            row_labels: Any = labels
+            if isinstance(row_labels, tuple):
+                row_labels = list(row_labels)
             try:
-                keep[list(cast('Sequence[int]', labels))] = False
+                keep[row_labels] = False
             except IndexError:
                 raise KeyError('row indexes not found in axis')
             new = self.compress(keep)
@@ -811,6 +814,8 @@ class DataFrameArray(DataFrameLight):
     Take and compress are much faster, but extend and union are slower
     """
 
+    _data: dict[str, np.ndarray]
+
     def __normalize__(self) -> None:
         """
         Try to convert input data to Dict[ndarray]
@@ -818,20 +823,23 @@ class DataFrameArray(DataFrameLight):
         if self._raw is None:
             self._data = {}
         elif isinstance(self._raw, dict):
-            self._data = self._raw
+            raw_data: Any = self._raw
+            self._data = raw_data
+            for key, values in self._data.items():
+                if not isinstance(values, np.ndarray):
+                    self._data[key] = np.asarray(values)
             if __debug__:
-                lens = []
-                for d in self._data.values():
-                    if not isinstance(d, (list, np.ndarray)):
-                        raise TypeError(type(d))
-                    lens.append(len(d))
+                lens = [len(d) for d in self._data.values()]
                 assert ub.allsame(lens), (
                     'lens are not all same {} for columns {}'.format(
                         lens, list(self._data.keys())
                     )
                 )
         elif isinstance(self._raw, DataFrameLight):
-            self._data = copy.copy(self._raw._data)
+            self._data = {
+                key: np.asarray(values)
+                for key, values in self._raw._data.items()
+            }
         elif pd is not None and isinstance(self._raw, pd.DataFrame):
             self._data = {
                 k: v.values
@@ -839,7 +847,6 @@ class DataFrameArray(DataFrameLight):
             }
         else:
             raise TypeError('Unknown _raw type')
-        # self._data = ub.map_vals(np.asarray, self._data)  # does this break anything?
 
     def extend(
         self,
@@ -847,7 +854,7 @@ class DataFrameArray(DataFrameLight):
     ) -> None:
         other_data = other._data if isinstance(other, DataFrameLight) else other
         for key in self._data.keys():
-            vals1 = np.asarray(self._data[key])
+            vals1 = self._data[key]
             vals2 = np.asarray(other_data[key])
             self._data[key] = np.hstack([vals1, vals2])
 
@@ -858,7 +865,7 @@ class DataFrameArray(DataFrameLight):
     ) -> DataFrameArray:
         subset = self if inplace else self.__class__()
         for key in self._data.keys():
-            subset._data[key] = np.asarray(self._data[key])[flags]
+            subset._data[key] = self._data[key][flags]
         return subset
 
     def take(
@@ -868,7 +875,7 @@ class DataFrameArray(DataFrameLight):
     ) -> DataFrameArray:
         subset = self if inplace else self.__class__()
         for key in self._data.keys():
-            subset._data[key] = np.asarray(self._data[key])[indices]
+            subset._data[key] = self._data[key][indices]
         return subset
 
     # def min(self, axis=None):

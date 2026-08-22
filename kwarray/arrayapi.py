@@ -67,7 +67,7 @@ import numpy as np
 import sys
 import ubelt as ub
 from functools import partial
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -376,13 +376,13 @@ class TorchImpls:
             return result
 
     @_torchmethod(func_type='array_sequence')
-    def cat(datas: Sequence[Tensor], axis: int = -1) -> Tensor:
+    def cat(datas: list[Tensor] | tuple[Tensor, ...], axis: int = -1) -> Tensor:
         import torch
 
-        return torch.cat(list(datas), dim=axis)
+        return torch.cat(datas, dim=axis)
 
     @_torchmethod(func_type='array_sequence')
-    def hstack(datas: Sequence[Tensor]) -> Tensor:
+    def hstack(datas: list[Tensor] | tuple[Tensor, ...]) -> Tensor:
         """
         Concatenates along axis=0 if inputs are are 1-D otherwise axis=1
 
@@ -400,7 +400,7 @@ class TorchImpls:
         axis = 1
         if len(datas[0].shape) == 1:
             axis = 0
-        return torch.cat(list(datas), dim=axis)
+        return torch.cat(datas, dim=axis)
 
     @_torchmethod(func_type='array_sequence')
     def vstack(datas: Sequence[Tensor]) -> Tensor:
@@ -623,7 +623,7 @@ class TorchImpls:
             return data.permute(*axes)
 
     @_torchmethod(func_type='data_func')
-    def transpose(data: Tensor, axes: Sequence[int]) -> Tensor:
+    def transpose(data: Tensor, axes: list[int] | tuple[int, ...]) -> Tensor:
         """
         Example:
             >>> # xdoctest: +REQUIRES(module:torch)
@@ -634,7 +634,7 @@ class TorchImpls:
             >>> res2 = ArrayAPI.transpose(data2, (2, 0, 1))
             >>> assert np.all(res1.numpy() == res2)
         """
-        return data.permute(tuple(axes))
+        return data.permute(axes)
 
     @_torchmethod(func_type='data_func')
     def numel(data: Tensor) -> int:
@@ -645,13 +645,13 @@ class TorchImpls:
     @_torchmethod(func_type='data_func')
     def full_like(
         data: Tensor,
-        fill_value: Any,
+        fill_value: complex,
         dtype: DTypeLike | None = None,
     ) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.full_like(data, fill_value, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.full_like(data, fill_value, dtype=torch_dtype)
 
     @_torchmethod(func_type='data_func')
     def empty_like(
@@ -660,8 +660,8 @@ class TorchImpls:
     ) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.empty_like(data, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.empty_like(data, dtype=torch_dtype)
 
     @_torchmethod(func_type='data_func')
     def zeros_like(
@@ -670,8 +670,8 @@ class TorchImpls:
     ) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.zeros_like(data, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.zeros_like(data, dtype=torch_dtype)
 
     @_torchmethod(func_type='data_func')
     def ones_like(
@@ -680,48 +680,41 @@ class TorchImpls:
     ) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        return torch.ones_like(data, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.ones_like(data, dtype=torch_dtype)
 
     @_torchmethod(func_type='shape_creation')
     def full(
         shape: ShapeLike,
-        fill_value: object,
+        fill_value: complex,
         dtype: DTypeLike = float,
     ) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        torch_shape = (shape,) if isinstance(shape, int) else tuple(shape)
-        return torch.full(
-            torch_shape,
-            cast(complex, fill_value),
-            dtype=cast(Any, dtype),
-        )
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        torch_shape = (shape,) if isinstance(shape, int) else shape
+        return torch.full(torch_shape, fill_value, dtype=torch_dtype)
 
     @_torchmethod(func_type='shape_creation')
     def empty(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        torch_shape = (shape,) if isinstance(shape, int) else tuple(shape)
-        return torch.empty(torch_shape, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.empty(shape, dtype=torch_dtype)
 
     @_torchmethod(func_type='shape_creation')
     def zeros(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        torch_shape = (shape,) if isinstance(shape, int) else tuple(shape)
-        return torch.zeros(torch_shape, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.zeros(shape, dtype=torch_dtype)
 
     @_torchmethod(func_type='shape_creation')
     def ones(shape: ShapeLike, dtype: DTypeLike = float) -> Tensor:
         import torch
 
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        torch_shape = (shape,) if isinstance(shape, int) else tuple(shape)
-        return torch.ones(torch_shape, dtype=cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        return torch.ones(shape, dtype=torch_dtype)
 
     # -------
 
@@ -1279,8 +1272,8 @@ class TorchImpls:
 
     @_torchmethod(func_type='data_func')
     def astype(data: Tensor, dtype: DTypeLike, copy: bool = True) -> Tensor:
-        dtype = _torch_dtype_lut().get(dtype, dtype)
-        data = data.to(cast(Any, dtype))
+        torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+        data = data.to(torch_dtype)
         if copy:
             data = data.clone()
         return data
@@ -1338,8 +1331,8 @@ class TorchImpls:
                     raise
                 result = torch.empty([0]).view(data_array.shape)
         if dtype is not None:
-            dtype = _torch_dtype_lut().get(dtype, dtype)
-            result = result.to(cast(Any, dtype))
+            torch_dtype: Any = _torch_dtype_lut().get(dtype, dtype)
+            result = result.to(torch_dtype)
         return result
 
     ensure = asarray
@@ -1431,7 +1424,9 @@ class TorchImpls:
     ) -> Tensor:
         import torch
 
-        return torch.clamp(data, cast(Any, a_min), cast(Any, a_max), out=out)
+        return torch.clamp(  # ty: ignore[no-matching-overload]
+            data, a_min, a_max, out=out
+        )
 
     @_torchmethod(func_type='data_func')
     def softmax(data: Tensor, axis: int | None = None) -> Tensor:
@@ -1473,7 +1468,7 @@ class NumpyImpls:
         """
         # _dtype_lut = _torch_dtype_lut()
         # dtypes = (_dtype_lut.get(t, t) for t in arrays_and_dtypes)
-        return np.result_type(*cast(Any, arrays_and_dtypes))
+        return np.result_type(*arrays_and_dtypes)
 
     @_numpymethod(func_type='array_sequence')
     def cat(datas: Sequence[np.ndarray], axis: int = -1) -> np.ndarray:
@@ -1543,51 +1538,51 @@ class NumpyImpls:
     @_numpymethod
     def empty_like(
         data: np.ndarray,
-        dtype: DTypeLike | None = None,
+        dtype: npt.DTypeLike | None = None,
     ) -> np.ndarray:
-        return np.empty_like(data, dtype=cast(Any, dtype))
+        return np.empty_like(data, dtype=dtype)
 
     @_numpymethod
     def full_like(
         data: np.ndarray,
         fill_value: Any,
-        dtype: DTypeLike | None = None,
+        dtype: npt.DTypeLike | None = None,
     ) -> np.ndarray:
-        return np.full_like(data, fill_value, dtype=cast(Any, dtype))
+        return np.full_like(data, fill_value, dtype=dtype)
 
     @_numpymethod
     def zeros_like(
         data: np.ndarray,
-        dtype: DTypeLike | None = None,
+        dtype: npt.DTypeLike | None = None,
     ) -> np.ndarray:
-        return np.zeros_like(data, dtype=cast(Any, dtype))
+        return np.zeros_like(data, dtype=dtype)
 
     @_numpymethod
     def ones_like(
         data: np.ndarray,
-        dtype: DTypeLike | None = None,
+        dtype: npt.DTypeLike | None = None,
     ) -> np.ndarray:
-        return np.ones_like(data, dtype=cast(Any, dtype))
+        return np.ones_like(data, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
     def full(
         shape: ShapeLike,
         fill_value: object,
-        dtype: DTypeLike = float,
+        dtype: npt.DTypeLike = float,
     ) -> np.ndarray:
-        return np.full(shape, fill_value, dtype=cast(Any, dtype))
+        return np.full(shape, fill_value, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def empty(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
-        return np.empty(shape, dtype=cast(Any, dtype))
+    def empty(shape: ShapeLike, dtype: npt.DTypeLike = float) -> np.ndarray:
+        return np.empty(shape, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def zeros(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
-        return np.zeros(shape, dtype=cast(Any, dtype))
+    def zeros(shape: ShapeLike, dtype: npt.DTypeLike = float) -> np.ndarray:
+        return np.zeros(shape, dtype=dtype)
 
     @_numpymethod(func_type='shape_creation')
-    def ones(shape: ShapeLike, dtype: DTypeLike = float) -> np.ndarray:
-        return np.ones(shape, dtype=cast(Any, dtype))
+    def ones(shape: ShapeLike, dtype: npt.DTypeLike = float) -> np.ndarray:
+        return np.ones(shape, dtype=dtype)
 
     # -------
 
@@ -1801,10 +1796,10 @@ class NumpyImpls:
     @_numpymethod(func_type='data_func')
     def astype(
         data: np.ndarray,
-        dtype: DTypeLike,
+        dtype: npt.DTypeLike,
         copy: bool = True,
     ) -> np.ndarray:
-        return data.astype(cast(Any, dtype), copy=copy)
+        return data.astype(dtype, copy=copy)
 
     @_numpymethod(func_type='data_func')
     def tensor(data: np.ndarray, device: Any = ub.NoParam) -> Tensor:
@@ -1832,15 +1827,15 @@ class NumpyImpls:
     @_numpymethod(func_type='data_func')
     def pad(
         data: np.ndarray,
-        pad_width: object,
-        mode: str = 'constant',
+        pad_width: Any,
+        mode: Any = 'constant',
     ) -> np.ndarray:
-        return np.pad(data, cast(Any, pad_width), mode=cast(Any, mode))
+        return np.pad(data, pad_width, mode=mode)
 
     @_numpymethod(func_type='data_func')
     def asarray(
         data: Tensor | npt.ArrayLike,
-        dtype: DTypeLike | None = None,
+        dtype: npt.DTypeLike | None = None,
     ) -> np.ndarray:
         """
         Cast data into a numpy representation
@@ -1848,7 +1843,7 @@ class NumpyImpls:
         torch = sys.modules.get('torch', None)
         if torch is not None and isinstance(data, torch.Tensor):
             data = data.cpu().numpy()
-        return np.asarray(data, dtype=cast(Any, dtype))
+        return np.asarray(data, dtype=dtype)
 
     ensure = asarray
 
@@ -1884,9 +1879,9 @@ class NumpyImpls:
     def iround(
         data: np.ndarray,
         out: np.ndarray | None = None,
-        dtype: DTypeLike = int,
+        dtype: npt.DTypeLike = int,
     ) -> np.ndarray:
-        return np.round(data, out=out).astype(cast(Any, dtype))
+        return np.round(data, out=out).astype(dtype)
 
     if TYPE_CHECKING:
         @staticmethod
@@ -2062,7 +2057,7 @@ class ArrayAPI:
         # is there a good way to check if a type belongs to torch?
         _dtype_lut = ub.invert_dict(_torch_dtype_lut())
         dtypes = [_dtype_lut.get(t, t) for t in arrays_and_dtypes]
-        result = np.result_type(*cast(Any, dtypes))
+        result = np.result_type(*dtypes)
         return result
         # impl = ArrayAPI.numpy()
         # # impl = ArrayAPI.impl(arrays_and_dtypes[0])
@@ -2074,7 +2069,7 @@ class ArrayAPI:
         *args: object,
         **kwargs: object,
     ) -> ArrayData:
-        impl = ArrayAPI.impl(datas[0])
+        impl: Any = ArrayAPI.impl(datas[0])
         return impl.cat(datas, *args, **kwargs)
 
     @_apimethod(func_type='array_sequence')
@@ -2083,7 +2078,7 @@ class ArrayAPI:
         *args: object,
         **kwargs: object,
     ) -> ArrayData:
-        impl = cast(Any, ArrayAPI.impl(datas[0]))
+        impl: Any = ArrayAPI.impl(datas[0])
         return impl.hstack(datas, *args, **kwargs)
 
     @_apimethod(func_type='array_sequence')
@@ -2092,7 +2087,7 @@ class ArrayAPI:
         *args: object,
         **kwargs: object,
     ) -> ArrayData:
-        impl = cast(Any, ArrayAPI.impl(datas[0]))
+        impl: Any = ArrayAPI.impl(datas[0])
         return impl.vstack(datas, *args, **kwargs)
 
     if TYPE_CHECKING:
@@ -2615,7 +2610,7 @@ def _numpy_dtype_info(dtype):
     if np_dtype.kind in {'f', 'c'}:
         info = np.finfo(np_dtype)
     else:
-        info = np.iinfo(cast(Any, np_dtype))
+        info = np.iinfo(np_dtype)  # ty: ignore[no-matching-overload]
     return info
 
 
