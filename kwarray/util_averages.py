@@ -47,10 +47,7 @@ if TYPE_CHECKING:
     from numpy.typing import ArrayLike
     from ubelt.util_const import NoParamType
 
-try:
-    from packaging.version import parse as Version
-except ImportError:
-    from distutils.version import LooseVersion as Version
+from packaging.version import Version
 
 try:
     import importlib.metadata as importlib_metadata

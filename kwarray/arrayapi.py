@@ -93,10 +93,7 @@ try:
 except ImportError:
     from ubelt import memoize as cache
 
-try:
-    from packaging.version import parse as Version
-except ImportError:
-    from distutils.version import LooseVersion as Version
+from packaging.version import Version
 
 try:
     import importlib.metadata as importlib_metadata
@@ -497,6 +494,7 @@ class TorchImpls:
         if not torch.is_tensor(flags):
             flags = np.asarray(flags).astype(np.uint8)
             flags = torch.BoolTensor(flags).to(data.device)
+        flags = cast('Tensor', flags)
         if flags.ndimension() != 1:
             raise ValueError('condition must be a 1-d tensor')
         if axis is None:

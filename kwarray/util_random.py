@@ -94,6 +94,7 @@ This results in:
 import numpy as np
 import random
 import itertools as it
+import math
 from typing import TYPE_CHECKING, Any, cast, overload
 
 if TYPE_CHECKING:
@@ -181,7 +182,7 @@ def shuffle(
         [3, 2, 5, 1, 4, 6]
     """
     rng = ensure_rng(rng)
-    rng.shuffle(items)  # ty: ignore[invalid-argument-type]
+    rng.shuffle(items)
     return items
 
 
@@ -339,8 +340,7 @@ def random_product(
         idx_cards = np.array([len(g) for g in items], dtype=np.uint32)
 
     ndims = len(items)
-    # max_num = np.prod(idx_cards.astype(np.float))
-    max_num = np.multiply.reduce(idx_cards.astype(np.float32))
+    max_num = math.prod(int(card) for card in idx_cards)
 
     if num is None:
         num = max_num
@@ -360,7 +360,13 @@ def random_product(
             rng = ensure_rng(rng, 'numpy')
             # Need to use least-common-multiple so the mod of all idxs
             # are equally likely
-            card_lcm = np.lcm.reduce(idx_cards)
+            card_lcm = 1
+            for card in idx_cards:
+                card = int(card)
+                if card_lcm == 0 or card == 0:
+                    card_lcm = 0
+                else:
+                    card_lcm = (card_lcm // math.gcd(card_lcm, card)) * card
         else:
             rng = ensure_rng(rng, 'python')
 

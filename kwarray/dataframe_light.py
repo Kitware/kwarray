@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     import pandas as pd
 
     ColumnData = list[object] | np.ndarray
-
-try:
-    import pandas as pd
-except Exception:
-    pd = None  # ty: ignore[invalid-assignment]
+else:
+    try:
+        import pandas as pd
+    except Exception:
+        pd = None
 
 
 __version__ = '0.0.1'
