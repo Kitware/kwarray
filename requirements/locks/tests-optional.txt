@@ -252,7 +252,7 @@ tomli==2.4.1 ; python_full_version <= '3.11'
     #   pytest
 torch==2.4.1 ; python_full_version < '3.9'
     # via kwarray
-torch==2.8.0 ; python_full_version == '3.9.*'
+torch==2.13.0 ; python_full_version == '3.9.*'
     # via kwarray
 torch==2.13.0 ; python_full_version >= '3.10' and python_full_version < '4'
     # via kwarray
